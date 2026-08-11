@@ -1,0 +1,63 @@
+<view class="page-wrap">
+  <view class="page-head">
+    <view class="t">🔤 拼音汉字</view>
+    <view class="res-bar"><view class="res-item"><view class="ic-sun"></view>⭐ {{stars}}</view></view>
+  </view>
+
+  <!-- 子导航 -->
+  <view class="lnav">
+    <view class="pill {{tab===0?'on':''}}" data-i="0" bindtap="switchTab">认知卡片</view>
+    <view class="pill {{tab===1?'on':''}}" data-i="1" bindtap="switchTab">拼读练习</view>
+    <view class="pill {{tab===2?'on':''}}" data-i="2" bindtap="switchTab">汉字描红</view>
+  </view>
+
+  <!-- ① 认知卡片 -->
+  <view class="lpanel {{tab===0?'on':''}}">
+    <view class="flash">
+      <view class="label">大声读一读</view>
+      <view class="big">{{pyBig}}</view>
+      <view class="ex">{{pyEx}}</view>
+      <view class="label">{{pyWord}}</view>
+      <view class="play" bindtap="playPy">🔊 点我听一听</view>
+    </view>
+    <view class="flip">
+      <view class="btn btn-line" bindtap="pyPrev">‹ 上一个</view>
+      <view class="btn btn-green" bindtap="pyNext">下一个 ›</view>
+    </view>
+    <view class="tip">卡片可以左右切换：声母 + 单韵母。每屏一个大字配一张图，点喇叭听标准发音（云端语音合成，无需自备音频）。</view>
+  </view>
+
+  <!-- ② 拼读练习 -->
+  <view class="lpanel {{tab===1?'on':''}}">
+    <view class="blend">
+      <view class="syl">{{blendA}}</view>
+      <view class="syl">{{blendB}}</view>
+      <view class="eq">=</view>
+      <view class="res">{{blendR}}</view>
+    </view>
+    <view class="quiz-tip">把两个拼音拼在一起，读出“{{blendR}}”——像「{{blendEx}}」的 {{blendR}}！</view>
+    <view class="opt">
+      <view wx:for="{{blendOpts}}" wx:key="v" class="o {{item.cls}}" data-v="{{item.v}}" bindtap="chooseBlend">{{item.v}}</view>
+    </view>
+    <view class="flip flip-mt">
+      <view class="btn btn-line" bindtap="playBlend">🔊 听读音节</view>
+      <view class="btn btn-yellow" bindtap="nextBlend">➡ 换一题</view>
+    </view>
+  </view>
+
+  <!-- ③ 汉字描红 -->
+  <view class="lpanel {{tab===2?'on':''}}">
+    <view class="trace-box">
+      <canvas canvas-id="trace" class="trace-canvas" bindtouchstart="traceStart" bindtouchmove="traceMove"></canvas>
+    </view>
+    <view class="flip flip-mt">
+      <view class="btn btn-line" bindtap="playTrace">🔊 听一听</view>
+      <view class="btn btn-green" bindtap="finishTrace">✅ 这一笔描好啦</view>
+    </view>
+    <view class="tip">先点「听一听」听标准读音，再手指顺着浅色虚影描一描，写完点上面按钮换下一个字。选字：一 二 三 十 口 日 月 大 小 人…</view>
+  </view>
+
+  <view class="finish-bar">
+    <view class="btn btn-pink" bindtap="finishToday">🏆 完成今日拼音练习</view>
+  </view>
+</view>

@@ -1,0 +1,116 @@
+<view class="page-wrap">
+
+  <!-- 顶部：日期 + 连续打卡 -->
+  <view class="page-head">
+    <view>
+      <view class="t">今天 {{dateText}}</view>
+      <view class="s">{{weekText}} · 连续全科打卡 {{streak}} 天</view>
+    </view>
+    <view class="res-bar">
+      <view class="res-item"><view class="ic-coin"></view>{{farm.coins}}</view>
+      <view class="res-item"><view class="ic-sun"></view>{{farm.suns}}</view>
+    </view>
+  </view>
+
+  <!-- 备份提示 -->
+  <view wx:if="{{backupTip}}" class="tip-bar">数据已经积累不少啦，建议点下面的「导出备份」保存一份</view>
+
+  <!-- ============ 今天要处理（置顶区，铁律 5）============ -->
+  <view class="card todo-card">
+    <view class="card-title"><view class="dot"></view>今天要处理</view>
+
+    <view wx:if="{{todo.length === 0}}" class="all-done">
+      <view class="smile"><view class="eye l"></view><view class="eye r"></view><view class="mouth"></view></view>
+      <view class="ad-t">全部完成，今天超棒！</view>
+      <view class="muted">农场今晚很安全，小狗熊不敢来</view>
+    </view>
+
+    <view wx:for="{{todo}}" wx:key="id" class="todo-item {{item.overdue ? 'od' : ''}}">
+      <view class="sub-badge" style="background:{{item.color}}">{{item.icon}}</view>
+      <view class="ti-main">
+        <view class="ti-title">{{item.title}}</view>
+        <view class="ti-tag {{item.overdue ? 'red' : ''}}">{{item.tag}}</view>
+      </view>
+      <view class="btn btn-sm {{item.overdue ? 'btn-pink' : 'btn-green'}}" data-item="{{item}}" bindtap="handleTodo">
+        {{item.kind === 'hw' ? '去打卡' : '完成'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 今日三科进度 ============ -->
+  <view class="card">
+    <view class="card-title"><view class="dot" style="background:#5FBF6B"></view>今日三科作业 {{doneNum}}/3</view>
+    <view class="bar"><view class="fill" style="width:{{percent}}%"></view></view>
+    <view class="sub-row">
+      <view wx:for="{{subjects}}" wx:key="key" class="sub-chip {{item.done ? 'ok' : ''}}" bindtap="goCheckin">
+        <view class="sub-badge" style="background:{{item.color}}">{{item.icon}}</view>
+        <view class="sc-name">{{item.name}}</view>
+        <view class="sc-state">{{item.done ? '已完成' : '待完成'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 农场联动状态 ============ -->
+  <view class="card farm-card {{forecast.danger ? 'danger' : ''}}" bindtap="goFarm">
+    <view class="fc-left">
+      <view class="fc-title">{{forecast.danger ? '农场危险预警' : '农场一切安好'}}</view>
+      <view class="fc-desc">{{forecast.text}}</view>
+      <view class="fc-meta">当前农场里有 {{farm.bears}} 只小狗熊 · 杀虫剂 {{farm.pesticide}} 瓶</view>
+    </view>
+    <view class="fc-right">
+      <!-- 小小的迷你农场图标 -->
+      <view class="mini-farm">
+        <view class="mf-sun"></view>
+        <view class="mf-plant"><view class="mf-stem"></view><view class="mf-leaf l"></view><view class="mf-leaf r"></view></view>
+        <view class="mf-soil"></view>
+      </view>
+      <view class="go">进入农场 ></view>
+    </view>
+  </view>
+
+  <!-- ============ 今日计划清单 ============ -->
+  <view class="card">
+    <view class="card-title">
+      <view class="dot" style="background:#FF8FAE"></view>今日计划清单
+      <view class="btn btn-sm btn-line add-btn" catchtap="openAdd">+ 添加</view>
+    </view>
+    <view wx:if="{{plans.length === 0}}" class="empty">还没有计划，点右上角添加一条吧</view>
+    <view wx:for="{{plans}}" wx:key="id" class="plan-item">
+      <view class="ck {{item.done ? 'on' : ''}}" data-id="{{item.id}}" bindtap="togglePlan"><view class="tick"></view></view>
+      <view class="pi-main {{item.done ? 'done' : ''}}">
+        <view class="pi-title">{{item.title}}</view>
+        <view class="pi-sub" style="color:{{item.color}}">{{item.subName}}<text wx:if="{{item.overdue}}" class="od-tag">逾期顺延</text></view>
+      </view>
+      <view class="del" data-id="{{item.id}}" bindtap="delPlan">×</view>
+    </view>
+  </view>
+
+  <!-- ============ 数据备份（首屏可见，不藏设置里）============ -->
+  <view class="card">
+    <view class="card-title"><view class="dot" style="background:#F5B740"></view>数据备份</view>
+    <view class="muted" style="margin-bottom:18rpx">所有记录都保存在手机本地，换手机前记得导出一份 JSON 备份</view>
+    <view class="backup-row">
+      <view class="btn btn-sm btn-yellow" bindtap="exportData">导出 JSON 备份</view>
+      <view class="btn btn-sm btn-line" bindtap="importData">导入恢复</view>
+      <view wx:if="{{isDemo}}" class="btn btn-sm btn-gray" bindtap="clearDemo">清空示例</view>
+    </view>
+  </view>
+</view>
+
+<!-- 添加计划弹窗 -->
+<view wx:if="{{showAdd}}" class="mask" bindtap="closeAdd">
+  <view class="dialog" catchtap="">
+    <view class="d-title">添加今日计划</view>
+    <input class="input" placeholder="要做什么？例如：口算 20 题" placeholder-class="ph" value="{{newTitle}}" bindinput="onTitleInput" />
+    <view class="pick-row">
+      <view wx:for="{{subjectOptions}}" wx:key="key"
+            class="pick {{newSubject === item.key ? 'on' : ''}}"
+            style="{{newSubject === item.key ? 'background:' + item.color : ''}}"
+            data-key="{{item.key}}" bindtap="pickSubject">{{item.name}}</view>
+    </view>
+    <view class="d-btns">
+      <view class="btn btn-gray" bindtap="closeAdd">取消</view>
+      <view class="btn btn-green" bindtap="savePlan">保存</view>
+    </view>
+  </view>
+</view>

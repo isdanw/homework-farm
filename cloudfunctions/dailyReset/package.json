@@ -1,0 +1,9 @@
+{
+  "name": "dailyReset",
+  "version": "1.0.0",
+  "description": "每日凌晨自动重置作业状态并结算农场夜间惩罚",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

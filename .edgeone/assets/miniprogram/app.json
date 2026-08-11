@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/checkin/checkin",
+    "pages/stats/stats",
+    "pages/errors/errors",
+    "pages/farm/farm",
+    "pages/mall/mall"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#BFE6FF",
+    "navigationBarTitleText": "小小农场作业本",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFF9F0"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9AA5B1",
+    "selectedColor": "#3FA9F5",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "每日计划" },
+      { "pagePath": "pages/checkin/checkin", "text": "作业打卡" },
+      { "pagePath": "pages/stats/stats", "text": "学习统计" },
+      { "pagePath": "pages/errors/errors", "text": "错题本" },
+      { "pagePath": "pages/farm/farm", "text": "我的农场" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

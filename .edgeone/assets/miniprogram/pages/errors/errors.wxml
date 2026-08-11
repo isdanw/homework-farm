@@ -1,0 +1,63 @@
+<view class="page-wrap">
+  <view class="page-head">
+    <view>
+      <view class="t">错题本</view>
+      <view class="s">共 {{stat.total}} 道 · 还有 {{stat.left}} 道没掌握 · 每掌握 3 道奖励 1 阳光</view>
+    </view>
+    <view class="btn btn-sm btn-pink" bindtap="openAdd">+ 记错题</view>
+  </view>
+
+  <!-- 筛选 -->
+  <view class="filters">
+    <view class="f-row">
+      <view class="f {{filter==='all'?'on':''}}" data-v="all" bindtap="setFilter">全部</view>
+      <view class="f {{filter==='todo'?'on':''}}" data-v="todo" bindtap="setFilter">没掌握</view>
+      <view class="f {{filter==='done'?'on':''}}" data-v="done" bindtap="setFilter">已掌握</view>
+    </view>
+    <view class="f-row">
+      <view class="f small {{filterSub==='all'?'on':''}}" data-v="all" bindtap="setFilterSub">全科</view>
+      <view wx:for="{{subjects}}" wx:key="key"
+            class="f small {{filterSub===item.key?'on':''}}"
+            style="{{filterSub===item.key ? 'background:'+item.color+';color:#fff' : ''}}"
+            data-v="{{item.key}}" bindtap="setFilterSub">{{item.name}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{list.length === 0}}" class="card empty">这里还没有错题，做错了记下来才容易进步哦</view>
+
+  <view wx:for="{{list}}" wx:key="id" class="card err-card {{item.mastered ? 'ok' : ''}}">
+    <view class="e-top">
+      <view class="sub-badge" style="background:{{item.color}}">{{item.icon}}</view>
+      <view class="e-main">
+        <view class="e-title">{{item.title}}</view>
+        <view class="e-reason" wx:if="{{item.reason}}">错因：{{item.reason}}</view>
+        <view class="e-date">{{item.dateText}} 记录</view>
+      </view>
+    </view>
+    <view class="e-btns">
+      <view class="btn btn-sm {{item.mastered ? 'btn-gray' : 'btn-green'}}" data-id="{{item.id}}" bindtap="toggleMaster">
+        {{item.mastered ? '取消掌握' : '我掌握了'}}
+      </view>
+      <view class="btn btn-sm btn-line" data-id="{{item.id}}" bindtap="delItem">删除</view>
+    </view>
+  </view>
+</view>
+
+<!-- 添加错题 -->
+<view wx:if="{{showAdd}}" class="mask" bindtap="closeAdd">
+  <view class="dialog" catchtap="">
+    <view class="d-title">记一道错题</view>
+    <view class="pick-row">
+      <view wx:for="{{subjects}}" wx:key="key"
+            class="pick {{form.subject===item.key?'on':''}}"
+            style="{{form.subject===item.key ? 'background:'+item.color : ''}}"
+            data-key="{{item.key}}" bindtap="pickSub">{{item.name}}</view>
+    </view>
+    <textarea class="textarea" placeholder="题目 / 错在哪里，例如：8+5 写成了 12" value="{{form.title}}" bindinput="onTitle" maxlength="150" />
+    <input class="input" placeholder="错因（可不填）例如：进位忘了" value="{{form.reason}}" bindinput="onReason" />
+    <view class="d-btns">
+      <view class="btn btn-gray" bindtap="closeAdd">取消</view>
+      <view class="btn btn-pink" bindtap="saveItem">保存</view>
+    </view>
+  </view>
+</view>

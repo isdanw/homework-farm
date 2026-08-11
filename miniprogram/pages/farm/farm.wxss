@@ -1,0 +1,417 @@
+/* ============================================================================
+ *  农场页样式：Q 版田园画风 + 全 CSS 手绘植物 / 小狗熊 / 农场小主人
+ *  自定义作物样式请看：.shape-flower / .shape-berry / .shape-leaf 三段
+ * ========================================================================== */
+
+.farm-page { background: linear-gradient(180deg, #EAF7FF 0%, #FFF9F0 40%); }
+/* 皮肤（金币商城购买后切换） */
+.farm-page.skin-spring { background: linear-gradient(180deg, #E7FBE4 0%, #FFF9F0 45%); }
+.farm-page.skin-sakura { background: linear-gradient(180deg, #FFEDF4 0%, #FFF9F0 45%); }
+.farm-page.skin-ocean  { background: linear-gradient(180deg, #E1F3FF 0%, #F3FBFF 45%); }
+
+.top-res { margin-bottom: 18rpx; }
+.res-item.streak { color: #F5B740; }
+
+/* ---------------- 预警条 ---------------- */
+.warn-bar {
+  border-radius: 24rpx; padding: 20rpx 24rpx; margin-bottom: 18rpx;
+  display: flex; align-items: center; gap: 14rpx; font-size: 27rpx; font-weight: 600;
+}
+.warn-bar.good { background: #EFFBEF; color: #4A8C55; }
+.warn-bar.bad { background: #FFEFF2; color: #E0475C; border: 3rpx solid #FFC9D2; animation: warnBlink 2s infinite; }
+.wb-text { flex: 1; line-height: 1.45; }
+.wb-go { font-weight: 800; }
+@keyframes warnBlink { 0%,100% { box-shadow: 0 0 0 0 rgba(255,122,122,0); } 50% { box-shadow: 0 0 0 8rpx rgba(255,122,122,.18); } }
+
+/* ---------------- 内部分区 tab ---------------- */
+.ftabs { display: flex; gap: 12rpx; margin-bottom: 20rpx; }
+.ft {
+  flex: 1; min-height: 82rpx; line-height: 82rpx; text-align: center;
+  background: #fff; border-radius: 22rpx; font-size: 28rpx; font-weight: 700; color: #7A8792;
+  box-shadow: 0 4rpx 14rpx rgba(150,180,210,.12);
+}
+.ft.on { background: linear-gradient(180deg,#BFE6FF,#8FD3FF); color: #14608F; }
+
+/* ============================================================================
+ *  田地容器
+ * ========================================================================== */
+.field {
+  position: relative; width: 100%; height: 720rpx;
+  border-radius: 36rpx; overflow: hidden; margin-bottom: 22rpx;
+  background: linear-gradient(180deg, #CFEEFF 0%, #E9F9E4 42%, #D6F0C8 100%);
+  box-shadow: 0 10rpx 30rpx rgba(120,170,150,.20);
+}
+
+/* 天空 */
+.sky { position: absolute; left: 0; right: 0; top: 0; height: 200rpx; }
+.sun-big {
+  position: absolute; right: 40rpx; top: 26rpx; width: 90rpx; height: 90rpx; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FFF6C4, #FFC94D);
+  box-shadow: 0 0 40rpx rgba(255,201,77,.55);
+  animation: floaty 4s ease-in-out infinite;
+}
+.moon {
+  position: absolute; right: 44rpx; top: 28rpx; width: 80rpx; height: 80rpx; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FFFBE8, #FFE9A8);
+  box-shadow: 0 0 36rpx rgba(255,233,168,.6);
+}
+.star { position: absolute; width: 12rpx; height: 12rpx; background: #fff; border-radius: 50%; box-shadow: 0 0 12rpx #fff; animation: twinkle 1.8s infinite; }
+.star.s1 { left: 80rpx; top: 40rpx; } .star.s2 { left: 220rpx; top: 22rpx; animation-delay: .5s; } .star.s3 { left: 380rpx; top: 58rpx; animation-delay: 1s; }
+@keyframes twinkle { 0%,100% { opacity: .3; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.3); } }
+
+.cloud { position: absolute; height: 40rpx; background: rgba(255,255,255,.9); border-radius: 40rpx; }
+.cloud::before, .cloud::after {
+  content: ''; position: absolute; background: rgba(255,255,255,.9); border-radius: 50%;
+}
+.cloud.c1 { width: 120rpx; top: 40rpx; left: -140rpx; animation: drift 26s linear infinite; }
+.cloud.c1::before { width: 50rpx; height: 50rpx; top: -22rpx; left: 20rpx; }
+.cloud.c1::after { width: 36rpx; height: 36rpx; top: -14rpx; left: 66rpx; }
+.cloud.c2 { width: 90rpx; top: 100rpx; left: -120rpx; animation: drift 36s linear infinite 6s; }
+.cloud.c2::before { width: 40rpx; height: 40rpx; top: -18rpx; left: 18rpx; }
+@keyframes drift { 0% { transform: translateX(0); } 100% { transform: translateX(900rpx); } }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12rpx); } }
+
+/* 夜晚遮罩 */
+.night-mask { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(40,55,110,.42), rgba(40,55,110,.22)); pointer-events: none; }
+.farm-page.night .field { box-shadow: 0 10rpx 30rpx rgba(60,70,120,.3); }
+
+/* ---------------- 农场小主人（Q 版女孩） ---------------- */
+.farmer { position: absolute; left: 26rpx; bottom: 20rpx; width: 96rpx; height: 150rpx; z-index: 5; animation: floaty 3.6s ease-in-out infinite; }
+.farmer .hat {
+  position: absolute; top: 0; left: 2rpx; width: 92rpx; height: 26rpx; border-radius: 46rpx;
+  background: linear-gradient(180deg,#FFE29A,#F5C860);
+}
+.farmer .hat::after { content: ''; position: absolute; left: 24rpx; top: -18rpx; width: 44rpx; height: 26rpx; border-radius: 22rpx 22rpx 0 0; background: #FFE29A; }
+.farmer .hair { position: absolute; top: 20rpx; left: 12rpx; width: 72rpx; height: 62rpx; border-radius: 36rpx; background: #6B4A32; }
+.farmer .face {
+  position: absolute; top: 26rpx; left: 18rpx; width: 60rpx; height: 56rpx; border-radius: 30rpx;
+  background: #FFE3CE;
+}
+.farmer .eye { position: absolute; top: 22rpx; width: 9rpx; height: 12rpx; border-radius: 6rpx; background: #4A2F16; }
+.farmer .eye.l { left: 13rpx; } .farmer .eye.r { right: 13rpx; }
+.farmer .cheek { position: absolute; top: 32rpx; width: 12rpx; height: 8rpx; border-radius: 6rpx; background: #FFB3C6; opacity: .85; }
+.farmer .cheek.l { left: 6rpx; } .farmer .cheek.r { right: 6rpx; }
+.farmer .smile { position: absolute; left: 24rpx; top: 36rpx; width: 14rpx; height: 8rpx; border-bottom: 4rpx solid #C9765C; border-radius: 0 0 14rpx 14rpx; }
+.farmer .body {
+  position: absolute; bottom: 0; left: 16rpx; width: 64rpx; height: 66rpx;
+  border-radius: 26rpx 26rpx 18rpx 18rpx; background: linear-gradient(180deg,#BFE6FF,#8FD3FF);
+}
+.farmer .arm {
+  position: absolute; bottom: 34rpx; right: 2rpx; width: 30rpx; height: 14rpx; border-radius: 8rpx;
+  background: #FFE3CE; transform-origin: left center; animation: wave 2.2s ease-in-out infinite;
+}
+@keyframes wave { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(-38deg); } }
+
+/* ============================================================================
+ *  3 × 3 地块
+ * ========================================================================== */
+.plots {
+  position: absolute; left: 24rpx; right: 24rpx; bottom: 24rpx;
+  display: flex; flex-wrap: wrap; gap: 12rpx; z-index: 3;
+}
+.plot {
+  position: relative; width: calc(33.33% - 8rpx); height: 190rpx;
+  border-radius: 22rpx; overflow: visible;
+}
+.plot .soil {
+  position: absolute; left: 6rpx; right: 6rpx; bottom: 0; height: 54rpx;
+  border-radius: 18rpx; background: linear-gradient(180deg,#E0C39C,#BC8F62);
+  box-shadow: inset 0 6rpx 0 rgba(255,255,255,.25);
+}
+.plot.is-empty .soil { background: linear-gradient(180deg,#EBD8BF,#CFAE86); opacity: .85; }
+.add-seed {
+  position: absolute; left: 50%; bottom: 8rpx; margin-left: -26rpx;
+  width: 52rpx; height: 52rpx; line-height: 48rpx; text-align: center;
+  border-radius: 50%; background: rgba(255,255,255,.85); color: #7BAF5E;
+  font-size: 40rpx; font-weight: 800; box-shadow: 0 4rpx 10rpx rgba(0,0,0,.08);
+}
+/* 浇阳光长大特效 */
+.plot.grow-fx::after {
+  content: ''; position: absolute; left: 50%; bottom: 40rpx; margin-left: -50rpx;
+  width: 100rpx; height: 100rpx; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,231,154,.85), rgba(255,231,154,0) 70%);
+  animation: growPulse .9s ease-out;
+}
+@keyframes growPulse { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+
+/* 健康度爱心 */
+.hearts { position: absolute; left: 0; right: 0; bottom: -4rpx; display: flex; justify-content: center; gap: 6rpx; z-index: 4; }
+.heart { width: 16rpx; height: 16rpx; border-radius: 4rpx 8rpx 4rpx 8rpx; background: #E4E9EE; transform: rotate(45deg); }
+.heart.on { background: #FF8FAE; }
+.ready {
+  position: absolute; top: -6rpx; left: 50%; margin-left: -52rpx; width: 104rpx;
+  background: #FFD36E; color: #7A4E00; font-size: 20rpx; font-weight: 800;
+  border-radius: 14rpx; text-align: center; padding: 4rpx 0; z-index: 5;
+  animation: floaty 1.6s ease-in-out infinite;
+}
+
+/* ============================================================================
+ *  植物（4 个生长阶段）—— 想换造型改这里
+ * ========================================================================== */
+.plant { position: absolute; left: 0; right: 0; bottom: 30rpx; height: 160rpx; }
+.pl-stem, .pl-leaf, .pl-bud, .pl-crop { display: none; }
+
+.pl-mound {
+  position: absolute; bottom: 0; left: 50%; margin-left: -34rpx;
+  width: 68rpx; height: 22rpx; border-radius: 34rpx 34rpx 0 0; background: #A97C50;
+}
+.pl-seed {
+  position: absolute; bottom: 12rpx; left: 50%; margin-left: -10rpx;
+  width: 20rpx; height: 24rpx; border-radius: 50% 50% 46% 46%;
+  background: linear-gradient(180deg,#C9A06A,#8B5E34);
+  animation: seedBreath 2.4s ease-in-out infinite;
+}
+@keyframes seedBreath { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+.pl-stem {
+  position: absolute; bottom: 16rpx; left: 50%; margin-left: -5rpx;
+  width: 10rpx; background: #6FCF7C; border-radius: 6rpx; transition: height .5s ease;
+}
+.stage-1 .pl-stem { height: 40rpx; }
+.stage-2 .pl-stem { height: 62rpx; }
+.stage-3 .pl-stem { height: 78rpx; }
+
+.pl-leaf { position: absolute; width: 42rpx; height: 24rpx; }
+.pl-leaf.l { right: 50%; margin-right: 4rpx; border-radius: 24rpx 0 24rpx 0; }
+.pl-leaf.r { left: 50%; margin-left: 4rpx; border-radius: 0 24rpx 0 24rpx; }
+.stage-1 .pl-leaf { bottom: 42rpx; }
+.stage-2 .pl-leaf { bottom: 56rpx; }
+.stage-3 .pl-leaf { bottom: 62rpx; }
+
+/* 开花阶段：花苞 */
+.pl-bud {
+  position: absolute; bottom: 72rpx; left: 50%; margin-left: -22rpx;
+  width: 44rpx; height: 52rpx; border-radius: 50% 50% 40% 40%;
+  box-shadow: inset 0 -8rpx 0 rgba(0,0,0,.06);
+  animation: floaty 2.6s ease-in-out infinite;
+}
+
+/* 成熟阶段：作物本体 */
+.pl-crop {
+  position: absolute; bottom: 78rpx; left: 50%; margin-left: -46rpx;
+  width: 92rpx; height: 92rpx; animation: floaty 2.2s ease-in-out infinite;
+}
+
+/* —— 造型 A：花朵（语文）—— */
+.petal {
+  position: absolute; left: 50%; top: 50%; margin: -22rpx 0 0 -14rpx;
+  width: 28rpx; height: 44rpx; border-radius: 50%;
+}
+.core {
+  position: absolute; left: 50%; top: 50%; margin: -17rpx 0 0 -17rpx;
+  width: 34rpx; height: 34rpx; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FFF3B0, #FFC94D);
+}
+
+/* —— 造型 B：果实（数学）—— */
+.berry { position: absolute; border-radius: 50%; border: 4rpx solid; box-sizing: border-box; }
+.berry.b1 { width: 44rpx; height: 44rpx; left: 6rpx; top: 26rpx; }
+.berry.b2 { width: 40rpx; height: 40rpx; right: 4rpx; top: 34rpx; }
+.berry.b3 { width: 34rpx; height: 34rpx; left: 28rpx; top: 4rpx; opacity: .9; }
+
+/* —— 造型 C：叶菜（英语）—— */
+.bigleaf { position: absolute; width: 44rpx; height: 62rpx; }
+.bigleaf.l { left: 0; bottom: 8rpx; border-radius: 44rpx 8rpx 44rpx 8rpx; transform: rotate(-12deg); }
+.bigleaf.r { right: 0; bottom: 8rpx; border-radius: 8rpx 44rpx 8rpx 44rpx; transform: rotate(12deg); }
+.bigleaf.m { left: 24rpx; bottom: 20rpx; width: 40rpx; height: 66rpx; border-radius: 40rpx 40rpx 12rpx 12rpx; }
+
+/* 成熟小表情 */
+.face-mini { position: absolute; left: 50%; top: 50%; margin: -6rpx 0 0 -22rpx; width: 44rpx; height: 26rpx; z-index: 3; }
+.face-mini .e { position: absolute; top: 0; width: 8rpx; height: 10rpx; border-radius: 5rpx; background: #5A4632; }
+.face-mini .e.l { left: 6rpx; } .face-mini .e.r { right: 6rpx; }
+.face-mini .m { position: absolute; left: 15rpx; top: 12rpx; width: 14rpx; height: 8rpx; border-bottom: 4rpx solid #5A4632; border-radius: 0 0 14rpx 14rpx; }
+
+/* —— 被啃：抖动 —— */
+.plant.bitten { animation: bittenShake .4s ease-in-out 3; }
+@keyframes bittenShake {
+  0%,100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-6rpx) rotate(-4deg); }
+  75% { transform: translateX(6rpx) rotate(4deg); }
+}
+
+/* —— 枯萎：灰色褪色特效 —— */
+.plant.withered {
+  filter: grayscale(1) brightness(.92);
+  opacity: .55;
+  transform: rotate(-7deg);
+  animation: witherIn .8s ease-out;
+}
+.plant.withered .pl-stem { background: #A0A0A0 !important; }
+.plant.withered .pl-leaf { background: #B0B0B0 !important; }
+@keyframes witherIn {
+  0% { filter: grayscale(0); opacity: 1; transform: rotate(0); }
+  100% { filter: grayscale(1); opacity: .55; transform: rotate(-7deg); }
+}
+.dead-mark {
+  position: absolute; left: 50%; bottom: 96rpx; margin-left: -16rpx;
+  width: 32rpx; height: 32rpx; line-height: 30rpx; text-align: center;
+  color: #8A8A8A; font-size: 30rpx; font-weight: 800;
+}
+
+/* ============================================================================
+ *  小狗熊（夜晚入侵，带走动 + 啃咬动画）
+ * ========================================================================== */
+.bear { position: absolute; width: 120rpx; height: 130rpx; z-index: 7; animation: bearWalk 4.2s ease-in-out infinite; }
+.bear-inner { position: absolute; inset: 0; transform-origin: 50% 92%; animation: bearBite .72s ease-in-out infinite; }
+
+.b-ear { position: absolute; top: 4rpx; width: 34rpx; height: 34rpx; border-radius: 50%; background: #A9764F; border: 4rpx solid #8B5E34; box-sizing: border-box; }
+.b-ear.l { left: 10rpx; } .b-ear.r { right: 10rpx; }
+.b-head {
+  position: absolute; top: 14rpx; left: 16rpx; width: 88rpx; height: 78rpx;
+  border-radius: 50%; background: #C89B6E; border: 4rpx solid #8B5E34; box-sizing: border-box;
+}
+.b-eye { position: absolute; top: 22rpx; width: 10rpx; height: 13rpx; border-radius: 6rpx; background: #4A2F16; }
+.b-eye.l { left: 18rpx; } .b-eye.r { right: 18rpx; }
+.b-muzzle {
+  position: absolute; left: 50%; margin-left: -24rpx; top: 36rpx;
+  width: 48rpx; height: 32rpx; border-radius: 24rpx; background: #F2DCC0;
+}
+.b-nose { position: absolute; left: 50%; margin-left: -9rpx; top: 4rpx; width: 18rpx; height: 13rpx; border-radius: 9rpx; background: #4A2F16; }
+.b-mouth {
+  position: absolute; left: 50%; margin-left: -11rpx; top: 16rpx;
+  width: 22rpx; height: 12rpx; border-radius: 0 0 22rpx 22rpx; background: #8B4A3B;
+  animation: chew .72s ease-in-out infinite;
+}
+@keyframes chew { 0%,100% { height: 6rpx; } 50% { height: 16rpx; } }
+
+.b-body {
+  position: absolute; bottom: 10rpx; left: 22rpx; width: 76rpx; height: 62rpx;
+  border-radius: 34rpx 34rpx 26rpx 26rpx; background: #A9764F; border: 4rpx solid #8B5E34; box-sizing: border-box;
+}
+.b-belly { position: absolute; left: 50%; margin-left: -22rpx; top: 12rpx; width: 44rpx; height: 40rpx; border-radius: 50%; background: #F2DCC0; }
+.b-arm { position: absolute; bottom: 40rpx; width: 26rpx; height: 20rpx; border-radius: 12rpx; background: #A9764F; border: 3rpx solid #8B5E34; box-sizing: border-box; }
+.b-arm.l { left: 2rpx; animation: armSwing .72s ease-in-out infinite; }
+.b-arm.r { right: 2rpx; animation: armSwing .72s ease-in-out infinite reverse; }
+@keyframes armSwing { 0%,100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+.b-foot { position: absolute; bottom: 0; width: 30rpx; height: 18rpx; border-radius: 14rpx; background: #8B5E34; }
+.b-foot.l { left: 22rpx; } .b-foot.r { right: 22rpx; }
+
+@keyframes bearWalk {
+  0%   { transform: translateX(0) scaleX(1); }
+  45%  { transform: translateX(70rpx) scaleX(1); }
+  50%  { transform: translateX(70rpx) scaleX(-1); }
+  95%  { transform: translateX(0) scaleX(-1); }
+  100% { transform: translateX(0) scaleX(1); }
+}
+@keyframes bearBite {
+  0%,100% { transform: rotate(0) translateY(0); }
+  50% { transform: rotate(8deg) translateY(8rpx); }
+}
+
+.bite-bubble {
+  position: absolute; top: -34rpx; left: 66rpx; white-space: nowrap;
+  background: #fff; color: #E0475C; font-size: 20rpx; font-weight: 800;
+  border-radius: 18rpx; padding: 4rpx 14rpx; box-shadow: 0 4rpx 10rpx rgba(0,0,0,.12);
+  animation: bubblePop 1.4s ease-in-out infinite;
+}
+@keyframes bubblePop {
+  0%, 100% { opacity: 0; transform: scale(.6) translateY(6rpx); }
+  30%, 70% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ============================================================================
+ *  工具栏 / 提示 / 列表
+ * ========================================================================== */
+.lock-tip {
+  background: #FFEFF2; color: #E0475C; border-radius: 22rpx;
+  padding: 18rpx 24rpx; font-size: 26rpx; font-weight: 600; margin-bottom: 18rpx;
+}
+.tools { display: flex; gap: 18rpx; margin-bottom: 22rpx; }
+.tool {
+  flex: 1; background: #fff; border-radius: 28rpx; padding: 24rpx 18rpx; text-align: center;
+  box-shadow: 0 8rpx 20rpx rgba(150,180,210,.14);
+}
+.tool.dis { opacity: .5; }
+.tool-ic { display: flex; justify-content: center; margin-bottom: 12rpx; }
+.tool-t { font-size: 30rpx; font-weight: 800; }
+.tool-s { font-size: 22rpx; color: #9AA5B1; }
+.ic-coin.big, .ic-sun.big { width: 56rpx; height: 56rpx; }
+.ic-spray.big { width: 44rpx; height: 58rpx; }
+.ic-shield.big { width: 50rpx; height: 58rpx; }
+
+.tip-card .tip-line { font-size: 26rpx; color: #6A6A6A; line-height: 1.9; }
+.tip-card .tip-line.danger { color: #E0475C; font-weight: 700; }
+
+/* 仓库 */
+.depot-row { display: flex; align-items: center; gap: 14rpx; padding: 16rpx 0; border-bottom: 2rpx dashed #EEF3F7; }
+.dp-dot { width: 26rpx; height: 26rpx; border-radius: 50%; }
+.dp-name { flex: 1; font-size: 30rpx; font-weight: 700; }
+.dp-sub { font-size: 24rpx; color: #9AA5B1; font-weight: 400; }
+.dp-num { font-size: 26rpx; color: #7A8792; }
+.hv-row { display: flex; align-items: center; gap: 14rpx; padding: 14rpx 0; border-bottom: 2rpx dashed #EEF3F7; }
+.hv-name { flex: 1; font-size: 28rpx; font-weight: 600; }
+.hv-date { font-size: 22rpx; color: #B5BFC9; }
+.hv-coin { font-size: 28rpx; font-weight: 800; color: #F5B740; }
+.log { padding: 14rpx 18rpx; border-radius: 16rpx; margin-bottom: 12rpx; background: #F7FAFD; }
+.log.punish { background: #FFF0F2; } .log.reward { background: #FFFAE9; }
+.log.fix { background: #EEFBEE; } .log.shield { background: #EAF6FF; }
+.lg-date { font-size: 22rpx; color: #9AA5B1; }
+.lg-text { font-size: 26rpx; line-height: 1.5; }
+
+/* 商店 */
+.shop-row { display: flex; align-items: center; gap: 18rpx; }
+.shop-ic { width: 80rpx; display: flex; justify-content: center; }
+.shop-main { flex: 1; min-width: 0; }
+.shop-name { font-size: 34rpx; font-weight: 800; }
+.shop-desc { font-size: 25rpx; color: #7A8792; line-height: 1.4; }
+.shop-tip { font-size: 23rpx; color: #B5BFC9; margin-top: 4rpx; }
+.shop-tip.ok { color: #5FBF6B; font-weight: 700; }
+.shop-right { text-align: center; }
+.price { display: flex; align-items: center; gap: 8rpx; font-size: 30rpx; font-weight: 800; color: #F5B740; margin-bottom: 12rpx; justify-content: center; }
+.price.small { font-size: 24rpx; color: #7A8792; }
+
+/* 背包 */
+.bag-grid { display: flex; flex-wrap: wrap; gap: 18rpx; }
+.bag-item {
+  width: calc(33.33% - 12rpx); background: #F8FBFE; border-radius: 24rpx;
+  padding: 22rpx 10rpx; text-align: center;
+}
+.bag-item.locked { opacity: .45; }
+.bg-ic { width: 56rpx; height: 56rpx; border-radius: 50%; margin: 0 auto 10rpx; }
+.bg-ic.sun-bg { background: radial-gradient(circle at 35% 30%, #FFF3B0, #FFC94D); }
+.bg-ic.spray-bg { background: linear-gradient(180deg,#A8E6A1,#5FBF6B); border-radius: 14rpx; }
+.bg-ic.shield-bg { background: linear-gradient(180deg,#BFE6FF,#3FA9F5); border-radius: 14rpx 14rpx 50% 50%; }
+.bg-name { font-size: 24rpx; font-weight: 700; }
+.bg-num { font-size: 24rpx; color: #7A8792; }
+
+.own-row { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 0; border-bottom: 2rpx dashed #EEF3F7; }
+.own-ic { width: 56rpx; height: 56rpx; border-radius: 16rpx; }
+.own-main { flex: 1; min-width: 0; }
+.own-name { font-size: 29rpx; font-weight: 700; }
+.own-desc { font-size: 23rpx; color: #9AA5B1; }
+.cert-tag { background: #FFF3D6; color: #A9761A; border-radius: 12rpx; padding: 6rpx 16rpx; font-size: 22rpx; font-weight: 700; }
+
+/* ============================================================================
+ *  弹窗
+ * ========================================================================== */
+.warn-dialog { border: 6rpx solid #FFC9D2; }
+.warn-bear { position: relative; width: 150rpx; height: 120rpx; margin: 0 auto 16rpx; animation: shake 1s ease-in-out infinite; }
+.warn-bear .b-ear { width: 42rpx; height: 42rpx; top: 0; }
+.warn-bear .b-ear.l { left: 8rpx; } .warn-bear .b-ear.r { right: 8rpx; }
+.warn-bear .b-head.big { top: 16rpx; left: 18rpx; width: 114rpx; height: 100rpx; }
+.warn-bear .b-eye { top: 30rpx; width: 12rpx; height: 16rpx; }
+.warn-bear .b-eye.l { left: 26rpx; } .warn-bear .b-eye.r { right: 26rpx; }
+.warn-bear .b-muzzle { top: 48rpx; margin-left: -30rpx; width: 60rpx; height: 38rpx; }
+@keyframes shake { 0%,100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+
+.rp-date { font-size: 24rpx; color: #9AA5B1; margin-bottom: 12rpx; }
+.rp-grid { display: flex; gap: 12rpx; margin: 24rpx 0 12rpx; }
+.rp { flex: 1; background: #F7FAFD; border-radius: 20rpx; padding: 18rpx 6rpx; }
+.rp-n { font-size: 38rpx; font-weight: 800; color: #E0475C; }
+.rp-l { font-size: 21rpx; color: #7A8792; }
+.rp-miss { font-size: 26rpx; color: #E0475C; font-weight: 700; }
+
+.seed-list { margin: 20rpx 0; }
+.seed-card {
+  display: flex; align-items: center; gap: 16rpx; text-align: left;
+  background: #F8FBFE; border-radius: 24rpx; padding: 20rpx; margin-bottom: 14rpx;
+  border: 3rpx solid transparent;
+}
+.seed-card.locked { opacity: .45; }
+.sd-ic { width: 56rpx; height: 62rpx; border-radius: 50% 50% 46% 46%; }
+.sd-main { flex: 1; min-width: 0; }
+.sd-name { font-size: 30rpx; font-weight: 800; }
+.sd-desc { font-size: 23rpx; color: #9AA5B1; }
+.sd-num { font-size: 27rpx; font-weight: 700; color: #7A8792; }
+
+.close-line { margin-top: 20rpx; font-size: 27rpx; color: #9AA5B1; }

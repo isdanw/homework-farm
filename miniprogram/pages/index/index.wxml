@@ -1,0 +1,66 @@
+<view class="page-wrap">
+
+  <!-- 顶部：吉祥物问候 -->
+  <view class="hero">
+    <view class="mascot">🦊</view>
+    <view class="hero-txt">
+      <view class="h-greet">嗨，宝贝！今天想玩点什么？</view>
+      <view class="h-sub">{{dateText}} {{weekText}} · 连续打卡 {{streak}} 天</view>
+    </view>
+    <view class="star-badge">⭐ {{learnStars}}</view>
+  </view>
+
+  <!-- 三扇学科大门 -->
+  <view class="gate">
+    <view wx:for="{{doors}}" wx:key="key" class="door {{item.grad}}" data-page="{{item.page}}" bindtap="openModule">
+      <view class="door-emoji">{{item.emoji}}</view>
+      <view class="door-info">
+        <view class="door-name">{{item.name}}</view>
+        <view class="door-tip">点进去开始玩</view>
+      </view>
+      <view class="door-status {{item.done ? 'ok' : ''}}">{{item.status}}</view>
+    </view>
+  </view>
+
+  <view class="hint">💡 完成一个模块，回家就能给农场的小动物喂阳光、种蔬菜！</view>
+
+  <!-- 今日三科进度 -->
+  <view class="card">
+    <view class="card-title"><view class="dot" style="background:#5FBF6B"></view>今日三科 {{doneNum}}/3</view>
+    <view class="bar"><view class="fill" style="width:{{percent}}%"></view></view>
+    <view class="go-checkin" bindtap="goCheckin">去「每日打卡」查看 / 补打卡 ›</view>
+  </view>
+
+  <!-- 农场联动状态 -->
+  <view class="card farm-card {{forecast.danger ? 'danger' : ''}}" bindtap="goFarm">
+    <view class="fc-left">
+      <view class="fc-title">{{forecast.danger ? '农场危险预警' : '农场一切安好'}}</view>
+      <view class="fc-desc">{{forecast.text}}</view>
+      <view class="fc-meta">当前农场里有 {{farm.bears}} 只小狗熊 · 杀虫剂 {{farm.pesticide}} 瓶</view>
+    </view>
+    <view class="fc-right">
+      <view class="mini-farm">
+        <view class="mf-sun"></view>
+        <view class="mf-plant"><view class="mf-stem"></view><view class="mf-leaf l"></view><view class="mf-leaf r"></view></view>
+        <view class="mf-soil"></view>
+      </view>
+      <view class="go">进入农场 ›</view>
+    </view>
+  </view>
+
+  <!-- 家长工具 -->
+  <view class="card">
+    <view class="card-title">
+      <view class="dot" style="background:#F5B740"></view>家长工具
+      <view class="btn btn-sm btn-line add-btn" catchtap="toggleTools">{{showTools ? '收起' : '展开'}}</view>
+    </view>
+    <view wx:if="{{showTools}}">
+      <view class="muted" style="margin-bottom:18rpx">所有记录都保存在手机本地，换手机前记得导出一份 JSON 备份。</view>
+      <view class="backup-row">
+        <view class="btn btn-sm btn-yellow" bindtap="exportData">导出备份</view>
+        <view class="btn btn-sm btn-line" bindtap="importData">导入恢复</view>
+        <view wx:if="{{isDemo}}" class="btn btn-sm btn-gray" bindtap="clearDemo">清空示例</view>
+      </view>
+    </view>
+  </view>
+</view>

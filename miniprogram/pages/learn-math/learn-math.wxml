@@ -1,0 +1,53 @@
+<view class="page-wrap">
+  <view class="page-head">
+    <view class="t">🔢 数学乐园</view>
+    <view class="res-bar"><view class="res-item"><view class="ic-sun"></view>⭐ {{stars}}</view></view>
+  </view>
+
+  <view class="lnav">
+    <view class="pill {{tab===0?'on':''}}" data-i="0" bindtap="switchTab">加减法</view>
+    <view class="pill {{tab===1?'on':''}}" data-i="1" bindtap="switchTab">逻辑训练</view>
+    <view class="pill {{tab===2?'on':''}}" data-i="2" bindtap="switchTab">图形认知</view>
+  </view>
+
+  <!-- ① 20以内加减法 -->
+  <view class="lpanel {{tab===0?'on':''}}">
+    <view class="quiz">
+      <view class="label">算一算</view>
+      <view class="q">{{qText}}</view>
+      <view class="opt">
+        <view wx:for="{{qOpts}}" wx:key="v" class="o {{item.cls}}" data-v="{{item.v}}" bindtap="chooseMath">{{item.v}}</view>
+      </view>
+    </view>
+    <view class="btn btn-yellow flip-mt" bindtap="genMath">➡ 换一题</view>
+    <view class="tip">题目在 20 以内，大数字 + 大按钮，答对就撒花。可配合实物（🍎🍎🍎）数一数。</view>
+  </view>
+
+  <!-- ② 逻辑训练 -->
+  <view class="lpanel {{tab===1?'on':''}}">
+    <view class="quiz">
+      <view class="label">接下来是哪个？</view>
+      <view class="q seq">{{logicSeq}} ?</view>
+      <view class="opt">
+        <view wx:for="{{logicOpts}}" wx:key="v" class="o {{item.cls}}" data-v="{{item.v}}" bindtap="chooseLogic">{{item.v}}</view>
+      </view>
+    </view>
+    <view class="btn btn-yellow flip-mt" bindtap="nextLogic">➡ 换一组</view>
+    <view class="tip">观察前面的排列规律（颜色 / 形状 / 大小交替），选出接着出现的那一个。</view>
+  </view>
+
+  <!-- ③ 图形认知 -->
+  <view class="lpanel {{tab===2?'on':''}}">
+    <view class="grid3">
+      <view wx:for="{{shapes}}" wx:key="nm" class="tile" data-nm="{{item.nm}}" bindtap="tapShape">
+        <view class="ic">{{item.ic}}</view>
+        <view class="nm">{{item.nm}}</view>
+      </view>
+    </view>
+    <view class="tip">认识 6 种基础图形，点一下听名称（发声占位）。进阶可以做「找出所有的圆形」配对游戏。</view>
+  </view>
+
+  <view class="finish-bar">
+    <view class="btn btn-pink" bindtap="finishToday">🏆 完成今日数学练习</view>
+  </view>
+</view>

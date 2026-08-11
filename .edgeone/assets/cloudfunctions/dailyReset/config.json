@@ -1,0 +1,12 @@
+{
+  "triggers": [
+    {
+      "name": "dailyResetTimer",
+      "type": "timer",
+      "config": "0 5 0 * * * *"
+    }
+  ],
+  "permissions": {
+    "openapi": []
+  }
+}

@@ -1,0 +1,23 @@
+/* 拼音汉字模块样式 */
+.tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin: 16rpx 6rpx; }
+
+/* 闪光卡 */
+.flash { background: #fff; border-radius: var(--radius); box-shadow: 0 8rpx 24rpx rgba(150,180,210,.16); padding: 30rpx; text-align: center; }
+.flash .label { font-size: 28rpx; color: var(--c-sub); }
+.flash .big { font-size: 200rpx; font-weight: 800; line-height: 1.1; color: var(--c-blue-deep); }
+.flash .ex { font-size: 120rpx; margin: 6rpx 0; }
+.flash .play { display: inline-flex; align-items: center; gap: 8rpx; margin-top: 12rpx; background: var(--c-green-deep); color: #fff; padding: 14rpx 28rpx; border-radius: 30rpx; font-size: 30rpx; }
+
+.flip { display: flex; gap: 16rpx; margin-top: 18rpx; }
+.flip-mt { margin-top: 22rpx; }
+
+/* 拼读 */
+.blend { display: flex; align-items: center; justify-content: center; gap: 18rpx; margin: 16rpx 0 20rpx; }
+.blend .syl { font-size: 110rpx; font-weight: 800; background: #F2FAFF; border-radius: 28rpx; padding: 10rpx 34rpx; color: var(--c-blue-deep); }
+.blend .eq { font-size: 80rpx; }
+.blend .res { font-size: 110rpx; font-weight: 800; color: var(--c-pink-deep); }
+.quiz-tip { font-size: 28rpx; text-align: center; color: var(--c-text); margin-bottom: 18rpx; line-height: 1.6; }
+
+/* 描红 */
+.trace-box { background: #fff; border-radius: var(--radius); box-shadow: 0 8rpx 24rpx rgba(150,180,210,.16); padding: 20rpx; display: flex; justify-content: center; }
+.trace-canvas { width: 620rpx; height: 380rpx; }

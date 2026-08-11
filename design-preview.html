@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>幼小衔接学习打卡 · 页面设计原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* —— 明快马卡龙（在原有基础上提亮，更童趣）—— */
+    --blue:#7FD4FF; --blue-deep:#2BB0F0;
+    --green:#8FE88A; --green-deep:#43C95A;
+    --pink:#FFB3D1; --pink-deep:#FF6FA5;
+    --cream:#FFF7EA; --cream-2:#FFEFD6;
+    --yellow:#FFD86B; --yellow-deep:#FFB01F;
+    --purple:#C9A8FF; --purple-deep:#9B6FF0;
+    --text:#3A3A3A; --sub:#8A8378;
+    --r:26px;            /* 大圆角 */
+    --shadow:0 8px 22px rgba(150,170,200,.20);
+    --shadow-press:0 3px 0 rgba(0,0,0,.10);
+    --font:"ZCOOL KuaiLe","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;font-family:var(--font);color:var(--text);
+    background:#EFE7DA;display:flex;justify-content:center;
+  }
+  /* 设备外框：模拟平板竖屏 */
+  .device{
+    width:430px;max-width:100vw;min-height:100vh;background:var(--cream);
+    position:relative;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 0 40px rgba(0,0,0,.15);
+  }
+  /* —— 顶部导航条 —— */
+  .nav{
+    height:64px;flex:0 0 64px;background:var(--blue);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 18px;color:#fff;font-size:21px;font-weight:700;
+    box-shadow:0 3px 10px rgba(0,0,0,.08);z-index:20;
+  }
+  .nav .back{font-size:26px;cursor:pointer;opacity:.9;}
+  .nav .star{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.28);
+    padding:5px 12px;border-radius:20px;font-size:18px;}
+  /* —— 内容区 —— */
+  .screen{flex:1;overflow-y:auto;padding:18px 18px 110px;}
+  .view{display:none;animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  /* —— 通用组件 —— */
+  .title{font-size:30px;font-weight:700;margin:6px 4px 14px;display:flex;align-items:center;gap:10px;}
+  .card{background:#fff;border-radius:var(--r);padding:18px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    min-height:62px;border-radius:32px;font-size:22px;font-weight:700;color:#fff;
+    background:var(--blue-deep);border:none;box-shadow:var(--shadow-press);
+    cursor:pointer;transition:transform .08s;width:100%;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:none;}
+  .btn.green{background:var(--green-deep);}
+  .btn.pink{background:var(--pink-deep);}
+  .btn.yellow{background:var(--yellow-deep);}
+  .btn.purple{background:var(--purple-deep);}
+  .btn.ghost{background:#fff;color:var(--blue-deep);border:3px solid var(--blue);}
+
+  /* 学科色 */
+  .s-chinese{background:linear-gradient(135deg,#FFB3D1,#FF6FA5);}
+  .s-math{background:linear-gradient(135deg,#7FD4FF,#2BB0F0);}
+  .s-english{background:linear-gradient(135deg,#8FE88A,#43C95A);}
+  .t-chinese{color:#FF6FA5;} .t-math{color:#2BB0F0;} .t-english{color:#43C95A;}
+
+  /* —— 学习乐园 枢纽页 —— */
+  .hero{background:linear-gradient(135deg,#FFF7EA,#FFE7C2);border-radius:var(--r);
+    padding:18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);}
+  .hero .mascot{width:78px;height:78px;border-radius:50%;background:var(--yellow);
+    display:flex;align-items:center;justify-content:center;font-size:44px;flex:0 0 78px;
+    box-shadow:inset 0 -6px 0 rgba(0,0,0,.06);}
+  .hero h2{margin:0 0 4px;font-size:24px;}
+  .hero p{margin:0;font-size:16px;color:var(--sub);}
+  .gate{display:flex;flex-direction:column;gap:14px;}
+  .gate .door{
+    border-radius:var(--r);padding:18px;color:#fff;display:flex;align-items:center;gap:16px;
+    box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden;min-height:96px;
+  }
+  .door .emoji{font-size:48px;flex:0 0 56px;text-align:center;}
+  .door .info h3{margin:0 0 4px;font-size:24px;}
+  .door .info p{margin:0;font-size:15px;opacity:.95;}
+  .door .status{position:absolute;right:16px;top:14px;background:rgba(255,255,255,.35);
+    border-radius:16px;padding:4px 12px;font-size:15px;}
+  .door .status.done{background:#fff;color:var(--green-deep);font-weight:700;}
+
+  /* —— 模块页（拼音/数学/英语）—— */
+  .subnav{display:flex;gap:10px;margin-bottom:16px;}
+  .subnav .pill{flex:1;text-align:center;padding:12px 4px;border-radius:20px;background:#fff;
+    color:var(--sub);font-size:17px;box-shadow:var(--shadow);cursor:pointer;border:3px solid transparent;}
+  .subnav .pill.on{border-color:var(--blue);color:var(--blue-deep);font-weight:700;background:#F2FAFF;}
+  .panel{display:none;}
+  .panel.on{display:block;animation:fade .2s ease;}
+
+  /* 闪光卡 */
+  .flash{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:22px;text-align:center;margin-bottom:16px;}
+  .flash .big{font-size:96px;font-weight:700;line-height:1.1;color:var(--blue-deep);}
+  .flash .ex{font-size:64px;margin:6px 0;}
+  .flash .label{font-size:18px;color:var(--sub);}
+  .flash .play{display:inline-flex;align-items:center;gap:8px;margin-top:10px;background:var(--green-deep);
+    color:#fff;padding:10px 20px;border-radius:24px;font-size:18px;cursor:pointer;}
+  .flip{display:flex;justify-content:space-between;gap:12px;}
+  .flip .btn{font-size:20px;min-height:54px;}
+
+  /* 拼读 */
+  .blend{display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0 20px;}
+  .blend .syl{font-size:66px;font-weight:700;background:#F2FAFF;border-radius:22px;padding:8px 22px;color:var(--blue-deep);}
+  .blend .eq{font-size:50px;}
+  .blend .res{font-size:66px;font-weight:700;color:var(--pink-deep);}
+
+  /* 描红 */
+  .trace{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:18px;text-align:center;margin-bottom:16px;}
+  .trace .char{font-size:130px;color:var(--green-deep);position:relative;line-height:1;
+    text-shadow:0 0 0 #fff;}
+  .trace .guide{position:absolute;inset:0;color:rgba(67,201,90,.18);}
+  .trace .dots{font-size:130px;color:rgba(43,176,240,.25);}
+
+  /* 数学题 */
+  .quiz{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:22px;text-align:center;margin-bottom:16px;}
+  .quiz .q{font-size:74px;font-weight:700;margin:6px 0 18px;letter-spacing:2px;}
+  .opt{display:flex;gap:14px;}
+  .opt .o{flex:1;min-height:78px;border-radius:26px;background:var(--cream-2);
+    display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:700;
+    color:var(--text);cursor:pointer;border:4px solid transparent;box-shadow:var(--shadow-press);}
+  .opt .o:active{transform:translateY(3px);}
+  .opt .o.right{background:var(--green);color:#fff;border-color:#43C95A;}
+  .opt .o.wrong{background:var(--pink);color:#fff;border-color:#FF6FA5;animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+
+  /* 逻辑/几何卡片 */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .tile{background:#fff;border-radius:22px;box-shadow:var(--shadow);padding:16px 8px;text-align:center;cursor:pointer;}
+  .tile .ic{font-size:54px;}
+  .tile .nm{font-size:17px;margin-top:6px;color:var(--sub);}
+
+  /* 字母网格 */
+  .abc{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .abc .L{background:#fff;border-radius:20px;box-shadow:var(--shadow);aspect-ratio:1;
+    display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:700;
+    color:var(--blue-deep);cursor:pointer;border:3px solid transparent;}
+  .abc .L.on{border-color:var(--yellow-deep);background:#FFF6DD;}
+  .abc .L small{display:block;font-size:14px;color:var(--sub);font-weight:400;}
+
+  /* 跟读 */
+  .read{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:24px;text-align:center;}
+  .read .pic{font-size:90px;}
+  .read .word{font-size:46px;font-weight:700;color:var(--green-deep);margin:6px 0;}
+  .read .mic{width:90px;height:90px;border-radius:50%;background:var(--pink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:44px;margin:14px auto;cursor:pointer;
+    box-shadow:0 6px 0 #e05a86;animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+  .stars{font-size:30px;letter-spacing:4px;color:var(--yellow-deep);}
+
+  /* 庆祝 */
+  .toast{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.6);
+    background:#fff;border-radius:26px;padding:20px 30px;box-shadow:0 12px 40px rgba(0,0,0,.2);
+    font-size:24px;font-weight:700;opacity:0;pointer-events:none;z-index:50;transition:.25s;}
+  .toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  .toast .em{font-size:46px;display:block;text-align:center;}
+
+  /* —— 底部 TabBar —— */
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:#fff;
+    display:flex;border-top:2px solid #EAF2F8;box-shadow:0 -6px 18px rgba(150,180,210,.14);
+    padding-bottom:env(safe-area-inset-bottom);z-index:30;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:#9AA5B1;}
+  .tab .ic{font-size:26px;width:46px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:#F0F4F8;}
+  .tab.on{color:var(--blue-deep);}
+  .tab.on .ic{background:#E2F4FF;transform:translateY(-3px) scale(1.05);transition:.15s;}
+  .tab .tx{font-size:13px;font-weight:600;}
+
+  /* 占位页 */
+  .ph{text-align:center;color:var(--sub);padding:60px 20px;font-size:18px;}
+  .ph .em{font-size:70px;display:block;margin-bottom:12px;}
+
+  /* 设计规范浮层 */
+  .spec-toggle{position:fixed;right:14px;top:74px;z-index:40;background:var(--purple-deep);color:#fff;
+    border-radius:20px;padding:8px 14px;font-size:15px;cursor:pointer;box-shadow:var(--shadow);}
+  .spec{display:none;position:fixed;inset:0;background:rgba(40,40,60,.5);z-index:60;
+    align-items:center;justify-content:center;padding:30px;}
+  .spec.on{display:flex;}
+  .spec .box{background:#fff;border-radius:24px;padding:22px;max-width:380px;max-height:84vh;overflow:auto;font-size:15px;line-height:1.7;}
+  .spec h3{margin:14px 0 6px;font-size:18px;}
+  .sw{display:inline-block;width:26px;height:26px;border-radius:8px;vertical-align:middle;margin-right:6px;}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="nav">
+    <span class="back" id="backBtn" style="visibility:hidden">‹</span>
+    <span id="navTitle">学习乐园</span>
+    <span class="star">⭐ <span id="starNum">12</span></span>
+  </div>
+
+  <div class="screen">
+    <!-- ===== 学习乐园 枢纽 ===== -->
+    <section class="view active" id="v-hub">
+      <div class="hero">
+        <div class="mascot">🦊</div>
+        <div>
+          <h2>嗨，宝贝！今天想学点什么？</h2>
+          <p>完成 3 个学习任务，农场小动物就有阳光啦～</p>
+        </div>
+      </div>
+      <div class="gate">
+        <div class="door s-chinese" onclick="enter('m-pinyin','拼音汉字')">
+          <div class="emoji">🔤</div>
+          <div class="info"><h3>拼音汉字</h3><p>声母韵母 · 拼读 · 描红</p></div>
+          <div class="status">未开始</div>
+        </div>
+        <div class="door s-math" onclick="enter('m-math','数学乐园')">
+          <div class="emoji">🔢</div>
+          <div class="info"><h3>数学乐园</h3><p>20以内加减 · 逻辑 · 图形</p></div>
+          <div class="status">未开始</div>
+        </div>
+        <div class="door s-english" onclick="enter('m-english','英语启蒙')">
+          <div class="emoji">🔤</div>
+          <div class="info"><h3>英语启蒙</h3><p>字母 · 单词卡片 · 跟读</p></div>
+          <div class="status">未开始</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;text-align:center;color:var(--sub);font-size:15px;">
+        💡 每完成一个模块，回家就能给农场的小动物喂阳光、种蔬菜！
+      </div>
+    </section>
+
+    <!-- ===== 拼音汉字 ===== -->
+    <section class="view" id="m-pinyin">
+      <div class="title"><span class="s-emoji">🔤</span> 拼音汉字</div>
+      <div class="subnav">
+        <div class="pill on" onclick="sub('py',0)">认知卡片</div>
+        <div class="pill" onclick="sub('py',1)">拼读练习</div>
+        <div class="pill" onclick="sub('py',2)">汉字描红</div>
+      </div>
+      <div class="panel on" id="py0">
+        <div class="flash">
+          <div class="label">声母</div>
+          <div class="big" id="pyBig">b</div>
+          <div class="ex" id="pyEx">🍌</div>
+          <div class="label" id="pyWord">b — 香蕉 banana</div>
+          <div class="play" onclick="praise('🔊 听发音')">🔊 点我听一听</div>
+        </div>
+        <div class="flip">
+          <div class="btn ghost" onclick="pyPrev()">‹ 上一个</div>
+          <div class="btn green" onclick="pyNext()">下一个 ›</div>
+        </div>
+        <div class="card" style="font-size:15px;color:var(--sub)">卡片可左右滑动切换：b p m f d t n l g k h j q x zh ch sh r z c s y w（声母）+ a o e i u ü ai ei ao ou（韵母）。每屏一个大字 + 一张图，点喇叭听标准发音。</div>
+      </div>
+      <div class="panel" id="py1">
+        <div class="blend">
+          <span class="syl">b</span><span class="syl">a</span>
+          <span class="eq">=</span><span class="res">ba</span>
+        </div>
+        <div class="card" style="text-align:center;font-size:17px;">把两个拼音拼在一起，读出“ba”——像<b>爸爸</b>的 ba！</div>
+        <div class="opt">
+          <div class="o" onclick="pick(this,'ba')">ba</div>
+          <div class="o" onclick="pick(this,'pa')">pa</div>
+          <div class="o" onclick="pick(this,'ma')">ma</div>
+        </div>
+        <div class="card" style="font-size:15px;color:var(--sub);margin-top:14px;">拼读闯关：系统随机出“声母+韵母”，孩子拼读后选正确音节，连续答对得 ⭐。</div>
+      </div>
+      <div class="panel" id="py2">
+        <div class="trace">
+          <div class="dots">大</div>
+        </div>
+        <div class="btn green" onclick="praise('✏️ 描得真棒')">✏️ 跟着虚线描一描</div>
+        <div class="card" style="font-size:15px;color:var(--sub);margin-top:14px;">描红用虚线引导笔顺，手指/触控笔下划即可（正式版用 canvas 描红并校验覆盖度）。选字：一 二 三 十 口 日 月 大 小 人。</div>
+      </div>
+    </section>
+
+    <!-- ===== 数学 ===== -->
+    <section class="view" id="m-math">
+      <div class="title"><span>🔢</span> 数学乐园</div>
+      <div class="subnav">
+        <div class="pill on" onclick="sub('mt',0)">加减法</div>
+        <div class="pill" onclick="sub('mt',1)">逻辑训练</div>
+        <div class="pill" onclick="sub('mt',2)">图形认知</div>
+      </div>
+      <div class="panel on" id="mt0">
+        <div class="quiz">
+          <div class="label" style="color:var(--sub);font-size:16px;">算一算</div>
+          <div class="q">3 + 5 = ?</div>
+          <div class="opt">
+            <div class="o" onclick="ans(this,false)">7</div>
+            <div class="o" onclick="ans(this,true)">8</div>
+            <div class="o" onclick="ans(this,false)">9</div>
+          </div>
+        </div>
+        <div class="btn yellow" onclick="praise('➕ 再来一题')">➕ 换一题</div>
+        <div class="card" style="font-size:15px;color:var(--sub);margin-top:14px;">20 以内不进位/进位加减，配实物图（🍎🍎🍎 + 🍎🍎🍎🍎🍎），大数字 + 大选项，答对撒花。</div>
+      </div>
+      <div class="panel" id="mt1">
+        <div class="quiz">
+          <div class="label" style="color:var(--sub);font-size:16px;">接下来是哪个？</div>
+          <div class="q" style="font-size:54px;letter-spacing:6px;">🔴 ⭐ 🔴 ⭐ 🔴 ?</div>
+          <div class="opt">
+            <div class="o" onclick="ans(this,true)">⭐</div>
+            <div class="o" onclick="ans(this,false)">🔵</div>
+            <div class="o" onclick="ans(this,false)">🔴</div>
+          </div>
+        </div>
+        <div class="card" style="font-size:15px;color:var(--sub)">规律训练：颜色/形状/大小交替、ABAB、AABB 模式，拖或点选下一个。</div>
+      </div>
+      <div class="panel" id="mt2">
+        <div class="grid">
+          <div class="tile"><div class="ic">🔵</div><div class="nm">圆形</div></div>
+          <div class="tile"><div class="ic">🟦</div><div class="nm">正方形</div></div>
+          <div class="tile"><div class="ic">🔺</div><div class="nm">三角形</div></div>
+          <div class="tile"><div class="ic">🟥</div><div class="nm">长方形</div></div>
+          <div class="tile"><div class="ic">⭐</div><div class="nm">星形</div></div>
+          <div class="tile"><div class="ic">⬗</div><div class="nm">梯形</div></div>
+        </div>
+        <div class="card" style="font-size:15px;color:var(--sub);margin-top:14px;">认知 6 种基础图形，点图形听名称；进阶“找出所有的圆形”配对游戏。</div>
+      </div>
+    </section>
+
+    <!-- ===== 英语 ===== -->
+    <section class="view" id="m-english">
+      <div class="title"><span>🔤</span> 英语启蒙</div>
+      <div class="subnav">
+        <div class="pill on" onclick="sub('en',0)">字母认知</div>
+        <div class="pill" onclick="sub('en',1)">单词卡片</div>
+        <div class="pill" onclick="sub('en',2)">简单跟读</div>
+      </div>
+      <div class="panel on" id="en0">
+        <div class="abc" id="abcGrid"></div>
+        <div class="card" style="text-align:center;font-size:16px;margin-top:14px;" id="abcInfo">点一个字母，看它的好朋友单词 👆</div>
+      </div>
+      <div class="panel" id="en1">
+        <div class="grid">
+          <div class="tile"><div class="ic">🍎</div><div class="nm">apple</div></div>
+          <div class="tile"><div class="ic">🐱</div><div class="nm">cat</div></div>
+          <div class="tile"><div class="ic">🐶</div><div class="nm">dog</div></div>
+          <div class="tile"><div class="ic">🌞</div><div class="nm">sun</div></div>
+          <div class="tile"><div class="ic">⭐</div><div class="nm">star</div></div>
+          <div class="tile"><div class="ic">🚗</div><div class="nm">car</div></div>
+        </div>
+        <div class="card" style="font-size:15px;color:var(--sub);margin-top:14px;">图文单词卡：大图 + 大单词，点图听读音、点字看拼写。计划 30–40 张基础词。</div>
+      </div>
+      <div class="panel" id="en2">
+        <div class="read">
+          <div class="pic">🍎</div>
+          <div class="word">apple</div>
+          <div class="mic" onclick="praise('🎤 读得真好听')">🎤</div>
+          <div class="stars">⭐⭐⭐</div>
+          <div style="font-size:15px;color:var(--sub);margin-top:8px;">按住麦克风跟读，系统给 1–3 颗星</div>
+        </div>
+        <div class="card" style="font-size:15px;color:var(--sub);margin-top:14px;">跟读需接入语音识别（微信同声传译插件 / 录音+后端 ASR）。设计上：大图引导、超大麦克风按钮、即时星级反馈。</div>
+      </div>
+    </section>
+
+    <!-- ===== 其余 Tab 占位（沿用现有设计） ===== -->
+    <section class="view" id="v-checkin"><div class="ph"><span class="em">✅</span>作业打卡<br/><small>沿用现有「作业打卡」页（打卡即今日 3 模块完成）</small></div></section>
+    <section class="view" id="v-stats"><div class="ph"><span class="em">📈</span>成长树<br/><small>沿用现有「学习统计」页</small></div></section>
+    <section class="view" id="v-errors"><div class="ph"><span class="em">📕</span>错题本<br/><small>沿用现有「错题本」页</small></div></section>
+    <section class="view" id="v-farm"><div class="ph"><span class="em">🌱</span>我的农场<br/><small>沿用现有「农场游戏」页（学习→阳光→种植联动）</small></div></section>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="tabbar">
+    <div class="tab on" data-v="v-hub" onclick="goTab(this,'v-hub','学习乐园',false)"><div class="ic">📚</div><div class="tx">学习乐园</div></div>
+    <div class="tab" data-v="v-checkin" onclick="goTab(this,'v-checkin','作业打卡',false)"><div class="ic">✅</div><div class="tx">作业打卡</div></div>
+    <div class="tab" data-v="v-stats" onclick="goTab(this,'v-stats','成长树',false)"><div class="ic">📈</div><div class="tx">成长树</div></div>
+    <div class="tab" data-v="v-errors" onclick="goTab(this,'v-errors','错题本',false)"><div class="ic">📕</div><div class="tx">错题本</div></div>
+    <div class="tab" data-v="v-farm" onclick="goTab(this,'v-farm','我的农场',false)"><div class="ic">🌱</div><div class="tx">我的农场</div></div>
+  </div>
+
+  <div class="spec-toggle" onclick="document.getElementById('spec').classList.toggle('on')">🎨 设计规范</div>
+  <div class="spec" id="spec" onclick="if(event.target===this)this.classList.remove('on')">
+    <div class="box">
+      <h3>🎨 设计规范（幼儿化增强版）</h3>
+      <b>配色（明快马卡龙）</b><br/>
+      <span class="sw" style="background:#7FD4FF"></span>蓝 #7FD4FF / <span class="sw" style="background:#2BB0F0"></span>#2BB0F0<br/>
+      <span class="sw" style="background:#8FE88A"></span>绿 #8FE88A / <span class="sw" style="background:#43C95A"></span>#43C95A<br/>
+      <span class="sw" style="background:#FFB3D1"></span>粉 #FFB3D1 / <span class="sw" style="background:#FF6FA5"></span>#FF6FA5<br/>
+      <span class="sw" style="background:#FFD86B"></span>黄 #FFD86B / <span class="sw" style="background:#FFB01F"></span>#FFB01F<br/>
+      学科色：语=粉红 / 数=蓝 / 英=绿（与现有一致）<br/>
+      <h3>字体</h3>
+      圆润卡通体 <b>ZCOOL KuaiLe（站酷快乐体）</b>；正文 ≥18px、标题 ≥24px、超大数字 ≥66px。WXML 落地时用系统圆体或嵌入该字体。
+      <h3>按钮 / 触控</h3>
+      胶囊圆角 32px，最小高度 62px（≈ 触控目标 ≥48px），按压缩小 3px + 去阴影，强化“可按”反馈。
+      <h3>游戏化</h3>
+      ⭐ 星星即时奖励、答对撒花 toast、进度门（3 扇学科大门）、农场联动（学习→阳光）。
+      <h3>导航约束</h3>
+      微信 tabBar 上限 5 个；本方案用「学习乐园」替换原「每日计划」，3 模块收入其内。
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><span class="em">🎉</span><span id="toastTxt">真棒！</span></div>
+</div>
+
+<script>
+  const navTitle=document.getElementById('navTitle');
+  const backBtn=document.getElementById('backBtn');
+  let stack=['v-hub'];
+
+  function show(id){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelector('.screen').scrollTop=0;
+  }
+  function goTab(el,id,title,canBack){
+    document.querySelectorAll('.tabbar .tab').forEach(t=>t.classList.remove('on'));
+    el.classList.add('on');
+    show(id); navTitle.textContent=title;
+    backBtn.style.visibility='hidden'; stack=['v-hub'];
+  }
+  function enter(id,title){
+    show(id); navTitle.textContent=title;
+    backBtn.style.visibility='visible'; stack.push(id);
+  }
+  backBtn.onclick=()=>{
+    stack.pop(); const prev=stack[stack.length-1];
+    show(prev);
+    if(prev==='v-hub'){backBtn.style.visibility='hidden';navTitle.textContent='学习乐园';
+      document.querySelectorAll('.tabbar .tab').forEach(t=>t.classList.toggle('on',t.dataset.v==='v-hub'));}
+  };
+  function sub(prefix,i){
+    const panels=document.querySelectorAll('#'+prefix+'0,#'+prefix+'1,#'+prefix+'2');
+    panels.forEach(p=>p.classList.remove('on'));
+    document.getElementById(prefix+i).classList.add('on');
+    const nav=document.getElementById(prefix+i).parentElement.querySelector('.subnav');
+    [...nav.children].forEach((p,idx)=>p.classList.toggle('on',idx===i));
+  }
+  function praise(t){const t2=document.getElementById('toast');document.getElementById('toastTxt').textContent=t;
+    t2.classList.add('show');setTimeout(()=>t2.classList.remove('show'),1100);}
+  function ans(el,correct){
+    if(correct){el.classList.add('right');praise('🎉 答对啦！');addStar();}
+    else{el.classList.add('wrong');praise('再想想～');}
+    setTimeout(()=>el.classList.remove('right','wrong'),700);
+  }
+  function pick(el,val){el.classList.add('right');praise('🎉 拼对啦！');addStar();
+    setTimeout(()=>el.classList.remove('right'),700);}
+  function addStar(){const s=document.getElementById('starNum');s.textContent=+s.textContent+1;}
+
+  // 拼音卡片
+  const pyData=[['b','🍌','b — 香蕉'],['p','🐧','p — 苹果'],['m','🐎','m — 马'],['a','🍎','a — 啊'],['o','🐟','o — 喔'],['e','🐘','e — 鹅']];
+  let pyI=0;
+  function pyRender(){document.getElementById('pyBig').textContent=pyData[pyI][0];
+    document.getElementById('pyEx').textContent=pyData[pyI][1];document.getElementById('pyWord').textContent=pyData[pyI][2];}
+  function pyNext(){pyI=(pyI+1)%pyData.length;pyRender();}
+  function pyPrev(){pyI=(pyI-1+pyData.length)%pyData.length;pyRender();}
+
+  // 字母网格
+  const abc=[['A','apple'],['B','ball'],['C','cat'],['D','dog'],['E','egg'],['F','fish'],['G','gift'],['H','hat'],
+    ['I','ice'],['J','jam'],['K','key'],['L','lion'],['M','milk'],['N','nose'],['O','orange'],['P','pig'],
+    ['Q','queen'],['R','red'],['S','sun'],['T','tiger'],['U','umbrella'],['V','van'],['W','water'],['X','xylophone'],
+    ['Y','yellow'],['Z','zoo']];
+  const g=document.getElementById('abcGrid');
+  abc.forEach(([L,w])=>{const d=document.createElement('div');d.className='L';d.innerHTML=L+'<small>'+w+'</small>';
+    d.onclick=()=>{document.querySelectorAll('.abc .L').forEach(x=>x.classList.remove('on'));d.classList.add('on');
+      document.getElementById('abcInfo').innerHTML='<b>'+L+'</b> 的好朋友是 <b>'+w+'</b> '+emo(w);};g.appendChild(d);});
+  function emo(w){const m={apple:'🍎',ball:'⚽',cat:'🐱',dog:'🐶',egg:'🥚',fish:'🐟',gift:'🎁',hat:'🎩',ice:'🧊',jam:'🍯',key:'🔑',lion:'🦁',milk:'🥛',nose:'👃',orange:'🍊',pig:'🐷',queen:'👑',red:'🔴',sun:'🌞',tiger:'🐯',umbrella:'☂️',van:'🚐',water:'💧',xylophone:'🎼',yellow:'🟡',zoo:'🦁'};return m[w]||'🔤';}
+</script>
+</body>
+</html>

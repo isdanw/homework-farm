@@ -1,0 +1,73 @@
+/* 学习乐园枢纽页样式（幼儿化：大圆角、明亮、活泼） */
+
+/* 顶部吉祥物问候 */
+.hero {
+  display: flex; align-items: center; gap: 16rpx;
+  background: linear-gradient(135deg, #FFF7EA, #FFE7C2);
+  border-radius: var(--radius); padding: 22rpx; margin-bottom: 22rpx;
+  box-shadow: 0 8rpx 24rpx rgba(150,180,210,.14);
+}
+.mascot {
+  width: 96rpx; height: 96rpx; border-radius: 50%; background: var(--c-yellow);
+  display: flex; align-items: center; justify-content: center; font-size: 54rpx; flex: 0 0 96rpx;
+  box-shadow: inset 0 -8rpx 0 rgba(0,0,0,.06);
+}
+.hero-txt { flex: 1; }
+.h-greet { font-size: 34rpx; font-weight: 800; }
+.h-sub { font-size: 24rpx; color: var(--c-sub); margin-top: 4rpx; }
+.star-badge {
+  background: #fff; color: var(--c-yellow-deep); font-weight: 800; font-size: 30rpx;
+  border-radius: 30rpx; padding: 10rpx 20rpx; box-shadow: 0 4rpx 14rpx rgba(245,183,64,.25);
+}
+
+/* 三扇学科大门 */
+.gate { display: flex; flex-direction: column; gap: 18rpx; }
+.door {
+  border-radius: var(--radius); padding: 24rpx; color: #fff;
+  display: flex; align-items: center; gap: 20rpx; box-shadow: 0 8rpx 22rpx rgba(150,170,200,.22);
+  position: relative; min-height: 120rpx;
+}
+.door-cn { background: linear-gradient(135deg, #FFB3D1, #FF6FA5); }
+.door-ma { background: linear-gradient(135deg, #7FD4FF, #2BB0F0); }
+.door-en { background: linear-gradient(135deg, #8FE88A, #43C95A); }
+.door-emoji { font-size: 60rpx; flex: 0 0 70rpx; text-align: center; }
+.door-info { flex: 1; }
+.door-name { font-size: 40rpx; font-weight: 800; }
+.door-tip { font-size: 24rpx; opacity: .95; margin-top: 4rpx; }
+.door-status {
+  position: absolute; right: 22rpx; top: 22rpx; background: rgba(255,255,255,.32);
+  border-radius: 20rpx; padding: 6rpx 16rpx; font-size: 24rpx;
+}
+.door-status.ok { background: #fff; color: #43C95A; font-weight: 800; }
+
+.hint {
+  font-size: 24rpx; color: var(--c-sub); text-align: center;
+  margin: 20rpx 8rpx; line-height: 1.6;
+}
+
+/* 今日三科进度 */
+.go-checkin { margin-top: 16rpx; font-size: 26rpx; color: var(--c-blue-deep); font-weight: 700; }
+
+/* 农场联动卡（复用全局 .farm-card 基础） */
+.farm-card { display: flex; align-items: center; justify-content: space-between; }
+.farm-card.danger { background: #FFF1F1; }
+.fc-left { flex: 1; padding-right: 16rpx; }
+.fc-title { font-size: 32rpx; font-weight: 800; }
+.fc-desc { font-size: 24rpx; color: var(--c-sub); margin: 8rpx 0; line-height: 1.5; }
+.fc-meta { font-size: 22rpx; color: var(--c-sub); }
+.fc-right { display: flex; flex-direction: column; align-items: center; }
+.go { font-size: 24rpx; color: var(--c-blue-deep); font-weight: 700; margin-top: 8rpx; }
+
+/* 迷你农场图标 */
+.mini-farm { width: 120rpx; height: 110rpx; position: relative; }
+.mf-sun { position: absolute; top: 0; right: 6rpx; width: 34rpx; height: 34rpx; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FFF3B0, #FFC94D); box-shadow: 0 0 0 8rpx rgba(255,201,77,.25); }
+.mf-soil { position: absolute; bottom: 0; left: 0; right: 0; height: 30rpx; border-radius: 14rpx; background: #D9C1A3; }
+.mf-plant { position: absolute; bottom: 26rpx; left: 44rpx; width: 8rpx; height: 44rpx; background: #6FCF7C; border-radius: 4rpx; }
+.mf-leaf { position: absolute; bottom: 46rpx; width: 28rpx; height: 18rpx; background: #A8E6A1; }
+.mf-leaf.l { left: 26rpx; border-radius: 18rpx 0 18rpx 0; }
+.mf-leaf.r { left: 56rpx; border-radius: 0 18rpx 0 18rpx; }
+
+/* 家长工具按钮行 */
+.backup-row { display: flex; gap: 16rpx; flex-wrap: wrap; }
+.add-btn { margin-left: auto; }

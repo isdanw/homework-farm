@@ -1,0 +1,100 @@
+/* 每日计划页样式 */
+.tip-bar {
+  background: #FFF3D6; color: #A9761A; border-radius: 20rpx;
+  padding: 16rpx 22rpx; font-size: 26rpx; margin-bottom: 20rpx;
+}
+
+/* ---- 今天要处理 ---- */
+.todo-card { border: 4rpx solid #FFE0EA; }
+.todo-item {
+  display: flex; align-items: center; gap: 18rpx;
+  padding: 18rpx; border-radius: 22rpx; background: #F8FBFE; margin-bottom: 16rpx;
+}
+.todo-item.od { background: #FFF0F2; border: 2rpx solid #FFC9D2; }
+.ti-main { flex: 1; min-width: 0; }
+.ti-title { font-size: 32rpx; font-weight: 700; }
+.ti-tag { font-size: 24rpx; color: #8A8A8A; margin-top: 4rpx; }
+.ti-tag.red { color: #FF5A5A; font-weight: 700; }
+
+.all-done { text-align: center; padding: 20rpx 0 10rpx; }
+.smile {
+  width: 120rpx; height: 120rpx; border-radius: 50%; margin: 0 auto 16rpx;
+  background: radial-gradient(circle at 35% 30%, #FFF3B0, #FFD36E);
+  position: relative; animation: floaty 2.4s ease-in-out infinite;
+}
+.smile .eye { position: absolute; top: 42rpx; width: 14rpx; height: 18rpx; border-radius: 8rpx; background: #6B4A1E; }
+.smile .eye.l { left: 34rpx; } .smile .eye.r { right: 34rpx; }
+.smile .mouth {
+  position: absolute; left: 42rpx; top: 66rpx; width: 36rpx; height: 20rpx;
+  border-bottom: 6rpx solid #6B4A1E; border-radius: 0 0 30rpx 30rpx;
+}
+.ad-t { font-size: 34rpx; font-weight: 800; color: #5FBF6B; }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10rpx); } }
+
+/* ---- 三科进度 ---- */
+.sub-row { display: flex; gap: 16rpx; margin-top: 22rpx; }
+.sub-chip {
+  flex: 1; background: #F6FAFD; border-radius: 24rpx; padding: 20rpx 10rpx;
+  text-align: center; border: 3rpx solid transparent;
+}
+.sub-chip.ok { background: #EEFBEE; border-color: #A8E6A1; }
+.sub-chip .sub-badge { margin: 0 auto 10rpx; }
+.sc-name { font-size: 30rpx; font-weight: 700; }
+.sc-state { font-size: 24rpx; color: #9AA5B1; }
+.sub-chip.ok .sc-state { color: #5FBF6B; font-weight: 700; }
+
+/* ---- 农场联动卡 ---- */
+.farm-card {
+  display: flex; align-items: center; gap: 20rpx;
+  background: linear-gradient(135deg, #EAF7FF, #EFFBEF);
+}
+.farm-card.danger { background: linear-gradient(135deg, #FFF0F2, #FFF7E6); border: 3rpx solid #FFC9D2; }
+.fc-left { flex: 1; min-width: 0; }
+.fc-title { font-size: 34rpx; font-weight: 800; margin-bottom: 8rpx; }
+.farm-card.danger .fc-title { color: #FF5A5A; }
+.fc-desc { font-size: 27rpx; color: #6A6A6A; line-height: 1.5; }
+.fc-meta { font-size: 24rpx; color: #9AA5B1; margin-top: 8rpx; }
+.fc-right { width: 160rpx; text-align: center; }
+.go { font-size: 24rpx; color: #3FA9F5; font-weight: 700; margin-top: 8rpx; }
+
+.mini-farm { position: relative; width: 140rpx; height: 110rpx; }
+.mf-sun {
+  position: absolute; right: 6rpx; top: 0; width: 40rpx; height: 40rpx; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FFF3B0, #FFC94D);
+  box-shadow: 0 0 0 8rpx rgba(255,201,77,.25); animation: floaty 3s infinite;
+}
+.mf-soil { position: absolute; bottom: 0; left: 10rpx; right: 10rpx; height: 26rpx; border-radius: 16rpx; background: linear-gradient(180deg,#E0C39C,#C39B6E); }
+.mf-plant { position: absolute; bottom: 22rpx; left: 46rpx; }
+.mf-stem { width: 8rpx; height: 44rpx; background: #6FCF7C; border-radius: 4rpx; margin: 0 auto; }
+.mf-leaf { position: absolute; bottom: 24rpx; width: 34rpx; height: 22rpx; background: #A8E6A1; }
+.mf-leaf.l { right: 8rpx; border-radius: 22rpx 0 22rpx 0; }
+.mf-leaf.r { left: 8rpx; border-radius: 0 22rpx 0 22rpx; }
+
+/* ---- 计划清单 ---- */
+.add-btn { margin-left: auto; }
+.plan-item { display: flex; align-items: center; gap: 18rpx; padding: 16rpx 0; border-bottom: 2rpx dashed #EEF3F7; }
+.ck {
+  width: 56rpx; height: 56rpx; border-radius: 50%; border: 4rpx solid #D6E2EC;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ck.on { background: #A8E6A1; border-color: #6FCF7C; }
+.ck .tick { width: 14rpx; height: 24rpx; border-right: 5rpx solid #fff; border-bottom: 5rpx solid #fff; transform: rotate(42deg) translate(-2rpx,-2rpx); opacity: 0; }
+.ck.on .tick { opacity: 1; }
+.pi-main { flex: 1; min-width: 0; }
+.pi-title { font-size: 31rpx; font-weight: 600; }
+.pi-main.done .pi-title { text-decoration: line-through; color: #B5BFC9; }
+.pi-sub { font-size: 24rpx; }
+.od-tag { background: #FFE3E7; color: #FF5A5A; border-radius: 10rpx; padding: 2rpx 10rpx; margin-left: 10rpx; font-size: 22rpx; }
+.del { width: 60rpx; height: 60rpx; line-height: 56rpx; text-align: center; color: #C3CDD6; font-size: 44rpx; }
+
+/* ---- 备份 ---- */
+.backup-row { display: flex; gap: 16rpx; flex-wrap: wrap; }
+
+/* ---- 弹窗内选择 ---- */
+.pick-row { display: flex; gap: 16rpx; margin-bottom: 10rpx; }
+.pick {
+  flex: 1; min-height: 80rpx; line-height: 80rpx; border-radius: 20rpx;
+  background: #F2F6FA; font-size: 30rpx; font-weight: 700; color: #6A6A6A;
+}
+.pick.on { color: #fff; }
+.ph { color: #B9C4CE; }

@@ -1,0 +1,328 @@
+<view class="page-wrap farm-page {{night ? 'night' : ''}} {{skinClass}}">
+
+  <!-- ===== 顶部资源条 ===== -->
+  <view class="res-bar top-res">
+    <view class="res-item"><view class="ic-coin"></view>{{res.coins}}</view>
+    <view class="res-item"><view class="ic-sun"></view>{{res.suns}}</view>
+    <view class="res-item"><view class="ic-spray"></view>{{res.pesticide}}</view>
+    <view class="res-item"><view class="ic-shield"></view>{{res.shields}}</view>
+    <view class="res-item streak">连续 {{streak}} 天</view>
+  </view>
+
+  <!-- ===== 作业联动预警条 ===== -->
+  <view class="warn-bar {{forecast.danger ? 'bad' : 'good'}}" bindtap="goCheckin">
+    <view class="wb-text">{{forecast.text}}</view>
+    <view wx:if="{{forecast.danger}}" class="wb-go">去打卡 ></view>
+  </view>
+
+  <!-- ===== 内部四个分区 ===== -->
+  <view class="ftabs">
+    <view class="ft {{tab==='farm'?'on':''}}" data-t="farm" bindtap="switchTab">种植地块</view>
+    <view class="ft {{tab==='depot'?'on':''}}" data-t="depot" bindtap="switchTab">仓库</view>
+    <view class="ft {{tab==='shop'?'on':''}}" data-t="shop" bindtap="switchTab">商店</view>
+    <view class="ft {{tab==='bag'?'on':''}}" data-t="bag" bindtap="switchTab">背包</view>
+  </view>
+
+  <!-- ==================== ① 种植地块 ==================== -->
+  <block wx:if="{{tab==='farm'}}">
+    <view class="field">
+      <!-- 天空：白天太阳 / 夜晚月亮 + 星星 -->
+      <view class="sky">
+        <view wx:if="{{!night}}" class="sun-big"></view>
+        <block wx:else>
+          <view class="moon"></view>
+          <view class="star s1"></view><view class="star s2"></view><view class="star s3"></view>
+        </block>
+        <view class="cloud c1"></view>
+        <view class="cloud c2"></view>
+      </view>
+
+      <!-- 农场小主人（Q 版女孩） -->
+      <view class="farmer">
+        <view class="hat"></view>
+        <view class="hair"></view>
+        <view class="face"><view class="eye l"></view><view class="eye r"></view><view class="cheek l"></view><view class="cheek r"></view><view class="smile"></view></view>
+        <view class="body"></view>
+        <view class="arm"></view>
+      </view>
+
+      <!-- 3 × 3 地块 -->
+      <view class="plots">
+        <view wx:for="{{plots}}" wx:key="index" class="plot {{item.empty ? 'is-empty' : ''}} {{growFx === item.index ? 'grow-fx' : ''}}"
+              data-i="{{item.index}}" bindtap="tapPlot">
+
+          <view class="soil"></view>
+
+          <!-- 空地块 -->
+          <view wx:if="{{item.empty}}" class="add-seed">＋</view>
+
+          <!-- 植物 -->
+          <view wx:else class="plant shape-{{item.shape}} stage-{{item.stage}} {{item.withered ? 'withered' : ''}} {{item.bitten ? 'bitten' : ''}}">
+            <!-- 播种：小土包 + 种子 -->
+            <view class="pl-mound"></view>
+            <view class="pl-seed"></view>
+            <!-- 茎 + 叶 -->
+            <view class="pl-stem"></view>
+            <view class="pl-leaf l" style="background:{{item.colorDeep}}"></view>
+            <view class="pl-leaf r" style="background:{{item.colorDeep}}"></view>
+            <!-- 花苞（开花阶段） -->
+            <view class="pl-bud" style="background:{{item.color}}"></view>
+
+            <!-- 成熟形态（按学科不同造型） -->
+            <view class="pl-crop">
+              <block wx:if="{{item.shape==='flower'}}">
+                <view class="petal" wx:for="{{[0,1,2,3,4]}}" wx:for-item="pi" wx:key="*this"
+                      style="transform:rotate({{pi*72}}deg) translateY(-26rpx);background:{{item.color}}"></view>
+                <view class="core"></view>
+              </block>
+              <block wx:elif="{{item.shape==='berry'}}">
+                <view class="berry b1" style="background:{{item.color}};border-color:{{item.colorDeep}}"></view>
+                <view class="berry b2" style="background:{{item.color}};border-color:{{item.colorDeep}}"></view>
+                <view class="berry b3" style="background:{{item.colorDeep}};border-color:{{item.colorDeep}}"></view>
+              </block>
+              <block wx:else>
+                <view class="bigleaf l" style="background:{{item.color}}"></view>
+                <view class="bigleaf r" style="background:{{item.color}}"></view>
+                <view class="bigleaf m" style="background:{{item.colorDeep}}"></view>
+              </block>
+              <!-- 成熟的小表情 -->
+              <view class="face-mini"><view class="e l"></view><view class="e r"></view><view class="m"></view></view>
+            </view>
+
+            <!-- 枯萎标记 -->
+            <view wx:if="{{item.withered}}" class="dead-mark">×</view>
+          </view>
+
+          <!-- 健康度小爱心 -->
+          <view wx:if="{{!item.empty}}" class="hearts">
+            <view wx:for="{{item.hearts}}" wx:for-item="h" wx:key="*this" class="heart {{h ? 'on' : ''}}"></view>
+          </view>
+          <!-- 成熟提示 -->
+          <view wx:if="{{item.mature}}" class="ready">可收获</view>
+        </view>
+      </view>
+
+      <!-- ===== 小狗熊（夜晚刷新，带啃咬动画）===== -->
+      <view wx:for="{{bears}}" wx:key="id" class="bear" style="left:{{item.x}}%;top:{{item.y}}%;animation-delay:{{item.delay}}s">
+        <view class="bear-inner">
+          <view class="b-ear l"></view><view class="b-ear r"></view>
+          <view class="b-head">
+            <view class="b-eye l"></view><view class="b-eye r"></view>
+            <view class="b-muzzle"><view class="b-nose"></view><view class="b-mouth"></view></view>
+          </view>
+          <view class="b-body"><view class="b-belly"></view></view>
+          <view class="b-arm l"></view><view class="b-arm r"></view>
+          <view class="b-foot l"></view><view class="b-foot r"></view>
+        </view>
+        <view class="bite-bubble">啃啃啃!</view>
+      </view>
+
+      <!-- 夜晚遮罩 -->
+      <view wx:if="{{night}}" class="night-mask"></view>
+    </view>
+
+    <!-- 收获被锁提示 -->
+    <view wx:if="{{lockHarvest}}" class="lock-tip">今天三科任务都没做，小狗熊糟蹋了菜园，今天不能收获金币</view>
+
+    <!-- 工具栏 -->
+    <view class="tools">
+      <view class="tool {{res.pesticide > 0 ? '' : 'dis'}}" bindtap="doPesticide">
+        <view class="tool-ic"><view class="ic-spray big"></view></view>
+        <view class="tool-t">杀虫剂 ×{{res.pesticide}}</view>
+        <view class="tool-s">赶走小狗熊 + 治好植物</view>
+      </view>
+      <view class="tool" bindtap="goMall">
+        <view class="tool-ic"><view class="ic-coin big"></view></view>
+        <view class="tool-t">金币商城</view>
+        <view class="tool-s">奖状 / 头像框 / 皮肤</view>
+      </view>
+    </view>
+
+    <view class="card tip-card">
+      <view class="card-title"><view class="dot"></view>怎么玩</view>
+      <view class="tip-line">1. 完成一科任务 → 领 1 颗阳光 + 1 颗该学科种子</view>
+      <view class="tip-line">2. 点空地块种下种子，浇阳光可以立刻长大一阶段</view>
+      <view class="tip-line">3. 长到「成熟」就能收获金币，去商城换奖励</view>
+      <view class="tip-line danger">4. 任务没做完 → 晚上小狗熊来啃植物，还会被偷走一半金币</view>
+      <view class="tip-line">5. 补完任务能领杀虫剂，赶走小狗熊、治好植物</view>
+    </view>
+  </block>
+
+  <!-- ==================== ② 仓库 ==================== -->
+  <block wx:elif="{{tab==='depot'}}">
+    <view class="card">
+      <view class="card-title"><view class="dot" style="background:#5FBF6B"></view>作物收成统计</view>
+      <view class="depot-row" wx:for="{{depotStat}}" wx:key="name">
+        <view class="dp-dot" style="background:{{item.color}}"></view>
+        <view class="dp-name">{{item.name}}<text class="dp-sub">（{{item.subName}}）</text></view>
+        <view class="dp-num">{{item.count}} 次 · {{item.coin}} 金币</view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title"><view class="dot" style="background:#F5B740"></view>收获记录</view>
+      <view wx:if="{{harvestLog.length===0}}" class="empty">还没有收获过，去种点东西吧</view>
+      <view wx:for="{{harvestLog}}" wx:key="id" class="hv-row">
+        <view class="hv-name">{{item.name}}</view>
+        <view class="hv-date">{{item.date}} {{item.time}}</view>
+        <view class="hv-coin">+{{item.coin}}</view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title"><view class="dot" style="background:#FF8FAE"></view>农场大事记</view>
+      <view wx:if="{{logs.length===0}}" class="empty">暂无记录</view>
+      <view wx:for="{{logs}}" wx:key="index" class="log {{item.type}}">
+        <view class="lg-date">{{item.dateText}}</view>
+        <view class="lg-text">{{item.text}}</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ==================== ③ 道具商店 ==================== -->
+  <block wx:elif="{{tab==='shop'}}">
+    <view class="card" wx:for="{{shopList}}" wx:key="id">
+      <view class="shop-row">
+        <view class="shop-ic">
+          <view wx:if="{{item.id==='sun'}}" class="ic-sun big"></view>
+          <view wx:elif="{{item.id==='pesticide'}}" class="ic-spray big"></view>
+          <view wx:else class="ic-shield big"></view>
+        </view>
+        <view class="shop-main">
+          <view class="shop-name">{{item.name}}</view>
+          <view class="shop-desc">{{item.desc}}</view>
+          <view class="shop-tip {{item.canBuy ? 'ok' : ''}}">{{item.tip}}</view>
+        </view>
+        <view class="shop-right">
+          <view wx:if="{{item.type==='coin'}}" class="price"><view class="ic-coin"></view>{{item.price}}</view>
+          <view wx:else class="price small">连续 {{item.needStreak}} 天</view>
+          <view class="btn btn-sm {{item.canBuy ? 'btn-green' : 'btn-gray'}}" data-id="{{item.id}}" bindtap="buyShop">
+            {{item.type==='coin' ? '购买' : '兑换'}}
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="card tip-card">
+      <view class="tip-line">金币怎么来？种下的作物长到「成熟」就能收获金币。</view>
+      <view class="tip-line danger">注意：漏做任务会被 NPC 偷走一半金币，攒钱前先把任务做完哦。</view>
+    </view>
+  </block>
+
+  <!-- ==================== ④ 背包 ==================== -->
+  <block wx:else>
+    <view class="card">
+      <view class="card-title"><view class="dot"></view>我的种子（完成对应任务才能解锁）</view>
+      <view class="bag-grid">
+        <view wx:for="{{seedList}}" wx:key="key" class="bag-item {{item.locked ? 'locked' : ''}}">
+          <view class="bg-ic" style="background:{{item.color}}"></view>
+          <view class="bg-name">{{item.seedName}}</view>
+          <view class="bg-num">{{item.locked ? '未解锁' : '×' + item.count}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title"><view class="dot" style="background:#5FBF6B"></view>我的道具</view>
+      <view class="bag-grid">
+        <view class="bag-item"><view class="bg-ic sun-bg"></view><view class="bg-name">阳光</view><view class="bg-num">×{{res.suns}}</view></view>
+        <view class="bag-item"><view class="bg-ic spray-bg"></view><view class="bg-name">杀虫剂</view><view class="bg-num">×{{res.pesticide}}</view></view>
+        <view class="bag-item"><view class="bg-ic shield-bg"></view><view class="bg-name">护盾</view><view class="bg-num">×{{res.shields}}</view></view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">
+        <view class="dot" style="background:#F5B740"></view>我的奖励
+        <view class="btn btn-sm btn-line" style="margin-left:auto" catchtap="goMall">去商城</view>
+      </view>
+      <view wx:if="{{ownedList.length===0}}" class="empty">还没有兑换奖励，攒够金币去商城看看吧</view>
+      <view wx:for="{{ownedList}}" wx:key="id" class="own-row">
+        <view class="own-ic" style="background:{{item.color}}"></view>
+        <view class="own-main">
+          <view class="own-name">{{item.name}}</view>
+          <view class="own-desc">{{item.desc}}</view>
+        </view>
+        <view wx:if="{{item.kind !== 'cert'}}" class="btn btn-sm {{item.equipped ? 'btn-gray' : 'btn-green'}}" data-id="{{item.id}}" bindtap="equip">
+          {{item.equipped ? '已装备' : '装备'}}
+        </view>
+        <view wx:else class="cert-tag">奖状</view>
+      </view>
+    </view>
+  </block>
+</view>
+
+<!-- ==================== 弹窗：未完成作业警告 ==================== -->
+<view wx:if="{{showWarn}}" class="mask">
+  <view class="dialog warn-dialog">
+    <view class="warn-bear">
+      <view class="b-ear l"></view><view class="b-ear r"></view>
+      <view class="b-head big">
+        <view class="b-eye l"></view><view class="b-eye r"></view>
+        <view class="b-muzzle"><view class="b-nose"></view><view class="b-mouth"></view></view>
+      </view>
+    </view>
+    <view class="d-title" style="color:#E0475C">还有任务没完成！</view>
+    <view class="d-text">{{warnText}}</view>
+    <view class="d-btns">
+      <view class="btn btn-gray" bindtap="closeWarn">先逛逛农场</view>
+      <view class="btn btn-pink" bindtap="goCheckin">马上去打卡</view>
+    </view>
+  </view>
+</view>
+
+<!-- ==================== 弹窗：昨晚结算报告 ==================== -->
+<view wx:if="{{showReport}}" class="mask">
+  <view class="dialog">
+    <view class="d-title">{{report.title}}</view>
+    <view class="rp-date">{{report.dateText}} 夜间结算</view>
+    <view class="d-text">{{report.desc}}</view>
+    <view class="rp-grid">
+      <view class="rp"><view class="rp-n">{{report.bears}}</view><view class="rp-l">小狗熊</view></view>
+      <view class="rp"><view class="rp-n">{{report.damaged}}</view><view class="rp-l">受伤植物</view></view>
+      <view class="rp"><view class="rp-n">{{report.withered}}</view><view class="rp-l">枯萎植物</view></view>
+      <view class="rp"><view class="rp-n">-{{report.stolen}}</view><view class="rp-l">被偷金币</view></view>
+    </view>
+    <view class="rp-miss" wx:if="{{report.level > 0}}">没完成的科目：{{report.missingText}}</view>
+    <view class="d-btns">
+      <view class="btn btn-gray" bindtap="closeReport">知道了</view>
+      <view class="btn btn-green" bindtap="goCheckin">今天去补上</view>
+    </view>
+  </view>
+</view>
+
+<!-- ==================== 弹窗：选择种子 ==================== -->
+<view wx:if="{{showSeed}}" class="mask" bindtap="closeSeed">
+  <view class="dialog" catchtap="">
+    <view class="d-title">种点什么好呢？</view>
+    <view class="d-text">只有完成对应学科任务才能解锁种子</view>
+    <view class="seed-list">
+      <view wx:for="{{seedList}}" wx:key="key" class="seed-card {{item.locked ? 'locked' : ''}}" data-key="{{item.key}}" bindtap="doPlant">
+        <view class="sd-ic" style="background:{{item.color}}"></view>
+        <view class="sd-main">
+          <view class="sd-name">{{item.seedName}}</view>
+          <view class="sd-desc">长大后变成 {{item.cropName}}</view>
+        </view>
+        <view class="sd-num">{{item.locked ? '未解锁' : '×' + item.count}}</view>
+      </view>
+    </view>
+    <view class="d-btns"><view class="btn btn-gray btn-block" bindtap="closeSeed">关闭</view></view>
+  </view>
+</view>
+
+<!-- ==================== 弹窗：植物操作 ==================== -->
+<view wx:if="{{showAction}}" class="mask" bindtap="closeAction">
+  <view class="dialog" catchtap="">
+    <view class="d-title">{{actionPlant.name}}</view>
+    <view class="d-text">
+      当前阶段：{{actionPlant.stageName}} · 健康度 {{actionPlant.health}}/3
+      <block wx:if="{{actionPlant.withered}}">（已枯萎，需要杀虫剂治疗）</block>
+    </view>
+    <view class="d-btns" style="flex-wrap:wrap">
+      <view wx:if="{{!actionPlant.mature && !actionPlant.withered}}" class="btn btn-yellow" bindtap="doSun">浇 1 颗阳光</view>
+      <view wx:if="{{actionPlant.mature}}" class="btn btn-green" bindtap="doHarvest">收获金币</view>
+      <view wx:if="{{actionPlant.withered}}" class="btn btn-line" bindtap="doPesticide">用杀虫剂</view>
+      <view class="btn btn-gray" bindtap="doClear">铲掉</view>
+    </view>
+    <view class="close-line" bindtap="closeAction">关闭</view>
+  </view>
+</view>

@@ -1,0 +1,42 @@
+<!-- 自定义底部导航：5 栏，图标全部 CSS 手绘，无需图片资源 -->
+<view class="tabbar">
+  <view
+    class="tab {{selected === index ? 'on' : ''}}"
+    wx:for="{{list}}"
+    wx:key="text"
+    data-index="{{index}}"
+    bindtap="switchTab">
+
+    <view class="ic-box">
+      <!-- 每日计划：小日历 -->
+      <view wx:if="{{item.icon === 'plan'}}" class="ic ic-plan">
+        <view class="ear l"></view><view class="ear r"></view>
+        <view class="line a"></view><view class="line b"></view>
+      </view>
+      <!-- 作业打卡：对勾 -->
+      <view wx:elif="{{item.icon === 'check'}}" class="ic ic-check">
+        <view class="tick"></view>
+      </view>
+      <!-- 学习统计：柱状图 -->
+      <view wx:elif="{{item.icon === 'stats'}}" class="ic ic-stats">
+        <view class="b b1"></view><view class="b b2"></view><view class="b b3"></view>
+      </view>
+      <!-- 错题本：小书 -->
+      <view wx:elif="{{item.icon === 'book'}}" class="ic ic-book">
+        <view class="pg"></view><view class="mark"></view>
+      </view>
+      <!-- 我的农场：小苗 -->
+      <view wx:else class="ic ic-farm">
+        <view class="soil"></view>
+        <view class="stem"></view>
+        <view class="leaf l"></view>
+        <view class="leaf r"></view>
+      </view>
+
+      <!-- 农场红点：今天还有作业没完成 -->
+      <view wx:if="{{item.icon === 'farm' && warn}}" class="dot-warn">!</view>
+    </view>
+
+    <view class="tab-txt">{{item.text}}</view>
+  </view>
+</view>

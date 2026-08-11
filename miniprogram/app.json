@@ -1,0 +1,35 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/checkin/checkin",
+    "pages/stats/stats",
+    "pages/errors/errors",
+    "pages/farm/farm",
+    "pages/mall/mall",
+    "pages/learn-pinyin/learn-pinyin",
+    "pages/learn-math/learn-math",
+    "pages/learn-english/learn-english"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#BFE6FF",
+    "navigationBarTitleText": "小小农场成长记",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFF9F0"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9AA5B1",
+    "selectedColor": "#3FA9F5",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "成长乐园" },
+      { "pagePath": "pages/checkin/checkin", "text": "每日打卡" },
+      { "pagePath": "pages/stats/stats", "text": "成长记录" },
+      { "pagePath": "pages/errors/errors", "text": "小本本" },
+      { "pagePath": "pages/farm/farm", "text": "我的农场" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

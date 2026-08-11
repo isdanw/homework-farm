@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>小小农场作业本 · 本地预览版</title>
+<style>
+  :root{
+    --blue:#BFE6FF; --blue-d:#3FA9F5; --green:#A8E6A1; --green-d:#6FCF7C;
+    --pink:#FFB3C6; --pink-d:#FF8FAE; --cream:#FFF9F0; --yellow:#FFC94D;
+    --ink:#5A6B78; --ink-l:#9AA5B1; --danger:#E0475C; --line:#EEF3F7;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(180deg,#EAF7FF 0%,#FFF9F0 45%);color:var(--ink);}
+  .app{max-width:460px;margin:0 auto;padding:14px 14px 40px;min-height:100vh;}
+  h1{font-size:20px;text-align:center;margin:6px 0 2px;color:var(--blue-d);}
+  .sub{text-align:center;font-size:12px;color:var(--ink-l);margin-bottom:12px;}
+
+  /* 资源条 */
+  .res{display:flex;gap:8px;background:#fff;border-radius:18px;padding:12px 8px;box-shadow:0 6rpx 18rpx rgba(150,180,210,.14);margin-bottom:14px;flex-wrap:wrap;}
+  .res .it{flex:1;min-width:54px;text-align:center;}
+  .res .num{font-size:20px;font-weight:800;color:var(--ink);}
+  .res .num.coin{color:var(--yellow);} .res .num.sun{color:#F5A623;}
+  .res .lab{font-size:11px;color:var(--ink-l);margin-top:2px;}
+
+  /* 卡片 */
+  .card{background:#fff;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 6rpx 18rpx rgba(150,180,210,.12);}
+  .card h2{font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:8px;}
+  .card h2 .dot{width:10px;height:10px;border-radius:50%;background:var(--blue-d);}
+
+  /* 作业打卡 */
+  .hw-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:2rpx dashed var(--line);}
+  .hw-row:last-child{border-bottom:none;}
+  .hw-ic{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex:none;}
+  .hw-main{flex:1;}
+  .hw-name{font-size:15px;font-weight:700;}
+  .hw-seed{font-size:11px;color:var(--ink-l);}
+  .btn{appearance:none;border:none;border-radius:16px;font-weight:800;font-size:14px;padding:10px 16px;cursor:pointer;transition:transform .08s;}
+  .btn:active{transform:scale(.95);}
+  .btn-done{background:#EFFBEF;color:#4A8C55;}
+  .btn-go{background:linear-gradient(180deg,#BFE6FF,#8FD3FF);color:#14608F;}
+  .btn-warn{background:linear-gradient(180deg,#FFD0D8,#FF9FB0);color:#fff;}
+  .btn-ghost{background:#F2F6F9;color:var(--ink);}
+  .btn[disabled]{opacity:.5;}
+
+  .night-actions{display:flex;gap:10px;margin-top:6px;}
+  .night-actions .btn{flex:1;}
+
+  /* 预警条 */
+  .warnbar{border-radius:18px;padding:12px 14px;font-size:13px;font-weight:700;margin-bottom:12px;line-height:1.5;}
+  .warnbar.bad{background:#FFEFF2;color:var(--danger);border:2rpx solid #FFC9D2;animation:pulse 2s infinite;}
+  .warnbar.good{background:#EFFBEF;color:#4A8C55;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,122,122,0);}50%{box-shadow:0 0 0 8px rgba(255,122,122,.16);}}
+
+  /* 农场 */
+  .field{position:relative;width:100%;height:340px;border-radius:26px;overflow:hidden;
+    background:linear-gradient(180deg,#CFEEFF 0%,#E9F9E4 42%,#D6F0C8 100%);box-shadow:0 8rpx 26rpx rgba(120,170,150,.2);}
+  .sky{position:absolute;inset:0 0 auto 0;height:96px;}
+  .sun{position:absolute;right:18px;top:14px;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF6C4,#FFC94D);box-shadow:0 0 22px rgba(255,201,77,.55);animation:floaty 4s ease-in-out infinite;}
+  .moon{position:absolute;right:20px;top:14px;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFFBE8,#FFE9A8);box-shadow:0 0 20px rgba(255,233,168,.6);}
+  .star{position:absolute;width:6px;height:6px;background:#fff;border-radius:50%;box-shadow:0 0 6px #fff;animation:tw 1.8s infinite;}
+  .star.s1{left:40px;top:20px;} .star.s2{left:110px;top:12px;animation-delay:.5s;} .star.s3{left:190px;top:28px;animation-delay:1s;}
+  @keyframes tw{0%,100%{opacity:.3;transform:scale(.8);}50%{opacity:1;transform:scale(1.3);}}
+  @keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  .night-mask{position:absolute;inset:0;background:linear-gradient(180deg,rgba(40,55,110,.42),rgba(40,55,110,.2));pointer-events:none;display:none;}
+  .field.night .night-mask{display:block;}
+
+  .farmer{position:absolute;left:12px;bottom:10px;width:48px;height:78px;z-index:5;animation:floaty 3.6s ease-in-out infinite;}
+  .farmer .hat{position:absolute;top:0;left:1px;width:46px;height:13px;border-radius:23px;background:linear-gradient(180deg,#FFE29A,#F5C860);}
+  .farmer .hat:after{content:'';position:absolute;left:12px;top:-9px;width:22px;height:13px;border-radius:11px 11px 0 0;background:#FFE29A;}
+  .farmer .hair{position:absolute;top:10px;left:6px;width:36px;height:31px;border-radius:18px;background:#6B4A32;}
+  .farmer .face{position:absolute;top:13px;left:9px;width:30px;height:28px;border-radius:15px;background:#FFE3CE;}
+  .farmer .eye{position:absolute;top:11px;width:4px;height:6px;border-radius:3px;background:#4A2F16;}
+  .farmer .eye.l{left:7px;} .farmer .eye.r{right:7px;}
+  .farmer .smile{position:absolute;left:12px;top:18px;width:7px;height:4px;border-bottom:2px solid #C9765C;border-radius:0 0 7px 7px;}
+  .farmer .body{position:absolute;bottom:0;left:8px;width:32px;height:33px;border-radius:13px 13px 9px 9px;background:linear-gradient(180deg,#BFE6FF,#8FD3FF);}
+
+  .plots{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:6px;z-index:3;}
+  .plot{position:relative;width:calc(33.33% - 4px);height:96px;border-radius:14px;}
+  .plot .soil{position:absolute;left:3px;right:3px;bottom:0;height:28px;border-radius:10px;background:linear-gradient(180deg,#E0C39C,#BC8F62);}
+  .plot.empty .soil{background:linear-gradient(180deg,#EBD8BF,#CFAE86);opacity:.85;}
+  .add{position:absolute;left:50%;bottom:5px;margin-left:-15px;width:30px;height:30px;line-height:28px;text-align:center;border-radius:50%;background:rgba(255,255,255,.85);color:#7BAF5E;font-size:24px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+  .plant{position:absolute;left:0;right:0;bottom:16px;height:80px;}
+  .pl-stem{position:absolute;bottom:8px;left:50%;margin-left:-2.5px;width:5px;background:#6FCF7C;border-radius:3px;}
+  .stage-1 .pl-stem{height:20px;} .stage-2 .pl-stem{height:32px;} .stage-3 .pl-stem{height:40px;}
+  .pl-leaf{position:absolute;width:21px;height:12px;background:#6FCF7C;border-radius:12px 0 12px 0;}
+  .pl-leaf.l{right:50%;margin-right:2px;} .pl-leaf.r{left:50%;margin-left:2px;}
+  .stage-1 .pl-leaf{bottom:20px;} .stage-2 .pl-leaf{bottom:27px;} .stage-3 .pl-leaf{bottom:30px;}
+  .pl-bud{position:absolute;bottom:36px;left:50%;margin-left:-9px;width:18px;height:22px;border-radius:50% 50% 40% 40%;box-shadow:inset 0 -3px 0 rgba(0,0,0,.06);animation:floaty 2.6s ease-in-out infinite;}
+  .pl-crop{position:absolute;bottom:40px;left:50%;margin-left:-23px;width:46px;height:46px;animation:floaty 2.2s ease-in-out infinite;}
+  .petal{position:absolute;left:50%;top:50%;margin:-11px 0 0 -7px;width:14px;height:22px;border-radius:50%;}
+  .core{position:absolute;left:50%;top:50%;margin:-8.5px 0 0 -8.5px;width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF3B0,#FFC94D);}
+  .berry{position:absolute;border-radius:50%;border:2px solid;box-sizing:border-box;}
+  .berry.b1{width:22px;height:22px;left:3px;top:13px;} .berry.b2{width:20px;height:20px;right:2px;top:17px;} .berry.b3{width:17px;height:17px;left:14px;top:2px;opacity:.9;}
+  .bigleaf{position:absolute;width:22px;height:31px;}
+  .bigleaf.l{left:0;bottom:4px;border-radius:22px 4px 22px 4px;transform:rotate(-12deg);}
+  .bigleaf.r{right:0;bottom:4px;border-radius:4px 22px 4px 22px;transform:rotate(12deg);}
+  .bigleaf.m{left:12px;bottom:10px;width:20px;height:33px;border-radius:20px 20px 6px 6px;}
+  .plant.bitten{animation:biteShake .4s ease-in-out 3;}
+  @keyframes biteShake{0%,100%{transform:translateX(0) rotate(0);}25%{transform:translateX(-3px) rotate(-4deg);}75%{transform:translateX(3px) rotate(4deg);}}
+  .plant.withered{filter:grayscale(1) brightness(.92);opacity:.55;transform:rotate(-7deg);animation:wither .8s ease-out;transition:transform .3s;}
+  .plant.withered .pl-stem,.plant.withered .pl-leaf{background:#A0A0A0 !important;}
+  @keyframes wither{0%{filter:grayscale(0);opacity:1;transform:rotate(0);}100%{filter:grayscale(1);opacity:.55;transform:rotate(-7deg);}}
+  .hearts{position:absolute;left:0;right:0;bottom:-2px;display:flex;justify-content:center;gap:3px;z-index:4;}
+  .heart{width:8px;height:8px;border-radius:2px 4px 2px 4px;background:#E4E9EE;transform:rotate(45deg);}
+  .heart.on{background:#FF8FAE;}
+  .ready{position:absolute;top:-3px;left:50%;margin-left:-26px;width:52px;background:#FFD36E;color:#7A4E00;font-size:10px;font-weight:800;border-radius:8px;text-align:center;padding:2px 0;z-index:5;animation:floaty 1.6s ease-in-out infinite;}
+
+  /* 小狗熊 */
+  .bear{position:absolute;width:60px;height:66px;z-index:7;animation:walk 4.2s ease-in-out infinite;}
+  .bear-inner{position:absolute;inset:0;transform-origin:50% 92%;animation:bite .72s ease-in-out infinite;}
+  .b-ear{position:absolute;top:2px;width:17px;height:17px;border-radius:50%;background:#A9764F;border:2px solid #8B5E34;box-sizing:border-box;}
+  .b-ear.l{left:5px;} .b-ear.r{right:5px;}
+  .b-head{position:absolute;top:7px;left:8px;width:44px;height:39px;border-radius:50%;background:#C89B6E;border:2px solid #8B5E34;box-sizing:border-box;}
+  .b-eye{position:absolute;top:11px;width:5px;height:6.5px;border-radius:3px;background:#4A2F16;}
+  .b-eye.l{left:9px;} .b-eye.r{right:9px;}
+  .b-muzzle{position:absolute;left:50%;margin-left:-12px;top:18px;width:24px;height:16px;border-radius:12px;background:#F2DCC0;}
+  .b-nose{position:absolute;left:50%;margin-left:-4.5px;top:2px;width:9px;height:6.5px;border-radius:5px;background:#4A2F16;}
+  .b-body{position:absolute;bottom:5px;left:11px;width:38px;height:31px;border-radius:17px 17px 13px 13px;background:#A9764F;border:2px solid #8B5E34;box-sizing:border-box;}
+  .b-belly{position:absolute;left:50%;margin-left:-11px;top:6px;width:22px;height:20px;border-radius:50%;background:#F2DCC0;}
+  @keyframes walk{0%{transform:translateX(0) scaleX(1);}45%{transform:translateX(36px) scaleX(1);}50%{transform:translateX(36px) scaleX(-1);}95%{transform:translateX(0) scaleX(-1);}100%{transform:translateX(0) scaleX(1);}}
+  @keyframes bite{0%,100%{transform:rotate(0) translateY(0);}50%{transform:rotate(8deg) translateY(4px);}}
+  .bite-bubble{position:absolute;top:-16px;left:33px;white-space:nowrap;background:#fff;color:var(--danger);font-size:11px;font-weight:800;border-radius:9px;padding:2px 8px;box-shadow:0 2px 6px rgba(0,0,0,.12);animation:bp 1.4s ease-in-out infinite;}
+  @keyframes bp{0%,100%{opacity:0;transform:scale(.6) translateY(3px);}30%,70%{opacity:1;transform:scale(1) translateY(0);}}
+
+  /* 弹窗 */
+  .mask{position:fixed;inset:0;background:rgba(40,55,80,.4);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .mask.show{display:flex;}
+  .dialog{background:#fff;border-radius:24px;padding:22px 20px;width:100%;max-width:340px;text-align:center;animation:pop .25s ease-out;}
+  @keyframes pop{0%{transform:scale(.8);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .dialog h3{margin:4px 0 10px;font-size:18px;}
+  .dialog .msg{font-size:14px;color:var(--ink);line-height:1.6;margin-bottom:14px;}
+  .reward-gain{display:flex;gap:10px;justify-content:center;margin:14px 0;}
+  .rg{flex:1;background:#F7FAFD;border-radius:14px;padding:12px 4px;}
+  .rg .n{font-size:22px;font-weight:800;} .rg .l{font-size:11px;color:var(--ink-l);margin-top:2px;}
+  .wbear{position:relative;width:90px;height:72px;margin:0 auto 6px;animation:shake 1s ease-in-out infinite;}
+  .wbear .b-ear{width:22px;height:22px;top:0;} .wbear .b-ear.l{left:4px;} .wbear .b-ear.r{right:4px;}
+  .wbear .b-head{top:8px;left:9px;width:58px;height:50px;} .wbear .b-eye{top:15px;width:6px;height:8px;} .wbear .b-eye.l{left:13px;} .wbear .b-eye.r{right:13px;}
+  .wbear .b-muzzle{top:24px;margin-left:-15px;width:30px;height:19px;}
+  @keyframes shake{0%,100%{transform:rotate(-5deg);}50%{transform:rotate(5deg);}}
+
+  .log{font-size:12px;line-height:1.7;color:var(--ink);max-height:160px;overflow:auto;text-align:left;background:#F7FAFD;border-radius:14px;padding:10px 12px;}
+  .log .row{padding:4px 0;border-bottom:1px dashed var(--line);}
+  .log .row:last-child{border-bottom:none;}
+  .log .t{color:var(--ink-l);font-size:11px;margin-right:6px;}
+  .footer{text-align:center;font-size:11px;color:var(--ink-l);margin-top:6px;}
+  .seed-pick{display:flex;gap:10px;margin:14px 0;}
+  .seed-pick .sp{flex:1;background:#F8FBFE;border-radius:16px;padding:12px 4px;text-align:center;border:2px solid transparent;}
+  .seed-pick .sp.on{border-color:var(--blue-d);}
+  .seed-pick .si{width:28px;height:30px;border-radius:50% 50% 46% 46%;margin:0 auto 6px;}
+  .seed-pick .sn{font-size:12px;font-weight:700;} .seed-pick .sc{font-size:11px;color:var(--ink-l);}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🌻 小小农场作业本</h1>
+  <div class="sub">本地预览版 · 数据与正式小程序同一套参数和引擎逻辑（数据存在本浏览器）</div>
+
+  <!-- 资源条 -->
+  <div class="res" id="res"></div>
+
+  <!-- 预警条 -->
+  <div id="warn"></div>
+
+  <!-- 作业打卡 -->
+  <div class="card">
+    <h2><span class="dot"></span>今日作业打卡</h2>
+    <div id="hwList"></div>
+    <div class="night-actions">
+      <button class="btn btn-warn" id="btnNight">🌙 模拟夜晚结算</button>
+      <button class="btn btn-ghost" id="btnNewDay">🌞 新的一天</button>
+    </div>
+  </div>
+
+  <!-- 农场 -->
+  <div class="card">
+    <h2><span class="dot"></span>我的农场</h2>
+    <div class="field" id="field">
+      <div class="sky">
+        <div class="sun" id="sun"></div>
+        <div class="moon" id="moon" style="display:none"></div>
+        <div class="star s1" style="display:none"></div>
+        <div class="star s2" style="display:none"></div>
+        <div class="star s3" style="display:none"></div>
+      </div>
+      <div class="night-mask"></div>
+      <div class="farmer"><div class="hat"></div><div class="hair"></div><div class="face"></div><div class="eye l"></div><div class="eye r"></div><div class="smile"></div><div class="body"></div></div>
+      <div class="plots" id="plots"></div>
+    </div>
+    <div class="night-actions">
+      <button class="btn btn-ghost" id="btnPesticide">🧴 用杀虫剂</button>
+      <button class="btn btn-ghost" id="btnShop">🛒 商店(阳光/杀虫剂/护盾)</button>
+    </div>
+  </div>
+
+  <!-- 大事记 -->
+  <div class="card">
+    <h2><span class="dot"></span>农场大事记</h2>
+    <div class="log" id="logs"></div>
+  </div>
+
+  <div class="footer">预览版仅供试玩玩法，正式体验请用微信开发者工具导入 miniprogram/ 目录</div>
+</div>
+
+<!-- 通用弹窗 -->
+<div class="mask" id="mask">
+  <div class="dialog" id="dialog"></div>
+</div>
+
+<script>
+/* =========================================================================
+ *  预览版引擎 —— 与 miniprogram/utils/config.js + farmEngine.js 同一套算法
+ *  为浏览器运行去掉了 wx.* 依赖，状态存 localStorage
+ * ========================================================================= */
+const CFG = {
+  SUBJECTS:[
+    {key:'chinese',name:'语文',icon:'语',color:'#FFB3C6',colorDeep:'#FF8FAE',seedName:'语文种子',cropName:'樱花小花',shape:'flower',coin:8},
+    {key:'math',name:'数学',icon:'数',color:'#9AD5FF',colorDeep:'#5FB6F5',seedName:'数学种子',cropName:'蓝莓果果',shape:'berry',coin:8},
+    {key:'english',name:'英语',icon:'A',color:'#A8E6A1',colorDeep:'#6FCF7C',seedName:'英语种子',cropName:'青提叶菜',shape:'leaf',coin:8}
+  ],
+  REWARD:{SUN_PER_SUBJECT:1,SEED_PER_SUBJECT:1,ALL_DONE_BONUS_SUN:0,ALL_DONE_BONUS_SEED:0,ALL_DONE_BONUS_COIN:5,PESTICIDE_ON_MAKEUP:1},
+  PUNISH:{
+    ENABLE:true,NIGHT_HOUR:19,STEAL_COIN_RATIO:0.5,STEAL_MAX:9999,
+    LEVELS:{
+      1:{bears:1,mode:'damageToday',healthLoss:1,title:'1 只小狗熊闯进菜园',desc:'有 1 科作业没写完，1 只小狗熊啃掉了今天种下植物的 1 格健康度'},
+      2:{bears:2,mode:'destroyHalfMature',healthLoss:2,title:'2 只小狗熊结伴来偷吃',desc:'有 2 科作业没写完，2 只小狗熊毁掉了一半成熟的植物'},
+      3:{bears:3,mode:'witherAllMature',healthLoss:3,lockHarvest:true,title:'3 只小狗熊集体入侵！',desc:'三科作业都没写，成熟作物全部枯萎，今天一枚金币也收不到'}
+    }
+  },
+  GROWTH:{STAGE_MINUTES:120,MAX_STAGE:3,MAX_HEALTH:3,PLOT_COUNT:9,SUN_SPEED_UP:1},
+  SHOP:[
+    {id:'sun',name:'阳光',desc:'浇一次立刻长大一阶段',price:6,unit:'颗',type:'coin'},
+    {id:'pesticide',name:'杀虫剂',desc:'赶走全部小狗熊并恢复植物',price:15,unit:'瓶',type:'coin'},
+    {id:'shield',name:'护盾',desc:'连续打卡3天兑换，挡1次攻击',price:0,unit:'个',type:'streak',needStreak:3,dailyLimit:1}
+  ]
+};
+const SUBJECTS = CFG.SUBJECTS, SUB_KEYS = SUBJECTS.map(s=>s.key);
+const getSubject = k => SUBJECTS.find(s=>s.key===k)||SUBJECTS[0];
+const todayKey = () => { const d=new Date(); const p=n=>n<10?'0'+n:''+n; return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
+const diffDays = (a,b)=>{ const da=new Date(a), db=new Date(b); return Math.round((da-db)/86400000); };
+const uid = p => p+'_'+Math.random().toString(36).slice(2,8);
+
+const KEY='wb_preview_farm';
+function defaultData(){
+  return {
+    homework:{}, farm:{
+      suns:0, seeds:{chinese:0,math:0,english:0}, coins:0, bears:[], plots:new Array(CFG.GROWTH.PLOT_COUNT).fill(null),
+      pesticide:0, shields:0, lockHarvestDate:'', harvestLog:[], logs:[], owned:[]
+    },
+    profile:{streak:0,lastFullCheckinDate:'',equipped:{skin:'',frame:''}},
+    settledDates:[], plans:{}, lastActiveDate:''
+  };
+}
+function load(){ try{ const s=localStorage.getItem(KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function save(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+let D = load() || seedDemo();
+
+function seedDemo(){
+  const d = defaultData();
+  // 预置：昨天逾期 1 科 + 今天三科都还没写 + 1 株被啃过的植物
+  const t = todayKey();
+  const y = (()=>{ const x=new Date(); x.setDate(x.getDate()-1); const p=n=>n<10?'0'+n:''+n; return `${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}`; })();
+  d.homework[y] = {}; SUB_KEYS.forEach(k=>d.homework[y][k]={done: k!=='math', minutes:0, note:'', doneAt:0});
+  d.homework[t] = {}; SUB_KEYS.forEach(k=>d.homework[t][k]={done:false, minutes:0, note:'', doneAt:0});
+  d.settledDates.push(y); // 昨天的罚已经算过（模拟）
+  d.farm.seeds.chinese=2; d.farm.suns=1; d.farm.coins=20;
+  const plant = makePlant('math', 2, CFG.GROWTH.MAX_HEALTH, Date.now(), t);
+  plant.bitten = true; plant.health = 1; // 被啃过、掉血
+  d.farm.plots[0]=plant;
+  d.lastActiveDate = t;
+  save(d); return d;
+}
+function makePlant(subject, stage, health, ts, date){
+  return {subject, stage, health, plantedDate:date, lastGrowAt:ts, withered:false, bitten:false};
+}
+function ensureDay(d,date){ const k=date||todayKey(); if(!d.homework[k]) d.homework[k]={}; SUB_KEYS.forEach(k2=>{ if(!d.homework[k][k2]) d.homework[k][k2]={done:false,minutes:0,note:'',doneAt:0}; }); return d.homework[k]; }
+function missingSubjects(d,date){ const hw=ensureDay(d,date); return SUB_KEYS.filter(k=>!hw[k].done); }
+
+/* —— 奖励：打卡 —— */
+function checkin(d, subject){
+  const date=todayKey(); const hw=ensureDay(d,date); if(hw[subject].done) return null;
+  hw[subject].done=true; hw[subject].doneAt=Date.now();
+  const sub=getSubject(subject);
+  const gain={sun:CFG.REWARD.SUN_PER_SUBJECT,seed:CFG.REWARD.SEED_PER_SUBJECT,coin:0,pesticide:0,allDone:false,subName:sub.name,seedName:sub.seedName};
+  d.farm.suns+=gain.sun; d.farm.seeds[subject]=(d.farm.seeds[subject]||0)+gain.seed;
+  const missing=missingSubjects(d,date);
+  if(missing.length===0){
+    gain.allDone=true; gain.sun+=CFG.REWARD.ALL_DONE_BONUS_SUN; gain.coin+=CFG.REWARD.ALL_DONE_BONUS_COIN;
+    d.farm.suns+=CFG.REWARD.ALL_DONE_BONUS_SUN; d.farm.coins+=CFG.REWARD.ALL_DONE_BONUS_COIN;
+    const p=d.profile; p.streak=(p.lastFullCheckinDate && diffDays(date,p.lastFullCheckinDate)===1)?p.streak+1:1; p.lastFullCheckinDate=date;
+    const punished=d.settledDates.indexOf(date)>=0 || d.farm.bears.length>0;
+    if(punished){ d.farm.pesticide+=CFG.REWARD.PESTICIDE_ON_MAKEUP; gain.pesticide=CFG.REWARD.PESTICIDE_ON_MAKEUP; addLog(d,date,'fix','补齐了全部作业，获得杀虫剂 ×'+gain.pesticide+'，快去赶走小狗熊！'); }
+  }
+  addLog(d,date,'reward',`完成${sub.name}作业，获得阳光 ×${CFG.REWARD.SUN_PER_SUBJECT}、${sub.seedName} ×${CFG.REWARD.SEED_PER_SUBJECT}`);
+  trimLogs(d); save(d); return gain;
+}
+
+/* —— 惩罚：夜晚结算 —— */
+function nightSettle(d,date){
+  const day=date||todayKey(); if(!CFG.PUNISH.ENABLE) return null; if(d.settledDates.indexOf(day)>=0) return null;
+  const missing=missingSubjects(d,day);
+  const report={date:day,level:missing.length,missing:missing.map(k=>getSubject(k).name),bears:0,damaged:0,withered:0,stolen:0,shielded:false,title:'',desc:''};
+  d.settledDates.push(day); if(d.settledDates.length>90) d.settledDates.shift();
+  if(missing.length===0){ report.title='平安夜！农场安全'; report.desc='今天三科作业全部完成，小狗熊不敢来，植物健康生长～'; addLog(d,day,'safe','三科全部完成，农场平安无事，植物健康生长'); trimLogs(d); save(d); return report; }
+  const conf=CFG.PUNISH.LEVELS[Math.min(missing.length,3)]; report.title=conf.title; report.desc=conf.desc;
+  if(d.farm.shields>0){ d.farm.shields-=1; report.shielded=true; report.desc='护盾闪闪发光，帮你挡下了这次小狗熊的攻击！（护盾 -1）'; addLog(d,day,'shield','护盾抵挡了小狗熊的攻击，菜园毫发无伤'); trimLogs(d); save(d); return report; }
+  const plots=d.farm.plots;
+  for(let i=0;i<conf.bears;i++){ d.farm.bears.push({id:uid('bear'),x:8+Math.round(Math.random()*62),y:10+Math.round(Math.random()*55),date:day}); }
+  report.bears=conf.bears;
+  const MAXH=CFG.GROWTH.MAX_HEALTH;
+  if(conf.mode==='damageToday'){
+    plots.forEach(p=>{ if(p&&!p.withered&&p.plantedDate===day){ p.health=Math.max(0,p.health-conf.healthLoss); p.bitten=true; report.damaged++; if(p.health<=0){p.withered=true;report.withered++;} } });
+    if(report.damaged===0) report.desc=conf.desc+'（今天没有新种下的植物，这次侥幸躲过）';
+  } else if(conf.mode==='destroyHalfMature'){
+    const mature=[]; plots.forEach((p,i)=>{ if(p&&!p.withered&&p.stage>=CFG.GROWTH.MAX_STAGE) mature.push(i); });
+    const kill=Math.ceil(mature.length/2);
+    for(let i=0;i<kill;i++){ const p=plots[mature[i]]; p.withered=true; p.health=0; p.bitten=true; report.withered++; }
+    plots.forEach(p=>{ if(p&&!p.withered){ p.health=Math.max(0,p.health-1); p.bitten=true; report.damaged++; if(p.health<=0){p.withered=true;report.withered++;} } });
+  } else if(conf.mode==='witherAllMature'){
+    plots.forEach(p=>{ if(!p) return; p.bitten=true; if(p.stage>=CFG.GROWTH.MAX_STAGE){p.withered=true;p.health=0;report.withered++;} else { p.health=Math.max(0,p.health-conf.healthLoss); report.damaged++; if(p.health<=0){p.withered=true;report.withered++;} } });
+    if(conf.lockHarvest) d.farm.lockHarvestDate=day;
+  }
+  const ratio=CFG.PUNISH.STEAL_COIN_RATIO;
+  const stolen=Math.min(CFG.PUNISH.STEAL_MAX, Math.floor(d.farm.coins*ratio));
+  if(stolen>0){ d.farm.coins-=stolen; report.stolen=stolen; }
+  addLog(d,day,'punish',`${conf.title}：${report.missing.join('、')}没完成 → 小狗熊 ×${conf.bears}，损坏 ${report.damaged} 株、枯萎 ${report.withered} 株，被偷 ${stolen} 金币`);
+  trimLogs(d); save(d); return report;
+}
+
+function usePesticide(d){
+  if(d.farm.pesticide<=0) return {ok:false,msg:'还没有杀虫剂，补完作业就能领到哦'};
+  if(d.farm.bears.length===0 && !d.farm.plots.some(p=>p&&(p.withered||p.health<CFG.GROWTH.MAX_HEALTH))) return {ok:false,msg:'农场很健康，暂时不需要杀虫剂'};
+  d.farm.pesticide-=1; const bc=d.farm.bears.length; d.farm.bears=[];
+  let healed=0; d.farm.plots.forEach(p=>{ if(!p) return; if(p.withered||p.health<CFG.GROWTH.MAX_HEALTH) healed++; p.withered=false; p.health=CFG.GROWTH.MAX_HEALTH; p.bitten=false; });
+  if(d.farm.lockHarvestDate===todayKey()) d.farm.lockHarvestDate='';
+  addLog(d,todayKey(),'fix',`使用杀虫剂：赶走 ${bc} 只小狗熊，${healed} 株植物恢复健康`); trimLogs(d); save(d);
+  return {ok:true,msg:`赶走了 ${bc} 只小狗熊，${healed} 株植物恢复健康！`,bc,healed};
+}
+function plantSeed(d,i,subject){
+  if(d.farm.plots[i]) return {ok:false,msg:'这块地已经种上啦'};
+  if((d.farm.seeds[subject]||0)<=0) return {ok:false,msg:`没有${getSubject(subject).seedName}了`};
+  d.farm.seeds[subject]-=1; d.farm.plots[i]=makePlant(subject,0,CFG.GROWTH.MAX_HEALTH,Date.now(),todayKey()); save(d); return {ok:true,msg:'种下啦！浇点阳光会长得更快～'};
+}
+function useSun(d,i){
+  const p=d.farm.plots[i]; if(!p) return {ok:false,msg:'这块地是空的'};
+  if(p.withered) return {ok:false,msg:'植物枯萎了，先用杀虫剂治好它'};
+  if(p.stage>=CFG.GROWTH.MAX_STAGE) return {ok:false,msg:'已经成熟啦，快收获吧'};
+  if(d.farm.suns<=0) return {ok:false,msg:'阳光不够了，完成作业可以领阳光'};
+  d.farm.suns-=1; p.stage=Math.min(CFG.GROWTH.MAX_STAGE,p.stage+CFG.GROWTH.SUN_SPEED_UP); save(d); return {ok:true,msg:'植物长大了一点！'};
+}
+function harvest(d,i){
+  const p=d.farm.plots[i]; if(!p) return {ok:false,msg:'这块地是空的'};
+  if(p.withered) return {ok:false,msg:'枯萎的植物收不了，用杀虫剂救救它'};
+  if(p.stage<CFG.GROWTH.MAX_STAGE) return {ok:false,msg:'还没成熟，再等等或者浇阳光'};
+  if(d.farm.lockHarvestDate===todayKey()) return {ok:false,msg:'今天三科作业都没写，小狗熊把果实糟蹋了，今天不能收获'};
+  const sub=getSubject(p.subject); d.farm.coins+=sub.coin; d.farm.plots[i]=null; save(d);
+  return {ok:true,msg:`收获 ${sub.cropName}，金币 +${sub.coin}`,coin:sub.coin};
+}
+function buyShop(d,id){
+  const item=CFG.SHOP.find(s=>s.id===id); if(!item) return {ok:false,msg:'没有这个道具'};
+  if(item.type==='streak'){
+    if(d.profile.streak<item.needStreak) return {ok:false,msg:`需要连续打卡 ${item.needStreak} 天，你现在是 ${d.profile.streak} 天`};
+    if(d.farm.shieldExchangeDate===todayKey()) return {ok:false,msg:'今天已经兑换过护盾啦'};
+    d.farm.shields+=1; d.farm.shieldExchangeDate=todayKey(); save(d); return {ok:true,msg:'兑换成功！护盾能挡下一次攻击'};
+  }
+  if(d.farm.coins<item.price) return {ok:false,msg:`金币不够，还差 ${item.price-d.farm.coins} 枚`};
+  d.farm.coins-=item.price; if(id==='sun') d.farm.suns+=1; if(id==='pesticide') d.farm.pesticide+=1; save(d); return {ok:true,msg:`买到 ${item.name} ×1`};
+}
+function forecast(d){
+  const missing=missingSubjects(d,todayKey());
+  if(missing.length===0) return {level:0,text:'三科全部完成，今晚农场平安，植物健康生长！',danger:false};
+  const conf=CFG.PUNISH.LEVELS[Math.min(missing.length,3)];
+  const names=missing.map(k=>getSubject(k).name);
+  return {level:missing.length,names,text:`还有 ${missing.length} 科没完成（${names.join('、')}），今晚会来 ${conf.bears} 只小狗熊，还会被偷走一半金币！`,danger:true};
+}
+function addLog(d,date,type,text){ d.farm.logs.unshift({date,type,text}); trimLogs(d); }
+function trimLogs(d){ if(d.farm.logs.length>60) d.farm.logs.length=60; }
+
+/* ===================== 渲染 ===================== */
+const $=s=>document.querySelector(s);
+function render(){
+  const f=D.farm;
+  // 资源条
+  $('#res').innerHTML = [
+    ['☀️',f.suns,'阳光','sun'],['🌱',SUB_KEYS.reduce((a,k)=>a+(f.seeds[k]||0),0),'种子'],
+    ['🪙',f.coins,'金币','coin'],['🛡️',f.shields,'护盾'],['🧴',f.pesticide,'杀虫剂'],['🔥',D.profile.streak,'连续天']
+  ].map(([i,n,l,c])=>`<div class="it"><div class="num ${c||''}">${i}${n}</div><div class="lab">${l}</div></div>`).join('');
+  // 预警
+  const fc=forecast(D);
+  $('#warn').innerHTML = fc.danger
+    ? `<div class="warnbar bad">⚠️ ${fc.text}</div>`
+    : `<div class="warnbar good">✅ ${fc.text}</div>`;
+  // 作业
+  const hw=ensureDay(D,todayKey());
+  $('#hwList').innerHTML = SUBJECTS.map(s=>{
+    const done=hw[s.key].done;
+    return `<div class="hw-row">
+      <div class="hw-ic" style="background:${s.color}">${s.icon}</div>
+      <div class="hw-main"><div class="hw-name">${s.name}作业</div><div class="hw-seed">完成得 ${CFG.REWARD.SUN_PER_SUBJECT}☀️ + ${s.seedName}</div></div>
+      ${done?`<button class="btn btn-done" disabled>已完成 ✓</button>`:`<button class="btn btn-go" data-hw="${s.key}">去打卡</button>`}
+    </div>`;
+  }).join('');
+  document.querySelectorAll('[data-hw]').forEach(b=>b.onclick=()=>doCheckin(b.dataset.hw));
+  // 地块
+  renderPlots();
+  // 大事记
+  $('#logs').innerHTML = D.farm.logs.slice(0,20).map(r=>`<div class="row"><span class="t">${r.date}</span>${r.text}</div>`).join('') || '<div class="row">还没有记录，去打卡试试吧～</div>';
+}
+function renderPlots(){
+  const f=D.farm; const isNight = D.farm.bears.length>0;
+  $('#field').classList.toggle('night', isNight);
+  $('#sun').style.display = isNight?'none':'block';
+  $('#moon').style.display = isNight?'block':'none';
+  document.querySelectorAll('.star').forEach(s=>s.style.display=isNight?'block':'none');
+  let html='';
+  f.plots.forEach((p,i)=>{
+    if(!p){ html+=`<div class="plot empty"><div class="soil"></div><div class="add" data-plant="${i}">＋</div></div>`; return; }
+    const s=getSubject(p.subject); const mature=p.stage>=CFG.GROWTH.MAX_STAGE && !p.withered;
+    let crop='';
+    if(p.stage===2) crop=`<div class="pl-bud" style="background:${s.color}"></div>`;
+    if(p.stage>=2){
+      if(s.shape==='flower') crop=`<div class="pl-crop">`+[0,1,2,3,4].map(pi=>`<div class="petal" style="transform:rotate(${pi*72}deg) translateY(-13px);background:${s.color}"></div>`).join('')+`<div class="core"></div></div>`;
+      else if(s.shape==='berry') crop=`<div class="pl-crop"><div class="berry b1" style="background:${s.color};border-color:${s.colorDeep}"></div><div class="berry b2" style="background:${s.color};border-color:${s.colorDeep}"></div><div class="berry b3" style="background:${s.colorDeep};border-color:${s.colorDeep}"></div></div>`;
+      else crop=`<div class="pl-crop"><div class="bigleaf l" style="background:${s.color}"></div><div class="bigleaf r" style="background:${s.color}"></div><div class="bigleaf m" style="background:${s.colorDeep}"></div></div>`;
+    }
+    html+=`<div class="plot ${p.withered?'':''}">
+      <div class="soil"></div>
+      <div class="plant shape-${s.shape} stage-${p.stage} ${p.withered?'withered':''} ${p.bitten?'bitten':''}">
+        <div class="pl-stem"></div>
+        <div class="pl-leaf l" style="background:${s.colorDeep}"></div>
+        <div class="pl-leaf r" style="background:${s.colorDeep}"></div>
+        ${crop}
+      </div>
+      ${mature?`<div class="ready">可收获</div>`:''}
+      <div class="hearts">${[0,1,2].map(h=>`<div class="heart ${h<p.health?'on':''}"></div>`).join('')}</div>
+      <div class="add" data-act="${i}" style="bottom:auto;top:2px;background:#fff;color:#7A8792;font-size:18px;">⋯</div>
+    </div>`;
+  });
+  // 小狗熊
+  if(isNight){
+    f.bears.forEach(b=>{ html+=`<div class="bear" style="left:${b.x}%;top:${b.y}%"><div class="bear-inner"><div class="b-ear l"></div><div class="b-ear r"></div><div class="b-head"></div><div class="b-eye l"></div><div class="b-eye r"></div><div class="b-muzzle"><div class="b-nose"></div></div><div class="b-body"><div class="b-belly"></div></div></div><div class="bite-bubble">咔嚓!</div></div>`; });
+  }
+  $('#plots').innerHTML=html;
+  document.querySelectorAll('[data-plant]').forEach(e=>e.onclick=()=>openSeedPick(+e.dataset.plant));
+  document.querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>plotMenu(+e.dataset.act));
+}
+function plotMenu(i){
+  const p=D.farm.plots[i]; if(!p) return;
+  const s=getSubject(p.subject); const mature=p.stage>=CFG.GROWTH.MAX_STAGE&&!p.withered;
+  let body=`<h3>${s.cropName}</h3><div class="msg">阶段 ${p.stage}/${CFG.GROWTH.MAX_STAGE} · 健康 ${'❤'.repeat(p.health)||'—'}</div>`;
+  body+=`<button class="btn btn-go" id="mSun" ${p.withered||mature?'disabled':''}>💧 浇阳光(长大)</button><br><br>`;
+  if(mature) body+=`<button class="btn btn-warn" id="mHarvest">🧺 收获(+${s.coin}金币)</button><br><br>`;
+  body+=`<button class="btn btn-ghost" id="mClear">🗑️ 铲除这块地</button><br><br>`;
+  body+=`<button class="btn btn-ghost" id="mClose">关闭</button>`;
+  showDialog(body);
+  const sun=$('#mSun'); if(sun&&!sun.disabled) sun.onclick=()=>{ const r=useSun(D,i); toast(r.msg); closeDialog(); render(); };
+  const hv=$('#mHarvest'); if(hv) hv.onclick=()=>{ const r=harvest(D,i); toast(r.msg); closeDialog(); render(); };
+  const cl=$('#mClear'); if(cl) cl.onclick=()=>{ D.farm.plots[i]=null; save(D); closeDialog(); render(); };
+  $('#mClose').onclick=closeDialog;
+}
+let pickIdx=-1;
+function openSeedPick(i){
+  pickIdx=i;
+  const owned=SUBJECTS.filter(s=>(D.farm.seeds[s.key]||0)>0);
+  if(owned.length===0){ toast('还没有种子，去完成对应学科作业解锁吧'); return; }
+  let body=`<h3>选择种子播种</h3><div class="seed-pick">`+
+    owned.map(s=>`<div class="sp" data-seed="${s.key}"><div class="si" style="background:${s.color}"></div><div class="sn">${s.seedName}</div><div class="sc">×${D.farm.seeds[s.key]}</div></div>`).join('')+
+    `</div><button class="btn btn-ghost" id="spClose">取消</button>`;
+  showDialog(body);
+  document.querySelectorAll('[data-seed]').forEach(e=>e.onclick=()=>{ const r=plantSeed(D,pickIdx,e.dataset.seed); toast(r.msg); closeDialog(); render(); });
+  $('#spClose').onclick=closeDialog;
+}
+function doCheckin(key){
+  const g=checkin(D,key);
+  if(!g){ toast('已经打卡过了'); return; }
+  let body=`<h3>🎉 打卡成功！</h3><div class="reward-gain">
+    <div class="rg"><div class="n" style="color:#F5A623">+${g.sun}</div><div class="l">☀️ 阳光</div></div>
+    <div class="rg"><div class="n" style="color:#7BAF5E">+${g.seed}</div><div class="l">🌱 ${g.seedName}</div></div>
+    ${g.coin?`<div class="rg"><div class="n" style="color:#F5B740">+${g.coin}</div><div class="l">🪙 金币</div></div>`:''}
+    ${g.pesticide?`<div class="rg"><div class="n">+${g.pesticide}</div><div class="l">🧴 杀虫剂</div></div>`:''}
+  </div><div class="msg">${g.allDone?'三科全勤！连续打卡 '+D.profile.streak+' 天 🔥':'继续加油，把剩下的科也写完吧～'}</div>
+  <button class="btn btn-go" id="okBtn">好的</button>`;
+  showDialog(body); $('#okBtn').onclick=()=>{ closeDialog(); render(); };
+  render();
+}
+function doNight(){
+  const r=nightSettle(D,todayKey());
+  if(!r){ toast('今天已经结算过啦'); return; }
+  if(r.shielded){ showBear(`🛡️ 护盾挡下了攻击`, r.desc); return; }
+  if(r.bears===0){ showDialog(`<h3>🌟 平安夜</h3><div class="msg">${r.desc}</div><button class="btn btn-go" id="ok">好的</button>`); $('#ok').onclick=()=>{closeDialog();render();}; render(); return; }
+  showBear(`🐻 ${r.title}`, `${r.desc}<br>被偷走 <b>${r.stolen}</b> 金币${r.damaged?`，损坏 ${r.damaged} 株`:''}${r.withered?`，枯萎 ${r.withered} 株`:''}`);
+}
+function showBear(title,msg){
+  const body=`<div class="wbear"><div class="b-ear l"></div><div class="b-ear r"></div><div class="b-head"></div><div class="b-eye l"></div><div class="b-eye r"></div><div class="b-muzzle"><div class="b-nose"></div></div><div class="b-body"><div class="b-belly"></div></div></div>
+    <h3>${title}</h3><div class="msg">${msg}</div>
+    <button class="btn btn-warn" id="fix">🧴 用杀虫剂修复</button><br><br>
+    <button class="btn btn-ghost" id="ok">先看看农场</button>`;
+  showDialog(body);
+  $('#fix').onclick=()=>{ const r=usePesticide(D); toast(r.msg); closeDialog(); render(); };
+  $('#ok').onclick=()=>{ closeDialog(); render(); };
+  render();
+}
+function doNewDay(){
+  // 模拟跨天：结算昨天(若未结算) + 清空今天作业 + 顺延
+  const t=todayKey();
+  if(D.lastActiveDate && D.lastActiveDate!==t){
+    let cursor=D.lastActiveDate,guard=0;
+    while(diffDays(t,cursor)>0 && guard<30){ nightSettle(D,cursor); cursor=(()=>{const x=new Date(cursor);x.setDate(x.getDate()+1);const p=n=>n<10?'0'+n:''+n;return `${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}`;})(); guard++; }
+  }
+  ensureDay(D,t); D.lastActiveDate=t; save(D);
+  toast('新的一天，作业已重置，去打卡吧！'); render();
+}
+function openShop(){
+  let body=`<h3>🛒 道具商店</h3>`;
+  CFG.SHOP.forEach(it=>{
+    let btn, info;
+    if(it.type==='streak'){ info=`连续打卡 ${it.needStreak} 天兑换`; btn=`<button class="btn btn-go" data-buy="${it.id}">兑换</button>`; }
+    else { info=`🪙 ${it.price} 金币`; btn=`<button class="btn btn-go" data-buy="${it.id}">购买</button>`; }
+    body+=`<div class="hw-row"><div class="hw-ic" style="background:#BFE6FF;color:#14608F">${it.id==='sun'?'☀️':it.id==='pesticide'?'🧴':'🛡️'}</div>
+      <div class="hw-main"><div class="hw-name">${it.name}</div><div class="hw-seed">${it.desc}</div></div>
+      <div style="text-align:right"><div style="font-size:13px;color:#7A8792;margin-bottom:6px">${info}</div>${btn}</div></div>`;
+  });
+  body+=`<button class="btn btn-ghost" id="sc" style="margin-top:10px">关闭</button>`;
+  showDialog(body);
+  document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{ const r=buyShop(D,b.dataset.buy); toast(r.msg); if(r.ok){ closeDialog(); render(); } });
+  $('#sc').onclick=closeDialog;
+}
+/* 弹窗工具 */
+function showDialog(html){ $('#dialog').innerHTML=html; $('#mask').classList.add('show'); }
+function closeDialog(){ $('#mask').classList.remove('show'); }
+$('#mask').onclick=e=>{ if(e.target.id==='mask') closeDialog(); };
+function toast(msg){ const t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;left:50%;top:20%;transform:translateX(-50%);background:rgba(40,55,80,.9);color:#fff;padding:10px 18px;border-radius:14px;font-size:14px;z-index:99;'; document.body.appendChild(t); setTimeout(()=>t.remove(),1600); }
+
+/* 按钮绑定 */
+$('#btnNight').onclick=doNight;
+$('#btnNewDay').onclick=doNewDay;
+$('#btnPesticide').onclick=()=>{ const r=usePesticide(D); toast(r.msg); render(); };
+$('#btnShop').onclick=openShop;
+
+/* 首次进入提示 */
+if(!localStorage.getItem(KEY+'_seen')){
+  localStorage.setItem(KEY+'_seen','1');
+  setTimeout(()=>toast('示例：语文种子×2、被啃过的植物在农场里，试试点「模拟夜晚结算」'),400);
+}
+render();
+</script>
+</body>
+</html>

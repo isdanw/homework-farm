@@ -1,0 +1,67 @@
+<view class="page-wrap">
+  <view class="page-head">
+    <view>
+      <view class="t">成长记录</view>
+      <view class="s">完成任务越勤快，农场越富有</view>
+    </view>
+  </view>
+
+  <!-- 数据卡片 -->
+  <view class="grid">
+    <view class="g-card g-blue">
+      <view class="g-num">{{summary.streak}}</view>
+      <view class="g-lab">连续全科天数</view>
+    </view>
+    <view class="g-card g-green">
+      <view class="g-num">{{summary.avg}}</view>
+      <view class="g-lab">日均完成科目</view>
+    </view>
+    <view class="g-card g-yellow">
+      <view class="g-num">{{summary.coins}}</view>
+      <view class="g-lab">当前金币</view>
+    </view>
+    <view class="g-card g-pink">
+      <view class="g-num">{{summary.punishTimes}}</view>
+      <view class="g-lab">被小狗熊袭击</view>
+    </view>
+  </view>
+
+  <!-- 近 14 天柱状图（纯 CSS 手写） -->
+  <view class="card">
+    <view class="card-title"><view class="dot"></view>最近 14 天完成情况</view>
+    <view class="chart">
+      <view wx:for="{{bars}}" wx:key="key" class="ch-col">
+        <view class="ch-bar {{item.full ? 'full' : ''}} {{item.num === 0 ? 'zero' : ''}}" style="height:{{item.height}}rpx"></view>
+        <view class="ch-lab {{item.isToday ? 'today' : ''}}">{{item.label}}</view>
+      </view>
+    </view>
+    <view class="legend">
+      <view class="lg"><view class="box full"></view>三科全完成</view>
+      <view class="lg"><view class="box"></view>部分完成</view>
+      <view class="lg"><view class="box zero"></view>没完成任务</view>
+    </view>
+  </view>
+
+  <!-- 三科完成率 -->
+  <view class="card">
+    <view class="card-title"><view class="dot" style="background:#FF8FAE"></view>各科完成率</view>
+    <view wx:for="{{subjectRate}}" wx:key="name" class="rate-row">
+      <view class="rt-name">{{item.name}}</view>
+      <view class="bar rt-bar"><view class="fill" style="width:{{item.rate}}%;background:{{item.color}}"></view></view>
+      <view class="rt-num">{{item.rate}}%</view>
+    </view>
+    <view class="muted">共收获作物 {{summary.harvest}} 次，累计赚到 {{summary.earned}} 金币；小本本还有 {{summary.errorsLeft}} 道没掌握</view>
+  </view>
+
+  <!-- 农场大事记 -->
+  <view class="card">
+    <view class="card-title"><view class="dot" style="background:#5FBF6B"></view>农场大事记</view>
+    <view wx:if="{{logs.length === 0}}" class="empty">还没有记录，快去打卡吧</view>
+    <view wx:for="{{logs}}" wx:key="index" class="log {{item.type}}">
+      <view class="lg-date">{{item.dateText}}</view>
+      <view class="lg-text">{{item.text}}</view>
+    </view>
+  </view>
+
+  <view class="btn btn-block btn-green" bindtap="goCheckin">去打卡赚阳光</view>
+</view>
