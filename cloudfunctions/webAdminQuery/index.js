@@ -31,6 +31,7 @@ const COLLS = {
   mistakes: 'tutor_mistakes',
   reviews: 'tutor_reviews',
   evidence: 'tutor_evidence',
+  exams: 'exam_resources',
   bindings: 'web_portal_bindings'
 };
 const READ_LIMIT = 200; // 单集合读取上限（防误拉全量，家庭自用量级足够）
@@ -69,7 +70,7 @@ function groupCount(rows, key) {
 /* ---------- 工具：按账号维度过滤（per-user 口令场景） ---------- */
 function ofilter(name, openid) {
   if (!openid) return {}; // 管理员：不过滤，看全部
-  // hw_farm_* 用文档属主 _openid；tutor_* 用明文 openid
+  // hw_farm_* 用文档属主 _openid；tutor_* 与 exam_resources 用明文 openid
   if (name === COLLS.user || name === COLLS.log || name === COLLS.settle || name === COLLS.events) return { _openid: openid };
   return { openid };
 }
@@ -287,15 +288,17 @@ async function profile(openid) {
  * sync 模块 —— 工作台「云→本地镜像下拉」专用数据出口（T2）
  * 与 tutor/profile 不同：不过滤字段、不限 100 条，透传全部业务字段（含 messages/stage/done），
  * 保证本地 家庭学习库 md 可被完整重建。仍受 token 鉴权与 openid 作用域约束（per-user 或 admin）。
- * 出参：{ profile:{nickname,grade,learner,subjectProfiles}, sessions, mistakes, evidence, reviews }
+ * 出参：{ profile:{nickname,grade,learner,subjectProfiles}, sessions, mistakes, evidence, reviews, exams }
+ *   exams = exam_resources 全字段（含 markdown/rawText/answers），F-B 起纳入下拉，供 papers md 重建。
  */
 async function sync(openid) {
-  const [users, sessions, mistakes, reviews, evidence] = await Promise.all([
+  const [users, sessions, mistakes, reviews, evidence, exams] = await Promise.all([
     getAll(COLLS.user, ofilter(COLLS.user, openid)),
     getAll(COLLS.sessions, ofilter(COLLS.sessions, openid)),
     getAll(COLLS.mistakes, ofilter(COLLS.mistakes, openid)),
     getAll(COLLS.reviews, ofilter(COLLS.reviews, openid)),
-    getAll(COLLS.evidence, ofilter(COLLS.evidence, openid))
+    getAll(COLLS.evidence, ofilter(COLLS.evidence, openid)),
+    getAll(COLLS.exams, ofilter(COLLS.exams, openid))
   ]);
   const u = users[0];
   const data = (u && u.data) || {};
@@ -319,7 +322,13 @@ async function sync(openid) {
     sessions: pass(sessions, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'messages', 'createdAt', 'updatedAt', 'closed', 'closedAt']),
     mistakes: pass(mistakes, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'source', 'questionText', 'childAnswer', 'markSource', 'createdAt', 'updatedAt']),
     evidence: pass(evidence, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'total', 'correct', 'rate', 'passed', 'createdAt', 'updatedAt']),
-    reviews: pass(reviews, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'stage', 'dueAt', 'done', 'mistakeClientId', 'createdAt', 'updatedAt'])
+    reviews: pass(reviews, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'stage', 'dueAt', 'done', 'mistakeClientId', 'createdAt', 'updatedAt']),
+    // F-B：试卷库（资源库条目，非学情数据）。正文三段一并返回，供工作台下拉重建 papers md。
+    exams: pass(exams, ['openid', 'clientId', 'resourceId', 'fileName', 'name', 'level', 'examType', 'retestType',
+      'subject', 'subjectName', 'stage', 'grade', 'textbookEdition', 'correspondingUnit',
+      'knowledgePoints', 'suggestedDuration', 'maxEvidenceLevel', 'passingCriteria',
+      'officialUrl', 'answerUrl', 'publisher', 'lastVerified', 'staleLink', 'sourceFile', 'sessionFile',
+      'markdown', 'rawText', 'answers', 'createdAt', 'updatedAt'])
   };
 }
 

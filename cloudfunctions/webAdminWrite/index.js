@@ -2,19 +2,22 @@
  * 云函数 webAdminWrite —— 家长数据看板·写入代理（与 webAdminQuery 对称，T3 工作台→云 push）
  *
  * 职责（不可破坏的红线）：
- *   · 写。但只写「导学镜像」四类集合（tutor_sessions/mistakes/evidence/reviews）+ 孩子切片
- *     （learner / subjectProfiles / nickname / grade）；绝不触碰 homework/checkin/schedule/农场等
- *     小程序权威数据，避免镜像写回污染主链路。
+ *   · 写。但只写「导学镜像」四类集合（tutor_sessions/mistakes/evidence/reviews）+「试卷库」
+ *     （exam_resources）+ 孩子切片（learner / subjectProfiles / nickname / grade）；
+ *     绝不触碰 homework/checkin/schedule/农场等小程序权威数据，避免镜像写回污染主链路。
  *   · 身份解析：复用 webAdminQuery 的 token→openid 机制（web_portal_bindings），不接收微信上下文。
- *   · 去重：tutor_* 按 openid+clientId 查重。**T5 起改为三路合并**（base=本地「云端版本」基线 /
- *     mine=本地 md / theirs=云端当前 updatedAt）：下拉后云端被小程序改过则拒绝覆盖并上报 conflicts；
- *     仅在「云端仍停在我下拉时的版本」或「本地确更新」时才发布。绝不静默覆盖。
+ *   · 去重：tutor_* 与 exam_resources 均按 openid+clientId 查重。**T5 起 tutor_* 改为三路合并**
+ *     （base=本地「云端版本」基线 / mine=本地 md / theirs=云端当前 updatedAt）：下拉后云端被小程序
+ *     改过则拒绝覆盖并上报 conflicts；仅在「云端仍停在我下拉时的版本」或「本地确更新」时才发布。
+ *     绝不静默覆盖。（F-B 试卷库的判定顺序不同，见 writeExams 注释。）
  *   · 纯数据搬运，不调用 AI、不做"掌握"判定。
  *
  * 入参：
- *   { token:'xxx', sessions:[], mistakes:[], evidence:[], reviews:[], profile:{ nickname, grade, learner, subjectProfiles, baseUpdatedAt } }
- *   （每条 tutor 记录可带 baseUpdatedAt = 上次下拉时的云端 updatedAt，不落库）
- * 出参：{ ok:true, scope, openid, added, skipped, updated, conflictCount, conflicts[], profile }
+ *   { token:'xxx', sessions:[], mistakes:[], evidence:[], reviews:[], exams:[],
+ *     profile:{ nickname, grade, learner, subjectProfiles, baseUpdatedAt } }
+ *   （每条 tutor 记录可带 baseUpdatedAt = 上次下拉时的云端 updatedAt，不落库；
+ *     exams 每条的 clientId = resourceId）
+ * 出参：{ ok:true, scope, openid, added, skipped, updated, exams?, conflictCount, conflicts[], profile }
  *       或 { ok:false, code, msg }
  */
 
@@ -27,6 +30,7 @@ const COLLS = {
   mistakes: 'tutor_mistakes',
   reviews: 'tutor_reviews',
   evidence: 'tutor_evidence',
+  exams: 'exam_resources',
   bindings: 'web_portal_bindings'
 };
 
@@ -77,7 +81,14 @@ const PUBLISH_FIELDS = {
   // 若缺此字段，update 路径会将其剥离，导致「V2 → 云端 source:photo」回路断掉（§9.2 R4）。
   mistakes: ['topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'source'],
   evidence: ['total', 'correct', 'rate', 'passed'],
-  reviews: ['stage', 'dueAt', 'done']
+  reviews: ['stage', 'dueAt', 'done'],
+  // F-B 试卷库：试卷是**资源库条目**（不是学情数据，不产生 evidence）。
+  // 全字段可发布（含 markdown/rawText/answers 三段正文），索引元数据与正文一并搬运。
+  exams: ['resourceId', 'fileName', 'name', 'level', 'examType', 'retestType', 'subject', 'subjectName',
+    'stage', 'grade', 'textbookEdition', 'correspondingUnit', 'knowledgePoints',
+    'suggestedDuration', 'maxEvidenceLevel', 'passingCriteria', 'officialUrl', 'answerUrl',
+    'publisher', 'lastVerified', 'staleLink', 'sourceFile', 'sessionFile',
+    'markdown', 'rawText', 'answers']
 };
 
 /** 字段归一化：只用于「是否实质变化」的比较。
@@ -173,6 +184,80 @@ async function writeTutor(kind, collName, openid, items) {
       // ⚠️ node-sdk 的 update(obj)：obj 的键就是「要更新的字段」，**没有 { data:{} } 包壳**
       //    （与 wx-server-sdk 不同！）。误写成 update({ data:{...} }) 会写成嵌套的 data.data，永不生效。
       await dbh.collection(collName).doc(cloud._id).update(patch);
+      updated++;
+    } catch (e) { skipped++; }
+  }
+  return { added, skipped, updated, conflicts };
+}
+
+/* ---------- F-B：试卷库写入（exam_resources，工作台单向权威）----------
+ * 与 tutor_* 的差异与理由：
+ *   · 试卷**只由工作台/专家侧生成**，小程序端纯只读、云端从不产生试卷 →
+ *     工作台是该集合的唯一作者，因此「内容有变即发布」是安全的，不会覆盖他人的编辑。
+ *   · 但基线保护仍然保留：若本地记有「云端版本」基线而云端已越过它，
+ *     说明有本机之外的写入发生 → 一律拒绝覆盖并上报 conflict（绝不静默覆盖）。
+ *   · 判定顺序刻意与 writeTutor 不同：**先判幂等（内容全同则跳过）再判基线**，
+ *     否则「首推后再推一次未改动的卷」会因 base=0 被误报 conflict（噪音）。
+ *   · 试卷是资源库条目：不产生 evidence、不参与任何「掌握」判定。
+ */
+async function writeExams(openid, items) {
+  const dbh = db();
+  let added = 0, skipped = 0, updated = 0;
+  const conflicts = [];
+  const fields = PUBLISH_FIELDS.exams;
+
+  for (const raw of items) {
+    if (!raw || typeof raw !== 'object') continue;
+    const clientId = str(raw.clientId || raw.resourceId, 80);
+    if (!clientId) continue;
+
+    const doc = Object.assign({}, raw);
+    doc.clientId = clientId;
+    delete doc.id; delete doc.cloudId; delete doc._id;
+    const base = Number(doc.baseUpdatedAt) || 0;
+    delete doc.baseUpdatedAt;          // 本地基线元数据，不落云
+
+    let exist = [];
+    try {
+      const res = await dbh.collection(COLLS.exams).where({ openid, clientId }).limit(1).get();
+      exist = (res && res.data) || [];
+    } catch (e) { exist = []; }
+
+    // ---- 新增 ----
+    if (!exist.length) {
+      const now = Date.now();
+      const fresh = Object.assign({ openid }, doc, {
+        createdAt: Number(doc.createdAt) || now,
+        updatedAt: now                 // 云端版本 = 首次落库时刻，供下拉写回「云端版本」基线
+      });
+      try {
+        await dbh.collection(COLLS.exams).add(fresh);
+        added++;
+      } catch (e) {
+        try { await dbh.createCollection(COLLS.exams); } catch (e2) {}
+        try { await dbh.collection(COLLS.exams).add(fresh); added++; } catch (e3) {}
+      }
+      continue;
+    }
+
+    // ---- 已存在：先判幂等，再判基线 ----
+    const cloud = exist[0];
+    const patch = {};
+    for (const k of fields) if (doc[k] !== undefined) patch[k] = doc[k];
+
+    if (sameFields(cloud, patch)) { skipped++; continue; }   // 内容全同 → 幂等跳过，不刷新 updatedAt
+
+    const theirs = Number(cloud && cloud.updatedAt) || 0;
+    if (base > 0 && theirs > base) {
+      conflicts.push({ kind: 'exams', clientId, reason: 'cloud_changed_after_pull', base, theirs });
+      skipped++;
+      continue;
+    }
+
+    patch.updatedAt = Date.now();
+    try {
+      // node-sdk update(obj)：obj 的键即字段名，无 { data:{} } 包壳
+      await dbh.collection(COLLS.exams).doc(cloud._id).update(patch);
       updated++;
     } catch (e) { skipped++; }
   }
@@ -322,6 +407,14 @@ exports.main = async (event) => {
       const r = await writeTutor(kind, map[kind], openid, input[kind]);
       tally.added += r.added; tally.skipped += r.skipped; tally.updated += r.updated;
       if (r.conflicts && r.conflicts.length) conflicts.push(...r.conflicts);
+    }
+    // F-B：试卷库（exam_resources）—— 单独走 writeExams（判定顺序与 tutor_* 不同，见其注释）
+    const exams = Array.isArray(event.exams) ? event.exams.slice(0, 200) : [];
+    if (exams.length) {
+      const re = await writeExams(openid, exams);
+      tally.added += re.added; tally.skipped += re.skipped; tally.updated += re.updated;
+      if (re.conflicts && re.conflicts.length) conflicts.push(...re.conflicts);
+      tally.exams = { added: re.added, skipped: re.skipped, updated: re.updated };
     }
     const profileRes = await writeProfile(openid, event.profile);
     if (profileRes && profileRes.result === 'conflict') {
