@@ -1,0 +1,41 @@
+<view class="login">
+  <!-- 品牌区 -->
+  <view class="brand">
+    <view class="logo">🦊</view>
+    <view class="title">成长乐园打卡</view>
+    <view class="sub">语文 · 数学 · 英语 每日打卡，种出专属小农场</view>
+  </view>
+
+  <!-- 步骤 0：微信登录 -->
+  <block wx:if="{{step === 0}}">
+    <view class="tip">使用前请先登录微信，并完善孩子信息</view>
+    <button class="wx-btn" loading="{{logging}}" bindtap="wechatLogin">
+      <text class="wx-ic">💬</text> 微信登录
+    </button>
+    <view class="privacy">登录即表示同意：仅使用微信 openid 绑定你的数据，用于换手机时自动恢复，不会收集真实姓名等隐私。</view>
+  </block>
+
+  <!-- 步骤 1：填写首个孩子资料 -->
+  <block wx:else>
+    <view class="card">
+      <view class="sec-t">① 给孩子起个名字</view>
+      <input class="nick" type="nickname" placeholder="孩子的昵称" placeholder-class="ph"
+             value="{{form.nickname}}" bindinput="onNick" maxlength="12" />
+
+      <view class="sec-t">② 选一个头像</view>
+      <view class="emoji-grid">
+        <view wx:for="{{avatarOptions}}" wx:key="*this"
+              class="emoji {{form.avatar === item ? 'on' : ''}}"
+              data-emoji="{{item}}" bindtap="pickAvatar">{{item}}</view>
+      </view>
+
+      <view class="sec-t">③ 选择年级（可选）</view>
+      <view class="grade-row">
+        <view wx:for="{{gradeOptions}}" wx:key="*this"
+              class="grade {{form.grade === item ? 'on' : ''}}"
+              data-g="{{item}}" bindtap="pickGrade">{{item}}</view>
+      </view>
+    </view>
+    <button class="enter-btn" bindtap="submit">进入成长乐园</button>
+  </block>
+</view>

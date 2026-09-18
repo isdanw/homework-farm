@@ -1,42 +1,93 @@
 <view class="page-wrap">
 
-  <!-- 顶部：吉祥物问候 -->
+  <!-- ===== 卡通背景氛围层（云朵 / 星星 / 太阳 / 草丛） ===== -->
+  <view class="scene" aria-hidden="true">
+    <text class="sc sc-cloud" style="top:24rpx;left:18rpx">☁️</text>
+    <text class="sc sc-cloud" style="top:60rpx;right:34rpx;font-size:42rpx">☁️</text>
+    <text class="sc sc-star" style="top:150rpx;right:58rpx">⭐</text>
+    <text class="sc sc-star" style="top:300rpx;left:22rpx;font-size:30rpx">✨</text>
+    <text class="sc sc-sun" style="top:470rpx;right:22rpx">🌞</text>
+    <text class="sc sc-star" style="top:560rpx;left:38rpx;font-size:26rpx">🌟</text>
+    <view class="page-wave"></view>
+  </view>
+
+  <!-- ===== 状态 Hero：这是谁 + 今天 + 连续打卡 ===== -->
   <view class="hero">
-    <view class="mascot">🦊</view>
-    <view class="hero-txt">
-      <view class="h-greet">嗨，宝贝！今天想玩点什么？</view>
-      <view class="h-sub">{{dateText}} {{weekText}} · 连续打卡 {{streak}} 天</view>
+    <view class="hero-mascot-wrap">
+      <view class="hero-mascot">{{child.avatar}}</view>
+      <text class="hero-buddy">🐻</text>
+      <view class="hero-blush l"></view>
+      <view class="hero-blush r"></view>
     </view>
-    <view class="star-badge">⭐ {{learnStars}}</view>
+    <view class="hero-body">
+      <view class="hero-greet">嗨，{{child.nickname}}！<text wx:if="{{child.grade}}" class="hero-grade">{{child.grade}}</text></view>
+      <view class="hero-sub">{{dateText}} {{weekText}}</view>
+    </view>
+    <view class="hero-streak">
+      <text class="hs-fire">🔥</text>
+      <view class="hs-text"><text class="hs-n">{{streak}}</text><text class="hs-u">天连续</text></view>
+    </view>
   </view>
 
-  <!-- 三扇学科大门 -->
-  <view class="gate">
-    <view wx:for="{{doors}}" wx:key="key" class="door {{item.grad}}" data-page="{{item.page}}" bindtap="openModule">
-      <view class="door-emoji">{{item.emoji}}</view>
-      <view class="door-info">
-        <view class="door-name">{{item.name}}</view>
-        <view class="door-tip">点进去开始玩</view>
+  <!-- ===== 主行动：今日三科打卡（绝对 C 位） ===== -->
+  <view class="act-card {{allDone ? 'all' : ''}}">
+    <view class="sticker">⭐</view>
+    <view class="act-head">
+      <view class="act-title"><view class="dot" style="background:#F5B740"></view>今日打卡</view>
+      <view class="act-count {{allDone ? 'done' : ''}}">{{doneNum}}/{{total}} 科</view>
+    </view>
+
+    <view class="sub-list">
+      <view class="sub-row {{item.done ? 'done' : ''}}" wx:for="{{doors}}" wx:key="key"
+            style="{{item.bg}}" data-key="{{item.key}}" bindtap="openCheckin">
+        <view class="sr-main">
+          <view class="sr-head">
+            <text class="sr-name">{{item.name}}</text>
+            <text class="sr-state">{{item.done ? '已完成' : '待打卡'}}</text>
+          </view>
+          <view wx:if="{{item.planTask}}" class="sr-task">
+            <text class="sr-task-ic">📚</text>
+            <text class="sr-task-tx">{{item.planTask}}</text>
+          </view>
+        </view>
       </view>
-      <view class="door-status {{item.done ? 'ok' : ''}}">{{item.status}}</view>
+    </view>
+
+    <!-- 待办提醒（有错题待订正才显示，点击进错题本） -->
+    <view wx:if="{{pendingMistakes}}" class="act-todo" bindtap="goMistakes">
+      <view class="todo-dot"></view>
+      <text class="todo-tx">有 {{pendingMistakes}} 道错题待订正</text>
+      <text class="todo-go">去处理 ›</text>
+    </view>
+
+    <!-- 进度条 + 反馈语 -->
+    <view class="act-bar"><view class="act-fill" style="width:{{percent}}%"></view></view>
+    <view wx:if="{{allDone}}" class="act-cheer">🎉 全部打卡完成，去农场领奖励吧！</view>
+    <view wx:else class="act-tip">已完成 {{doneNum}} 项，再完成 <text class="hl">{{leftNum}}</text> 项就能去农场啦～</view>
+
+    <!-- 今日课程（纯展示，不再跳转课表编辑） -->
+    <view wx:if="{{todayCoursesText}}" class="act-courses">
+      <text class="ac-ic">📅</text>
+      <text class="ac-tx">今天：{{todayCoursesText}}</text>
+    </view>
+
+    <!-- 全勤撒花 -->
+    <view class="confetti" wx:if="{{allDone}}">
+      <view class="cf" style="left:18%;background:#FF8FAE;animation-delay:0s"></view>
+      <view class="cf" style="left:42%;background:#FFD45E;animation-delay:.12s"></view>
+      <view class="cf" style="left:64%;background:#5FBF6B;animation-delay:.24s"></view>
+      <view class="cf" style="left:84%;background:#3FA9F5;animation-delay:.36s"></view>
     </view>
   </view>
 
-  <view class="hint">💡 完成一个模块，回家就能给农场的小动物喂阳光、种蔬菜！</view>
-
-  <!-- 今日三科进度 -->
-  <view class="card">
-    <view class="card-title"><view class="dot" style="background:#5FBF6B"></view>今日三科 {{doneNum}}/3</view>
-    <view class="bar"><view class="fill" style="width:{{percent}}%"></view></view>
-    <view class="go-checkin" bindtap="goCheckin">去「每日打卡」查看 / 补打卡 ›</view>
-  </view>
-
-  <!-- 农场联动状态 -->
-  <view class="card farm-card {{forecast.danger ? 'danger' : ''}}" bindtap="goFarm">
+  <!-- ===== 农场奖励联动：打卡 → 收获 → 去农场 ===== -->
+  <view class="farm-card {{forecast.danger ? 'danger' : ''}}" bindtap="goFarm">
+    <view class="sticker s-green">🌱</view>
     <view class="fc-left">
-      <view class="fc-title">{{forecast.danger ? '农场危险预警' : '农场一切安好'}}</view>
-      <view class="fc-desc">{{forecast.text}}</view>
-      <view class="fc-meta">当前农场里有 {{farm.bears}} 只小狗熊 · 杀虫剂 {{farm.pesticide}} 瓶</view>
+      <view class="fc-title">{{forecast.danger ? '⚠️ 农场有小狗熊' : '今天收获'}}</view>
+      <view wx:if="{{forecast.danger}}" class="fc-desc">{{forecast.text}}</view>
+      <view wx:else class="fc-desc">☀️ 阳光 {{farm.suns}} · 🌱 种子 {{seedsTotal}} · 🪙 金币 {{farm.coins}}</view>
+      <view class="fc-meta">{{forecast.danger ? ('小狗熊 ' + farm.bears + ' 只 · 杀虫剂 ' + farm.pesticide + ' 瓶') : '农场一切安好，去种点东西吧～'}}</view>
     </view>
     <view class="fc-right">
       <view class="mini-farm">
@@ -48,19 +99,15 @@
     </view>
   </view>
 
-  <!-- 家长工具 -->
-  <view class="card">
-    <view class="card-title">
-      <view class="dot" style="background:#F5B740"></view>家长工具
-      <view class="btn btn-sm btn-line add-btn" catchtap="toggleTools">{{showTools ? '收起' : '展开'}}</view>
+  <!-- ===== 快捷入口：成长计划 ===== -->
+  <view class="entry-card" bindtap="goPlan">
+    <view class="sticker s-green">🗓</view>
+    <view class="ec-icon">🎯</view>
+    <view class="ec-body">
+      <view class="ec-title">成长计划</view>
+      <view class="ec-sub">{{planEntryText}}</view>
     </view>
-    <view wx:if="{{showTools}}">
-      <view class="muted" style="margin-bottom:18rpx">所有记录都保存在手机本地，换手机前记得导出一份 JSON 备份。</view>
-      <view class="backup-row">
-        <view class="btn btn-sm btn-yellow" bindtap="exportData">导出备份</view>
-        <view class="btn btn-sm btn-line" bindtap="importData">导入恢复</view>
-        <view wx:if="{{isDemo}}" class="btn btn-sm btn-gray" bindtap="clearDemo">清空示例</view>
-      </view>
-    </view>
+    <view class="ec-go">›</view>
   </view>
+
 </view>

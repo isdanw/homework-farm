@@ -17,16 +17,6 @@
 .ic-box { position: relative; width: 56rpx; height: 52rpx; transition: transform .2s; }
 .ic { position: absolute; inset: 0; }
 
-/* —— 日历 —— */
-.ic-plan { border: 4rpx solid #C6D3DE; border-radius: 12rpx; background: #fff; }
-.tab.on .ic-plan { border-color: #3FA9F5; }
-.ic-plan .ear { position: absolute; top: -10rpx; width: 8rpx; height: 12rpx; border-radius: 4rpx; background: #C6D3DE; }
-.tab.on .ic-plan .ear { background: #3FA9F5; }
-.ic-plan .ear.l { left: 10rpx; } .ic-plan .ear.r { right: 10rpx; }
-.ic-plan .line { position: absolute; left: 8rpx; right: 8rpx; height: 5rpx; border-radius: 3rpx; background: #C6D3DE; }
-.tab.on .ic-plan .line { background: #9AD5FF; }
-.ic-plan .line.a { top: 16rpx; } .ic-plan .line.b { top: 30rpx; right: 22rpx; }
-
 /* —— 对勾 —— */
 .ic-check { border: 4rpx solid #C6D3DE; border-radius: 50%; }
 .tab.on .ic-check { border-color: #5FBF6B; }
@@ -36,22 +26,6 @@
   transform: rotate(42deg);
 }
 .tab.on .ic-check .tick { border-color: #5FBF6B; }
-
-/* —— 柱状图 —— */
-.ic-stats .b { position: absolute; bottom: 4rpx; width: 12rpx; border-radius: 6rpx 6rpx 0 0; background: #C6D3DE; }
-.ic-stats .b1 { left: 6rpx; height: 22rpx; }
-.ic-stats .b2 { left: 22rpx; height: 38rpx; }
-.ic-stats .b3 { left: 38rpx; height: 30rpx; }
-.tab.on .ic-stats .b1 { background: #FFC9DC; }
-.tab.on .ic-stats .b2 { background: #3FA9F5; }
-.tab.on .ic-stats .b3 { background: #A8E6A1; }
-
-/* —— 书本 —— */
-.ic-book { border: 4rpx solid #C6D3DE; border-radius: 8rpx 14rpx 14rpx 8rpx; background: #fff; }
-.tab.on .ic-book { border-color: #FF8FAE; }
-.ic-book .pg { position: absolute; left: 12rpx; top: 4rpx; bottom: 4rpx; width: 4rpx; background: #C6D3DE; }
-.tab.on .ic-book .pg { background: #FFC9DC; }
-.ic-book .mark { position: absolute; right: 10rpx; top: -2rpx; width: 10rpx; height: 22rpx; background: #FFC9DC; border-radius: 0 0 4rpx 4rpx; }
 
 /* —— 小苗 —— */
 .ic-farm .soil { position: absolute; bottom: 2rpx; left: 6rpx; right: 6rpx; height: 12rpx; border-radius: 8rpx; background: #D9C1A3; }
@@ -67,6 +41,12 @@
 .ic-learn .pg { position: absolute; left: 25rpx; top: 13rpx; bottom: 11rpx; width: 4rpx; background: #2BB0F0; }
 .ic-learn .st { position: absolute; right: 5rpx; top: 2rpx; width: 16rpx; height: 16rpx; border-radius: 50%; background: #FFD86B; box-shadow: 0 0 0 3rpx #fff; }
 .tab.on .ic-learn { background: linear-gradient(135deg,#9AD5FF,#2BB0F0); }
+
+/* —— 我的：小人 —— */
+.ic-mine .head { position: absolute; top: 4rpx; left: 50%; transform: translateX(-50%); width: 18rpx; height: 18rpx; border-radius: 50%; background: #C6D3DE; }
+.ic-mine .body { position: absolute; bottom: 4rpx; left: 50%; transform: translateX(-50%); width: 34rpx; height: 22rpx; border-radius: 18rpx 18rpx 0 0; background: #C6D3DE; }
+.tab.on .ic-mine .head,
+.tab.on .ic-mine .body { background: #3FA9F5; }
 
 /* 红点警告 */
 .dot-warn {

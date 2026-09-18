@@ -1,5 +1,5 @@
 /**
- * 自定义底部导航（5 栏）
+ * 自定义底部导航（3 栏）
  * 用自定义 tabBar 的好处：图标全部用 CSS 手绘，不需要任何图片文件，
  * 而且可以在「我的农场」上显示未完成作业的红点警告。
  */
@@ -13,9 +13,8 @@ Component({
     list: [
       { pagePath: '/pages/index/index',   text: '成长乐园', icon: 'learn' },
       { pagePath: '/pages/checkin/checkin', text: '每日打卡', icon: 'check' },
-      { pagePath: '/pages/stats/stats',   text: '成长记录', icon: 'stats' },
-      { pagePath: '/pages/errors/errors', text: '小本本',   icon: 'book' },
-      { pagePath: '/pages/farm/farm',     text: '我的农场', icon: 'farm' }
+      { pagePath: '/pages/farm/farm',     text: '我的农场', icon: 'farm' },
+      { pagePath: '/pages/mine/mine',     text: '我的', icon: 'mine' }
     ]
   },
 

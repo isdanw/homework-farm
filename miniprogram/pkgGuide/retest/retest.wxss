@@ -1,0 +1,134 @@
+/**
+ * retest.wxss —— 复测页（沿用全局马卡龙规范）
+ */
+
+page { background: var(--c-cream); }
+
+.rt-page {
+  padding: 24rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ---------------- 顶部信息 ---------------- */
+.rt-head {
+  background: #EAF5FF;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+.rt-subject { font-size: 28rpx; font-weight: 700; color: var(--c-blue-deep); }
+.rt-topic { font-size: 30rpx; font-weight: 700; margin-top: 8rpx; word-break: break-word; }
+.rt-err { font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
+
+/* ---------------- 状态（加载/错误） ---------------- */
+.rt-state { text-align: center; padding: 120rpx 40rpx; }
+.rt-state-emoji { font-size: 96rpx; }
+.rt-state-title { font-size: 34rpx; font-weight: 700; margin-top: 20rpx; }
+.rt-state-sub { font-size: 26rpx; color: var(--c-sub); margin-top: 12rpx; line-height: 1.7; }
+.rt-retry { margin-top: 32rpx; }
+
+/* ---------------- 进度 ---------------- */
+.rt-progress { margin-bottom: 20rpx; }
+.rt-prog-num { font-size: 26rpx; font-weight: 700; color: var(--c-sub); }
+.rt-prog-bar {
+  height: 12rpx;
+  background: #F0F2F5;
+  border-radius: 999rpx;
+  overflow: hidden;
+  margin-top: 10rpx;
+}
+.rt-prog-inner { height: 100%; background: var(--c-blue-deep); border-radius: 999rpx; transition: width .3s; }
+
+/* ---------------- 题目卡 ---------------- */
+.rt-card {
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 28rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+  margin-bottom: 20rpx;
+}
+.rt-q { font-size: 32rpx; font-weight: 700; line-height: 1.6; margin-bottom: 24rpx; }
+
+.rt-opt {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx;
+  border-radius: 18rpx;
+  border: 3rpx solid #EDF1F5;
+  margin-bottom: 16rpx;
+  background: #FFFFFF;
+}
+.rt-opt:last-child { margin-bottom: 0; }
+.rt-opt.on { border-color: var(--c-blue); background: #F2FAFF; }
+.rt-opt-letter {
+  width: 48rpx; height: 48rpx;
+  border-radius: 50%;
+  background: #F6F8FA;
+  color: var(--c-sub);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26rpx; font-weight: 700;
+  flex-shrink: 0;
+}
+.rt-opt.on .rt-opt-letter { background: var(--c-blue-deep); color: #fff; }
+.rt-opt-text { font-size: 28rpx; line-height: 1.5; }
+
+/* ---------------- 导航 / 提交 ---------------- */
+.rt-nav { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
+.rt-btn {
+  flex: 1;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 700;
+  padding: 20rpx 0;
+  border-radius: 36rpx;
+}
+.rt-btn-main { background: var(--c-blue-deep); color: #FFFFFF; }
+.rt-btn-line { background: #FFFFFF; color: var(--c-blue-deep); border: 3rpx solid var(--c-blue); }
+.rt-btn.disabled { opacity: 0.4; }
+
+.rt-submit {
+  height: 84rpx;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-green-deep);
+  color: #FFFFFF;
+  border-radius: 42rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+/* ---------------- 结果 ---------------- */
+.rt-result {
+  text-align: center;
+  padding: 40rpx 32rpx;
+  border-radius: var(--radius);
+  margin-bottom: 20rpx;
+}
+.rt-result.pass { background: #EBF7EC; }
+.rt-result.fail { background: #FFF3E0; }
+.rt-result-emoji { font-size: 88rpx; }
+.rt-result-title { font-size: 40rpx; font-weight: 800; margin-top: 12rpx; }
+.rt-result.pass .rt-result-title { color: var(--c-green-deep); }
+.rt-result.fail .rt-result-title { color: #F5A623; }
+.rt-result-rate { font-size: 30rpx; font-weight: 700; margin-top: 12rpx; }
+.rt-result-reason { font-size: 26rpx; color: var(--c-sub); margin-top: 8rpx; }
+.rt-result-note { font-size: 26rpx; color: var(--c-sub); margin-top: 12rpx; line-height: 1.6; }
+
+/* ---------------- 逐题回顾 ---------------- */
+.rt-review-item { padding: 20rpx 0; border-bottom: 1rpx solid #F3F5F7; }
+.rt-review-item:last-child { border-bottom: none; }
+.rt-review-head { display: flex; align-items: center; justify-content: space-between; }
+.rt-review-idx { font-size: 26rpx; font-weight: 700; color: var(--c-sub); }
+.rt-review-mark { font-size: 24rpx; font-weight: 700; }
+.rt-review-mark.ok { color: var(--c-green-deep); }
+.rt-review-mark.no { color: var(--c-danger); }
+.rt-review-q { font-size: 28rpx; margin-top: 10rpx; line-height: 1.5; }
+.rt-review-ans { font-size: 24rpx; color: var(--c-sub); margin-top: 8rpx; }
+.rt-review-analysis {
+  font-size: 24rpx; color: var(--c-text);
+  background: #F6F9FC; border-radius: 12rpx; padding: 12rpx 16rpx; margin-top: 10rpx;
+  line-height: 1.6;
+}
+
+/* ---------------- 底部操作 ---------------- */
+.rt-actions { display: flex; gap: 16rpx; }

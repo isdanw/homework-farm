@@ -1,0 +1,106 @@
+<view class="page-wrap">
+
+  <!-- 头部 -->
+  <view class="tp-head">
+    <view class="tp-back" bindtap="goBack">‹ 返回</view>
+    <view class="tp-title">学科画像</view>
+    <view class="tp-spacer"></view>
+  </view>
+
+  <!-- 类型标识 -->
+  <view class="type-card" style="background:linear-gradient(135deg, {{typeColor}} 0%, {{typeColor}} 100%)">
+    <view class="tc-emoji">{{typeEmoji}}</view>
+    <view class="tc-name">{{typeName}} 画像</view>
+  </view>
+
+  <!-- 阶段计划入口 -->
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#5FBF6B"></view><text class="section-title">阶段计划</text>
+      <view class="entry-go" wx:if="{{planHint}}">{{planHint}}</view>
+    </view>
+    <view class="muted" style="margin-bottom:14rpx">按年级、学期与教材自动编排一学期的阶段任务，并按任务勾选情况对照排期（超前 / 正常 / 滞后）。</view>
+    <view class="btn btn-green btn-block" bindtap="goPlan">🗓 进入 {{typeName}} 成长计划</view>
+  </view>
+
+  <!-- 智能识别：粘贴画像提示词自动填入 -->
+  <view class="card">
+    <view class="section-head" bindtap="togglePaste">
+      <view class="dot" style="background:#9B7BF0"></view><text class="section-title">智能识别</text>
+      <view class="entry-go">{{showPaste ? '收起' : '粘贴提示词自动填入 ›'}}</view>
+    </view>
+    <view wx:if="{{showPaste}}">
+      <view class="muted paste-tip">把画像提示词整段粘贴到下面（含 教材版本 / 能力维度 / 常见错误模式 / 进度 / 学习者编号 字段），点「识别并填入」自动解析并保存，之后仍可手动微调。</view>
+      <textarea class="paste-area" placeholder="在此粘贴画像提示词全文…" placeholder-class="opt-ph"
+                value="{{rawText}}" bindinput="onPasteInput" maxlength="3000" auto-height />
+      <view class="btn btn-line btn-block paste-btn" bindtap="parseAndApply">🔍 识别并填入</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#3FA9F5"></view><text class="section-title">基础信息</text>
+    </view>
+
+    <view class="opt-row col">
+      <view class="opt-name">教材版本</view>
+      <input class="opt-input-full" placeholder="如：人教版" placeholder-class="opt-ph"
+             value="{{textbook}}" bindinput="onTextbook" maxlength="20" cursor-spacing="20" />
+    </view>
+    <view class="opt-row col">
+      <view class="opt-name">当前进度</view>
+      <input class="opt-input-full" placeholder="如：一年级上学期 准备课" placeholder-class="opt-ph"
+             value="{{progress}}" bindinput="onProgress" maxlength="40" cursor-spacing="20" />
+    </view>
+    <view class="opt-row col">
+      <view class="opt-name">学习者编号</view>
+      <input class="opt-input-full" placeholder="如：JY-001" placeholder-class="opt-ph"
+             value="{{learnerNo}}" bindinput="onLearnerNo" maxlength="20" cursor-spacing="20" />
+    </view>
+    <view class="opt-row col">
+      <view class="opt-name">计划编排要求</view>
+      <view wx:if="{{hasBuiltinRole}}" class="muted">本学科使用内置角色提示词「{{builtinRoleName}}」生成成长计划，无需手动配置。</view>
+      <textarea wx:else class="opt-input-full paste-area" placeholder="希望计划怎么编排（留空用默认）" placeholder-class="opt-ph"
+                value="{{planPrompt}}" bindinput="onPlanPrompt" maxlength="1500" auto-height />
+    </view>
+  </view>
+
+  <!-- 能力维度 -->
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#F5B740"></view><text class="section-title">能力维度</text>
+      <view class="entry-go" bindtap="addDim">＋ 新增</view>
+    </view>
+    <view wx:if="{{dimensions.length === 0}}" class="empty-tip">还没有维度，点右上角「＋ 新增」添加</view>
+
+    <view class="dim-row" wx:for="{{dimensions}}" wx:key="index">
+      <input class="dim-name" placeholder="维度名" placeholder-class="opt-ph"
+             value="{{item.name}}" data-i="{{index}}" bindinput="onDimName" maxlength="16" />
+      <view class="level-box">
+        <view class="lv-btn" data-i="{{index}}" bindtap="dimMinus">－</view>
+        <view class="lv-val">{{item.level}}</view>
+        <view class="lv-btn" data-i="{{index}}" bindtap="dimPlus">＋</view>
+      </view>
+      <view class="dim-del" data-i="{{index}}" bindtap="removeDim">✕</view>
+    </view>
+    <view class="muted dim-note">掌握度 1-5 分，初值 2 为观察基线，随错题与复测证据迭代</view>
+  </view>
+
+  <!-- 常见错误模式 -->
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#FF8FAE"></view><text class="section-title">常见错误模式</text>
+      <view class="entry-go" bindtap="addErr">＋ 新增</view>
+    </view>
+    <view wx:if="{{errors.length === 0}}" class="empty-tip">还没有记录，点右上角「＋ 新增」添加</view>
+
+    <view class="err-row" wx:for="{{errors}}" wx:key="index">
+      <view class="err-dot">⚠️</view>
+      <view class="err-text">{{item}}</view>
+      <view class="err-del" data-i="{{index}}" bindtap="removeErr">✕</view>
+    </view>
+  </view>
+
+  <view class="btn btn-block btn-green tp-save" bindtap="save">保存画像</view>
+
+</view>

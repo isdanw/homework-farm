@@ -1,0 +1,9 @@
+{
+  "name": "tutorChat",
+  "version": "1.0.0",
+  "description": "全科题解导学：多轮导学对话（hy3）+ 会话归档到 tutor_sessions 集合",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

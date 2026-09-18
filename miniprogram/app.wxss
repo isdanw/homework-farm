@@ -28,9 +28,55 @@ page {
 
 /* 页面容器：底部给自定义 tabBar 让位 + iPhone 安全区 */
 .page-wrap {
+  position: relative;
   min-height: 100vh;
   padding: 24rpx 24rpx calc(200rpx + env(safe-area-inset-bottom)) 24rpx;
   box-sizing: border-box;
+}
+
+/* ================= 卡通装饰系统（可复用） ================= */
+/* 背景氛围层：漂浮云朵 / 星星 / 太阳，作为 page-wrap 首子元素 */
+.scene { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.sc { position: absolute; will-change: transform; }
+.sc-cloud { font-size: 56rpx; opacity: .85; animation: drift 9s ease-in-out infinite; }
+.sc-star  { font-size: 38rpx; opacity: .95; animation: twinkle 2.6s ease-in-out infinite; }
+.sc-sun   { font-size: 52rpx; opacity: .9; animation: drift 11s ease-in-out infinite; }
+@keyframes drift   { 0%,100% { transform: translateX(0); } 50% { transform: translateX(22rpx); } }
+@keyframes twinkle { 0%,100% { opacity: .35; transform: scale(.82) rotate(-6deg); } 50% { opacity: 1; transform: scale(1.12) rotate(6deg); } }
+
+/* 内容浮在装饰层之上 */
+.page-wrap > view:not(.scene) { position: relative; z-index: 1; }
+
+/* 贴纸角标：卡片右上角小徽章 */
+.sticker {
+  position: absolute; top: -16rpx; right: -12rpx; z-index: 3;
+  width: 56rpx; height: 56rpx; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30rpx; color: #fff;
+  background: #FFD45E; box-shadow: 0 4rpx 10rpx rgba(245,183,64,.45);
+  transform: rotate(13deg);
+}
+.sticker.s-green { background: #5FBF6B; box-shadow: 0 4rpx 10rpx rgba(95,191,107,.45); }
+.sticker.s-blue  { background: #3FA9F5; box-shadow: 0 4rpx 10rpx rgba(63,169,245,.45); }
+.sticker.s-pink  { background: #FF8FAE; box-shadow: 0 4rpx 10rpx rgba(255,143,174,.45); }
+
+/* 底部手绘草丛波浪（圆点波纹） */
+.page-wave {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 70rpx;
+  background: radial-gradient(circle at 20rpx -6rpx, #C8E9BE 18rpx, transparent 19rpx) repeat-x;
+  background-size: 40rpx 70rpx; opacity: .85;
+}
+
+/* 撒花（完成态庆祝） */
+.confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti .cf {
+  position: absolute; bottom: 40rpx; width: 14rpx; height: 14rpx; border-radius: 4rpx;
+  animation: confetti-pop .9s cubic-bezier(.2,1.4,.5,1) both;
+}
+@keyframes confetti-pop {
+  0%   { transform: translateY(10rpx) scale(0) rotate(0); opacity: 0; }
+  40%  { opacity: 1; }
+  100% { transform: translateY(-70rpx) scale(1) rotate(160deg); opacity: 0; }
 }
 
 /* ---------------- 通用卡片 ---------------- */
@@ -59,6 +105,8 @@ page {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;          /* 关键：width:100% 时 padding 计入宽度，避免横向溢出 */
+  max-width: 100%;
   min-height: 88rpx;
   padding: 0 34rpx;
   border-radius: 44rpx;
@@ -69,6 +117,7 @@ page {
   box-shadow: 0 6rpx 0 rgba(0, 0, 0, 0.08);
 }
 .btn:active { transform: translateY(3rpx); box-shadow: none; }
+.btn.disabled { opacity: .55; box-shadow: none; }
 .btn-green { background: var(--c-green-deep); }
 .btn-pink { background: var(--c-pink-deep); }
 .btn-yellow { background: var(--c-yellow-deep); }
@@ -77,7 +126,7 @@ page {
   background: #fff; color: var(--c-blue-deep);
   border: 3rpx solid var(--c-blue);
 }
-.btn-block { display: flex; width: 100%; }
+.btn-block { display: flex; width: 100%; max-width: 100%; }
 .btn-sm { min-height: 70rpx; font-size: 28rpx; padding: 0 24rpx; }
 
 /* ---------------- 顶部标题条 ---------------- */
@@ -157,6 +206,7 @@ page {
 }
 .dialog {
   width: 100%; max-width: 620rpx; background: #fff;
+  box-sizing: border-box;
   border-radius: 36rpx; padding: 40rpx 32rpx 32rpx;
   text-align: center; animation: pop .28s cubic-bezier(.2,1.3,.5,1);
   max-height: 78vh; overflow-y: auto;

@@ -1,0 +1,237 @@
+/**
+ * confirm.wxss —— 拍照收录确认页（沿用错题本马卡龙规范：奶油底 + 圆角卡片）
+ */
+
+page { background: var(--c-cream); }
+
+.cf-page {
+  padding: 24rpx 24rpx calc(200rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ---------------- 原图对照 ---------------- */
+.cf-photo-wrap { margin-bottom: 20rpx; }
+.cf-photo {
+  width: 100%;
+  height: 320rpx;
+  border-radius: 20rpx;
+  background: #FFFFFF;
+}
+.cf-photo-hint {
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--c-sub);
+  margin-top: 10rpx;
+}
+
+/* ---------------- 学科 chips ---------------- */
+.cf-subjects {
+  display: flex;
+  white-space: nowrap;
+  margin-bottom: 20rpx;
+}
+.cf-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 26rpx;
+  margin-right: 14rpx;
+  border-radius: 40rpx;
+  background: #FFFFFF;
+  border: 3rpx solid #EDF1F5;
+  font-size: 26rpx;
+  color: var(--c-sub);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.cf-chip.on {
+  border-color: var(--c-blue);
+  color: var(--c-blue-deep);
+  background: #F2FAFF;
+  font-weight: 800;
+}
+
+/* ---------------- 题目卡片 ---------------- */
+.cf-card {
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+  border: 3rpx solid transparent;
+}
+.cf-card.on { border-color: var(--c-blue); }
+
+.cf-head {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+.cf-check {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 12rpx;
+  border: 3rpx solid #D8E2EC;
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 800;
+  text-align: center;
+  line-height: 40rpx;
+  flex-shrink: 0;
+}
+.cf-check.on { background: var(--c-blue-deep); border-color: var(--c-blue-deep); }
+.cf-no {
+  width: 90rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  text-align: center;
+  background: #F6F9FC;
+  border-radius: 12rpx;
+  padding: 8rpx 0;
+}
+.cf-type-btn {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--c-blue-deep);
+  background: #EAF5FF;
+  border-radius: 999rpx;
+  padding: 8rpx 20rpx;
+}
+.cf-rule-tag {
+  font-size: 20rpx;
+  color: var(--c-green-deep);
+  background: #EBF7EC;
+  border-radius: 999rpx;
+  padding: 4rpx 14rpx;
+}
+.cf-del {
+  margin-left: auto;
+  font-size: 24rpx;
+  color: var(--c-sub);
+  padding: 8rpx 12rpx;
+}
+
+/* 对错三态 */
+.cf-mark-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+.cf-mark-label { font-size: 24rpx; color: var(--c-sub); }
+.cf-mark {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-sub);
+  background: #F6F9FC;
+  border-radius: 999rpx;
+  padding: 8rpx 26rpx;
+  border: 3rpx solid transparent;
+}
+.cf-mark.ok { color: var(--c-green-deep); background: #EBF7EC; border-color: var(--c-green); }
+.cf-mark.bad { color: #FF7A7A; background: #FFEDED; border-color: #FF7A7A; }
+.cf-mark.none { color: var(--c-sub); background: #F2F2F2; border-color: #E0E0E0; }
+
+/* 题干 / 作答 */
+.cf-q {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 60rpx;
+  font-size: 28rpx;
+  color: var(--c-text);
+  line-height: 1.6;
+  background: #F6F9FC;
+  border-radius: 14rpx;
+  padding: 14rpx 18rpx;
+  margin-top: 18rpx;
+}
+.cf-a {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 26rpx;
+  color: var(--c-text);
+  background: #FFF6DD;
+  border-radius: 14rpx;
+  padding: 12rpx 18rpx;
+  margin-top: 12rpx;
+}
+.cf-a.ans { background: #EBF7EC; }
+
+/* 诊断区 */
+.cf-diag {
+  margin-top: 18rpx;
+  border-top: 2rpx dashed #E4ECF4;
+  padding-top: 16rpx;
+}
+.cf-diag-row {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 12rpx;
+  flex-wrap: wrap;
+}
+.cf-diag-label { font-size: 24rpx; color: var(--c-sub); flex-shrink: 0; }
+.cf-diag-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  color: var(--c-text);
+  background: #F6F9FC;
+  border-radius: 12rpx;
+  padding: 10rpx 16rpx;
+}
+.cf-diag-input.sug { margin-top: 12rpx; }
+.cf-tag {
+  font-size: 24rpx;
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+  font-weight: 600;
+}
+.cf-marksrc { font-size: 20rpx; color: var(--c-sub); }
+.cf-diag-desc {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 24rpx;
+  color: var(--c-sub);
+  line-height: 1.6;
+  background: #F6F9FC;
+  border-radius: 12rpx;
+  padding: 10rpx 16rpx;
+  margin-bottom: 12rpx;
+}
+
+/* ---------------- 手动加题 ---------------- */
+.cf-add {
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--c-blue-deep);
+  background: #FFFFFF;
+  border: 3rpx dashed var(--c-blue);
+  border-radius: 20rpx;
+  padding: 20rpx 0;
+  margin-bottom: 20rpx;
+}
+
+/* ---------------- 底部操作栏 ---------------- */
+.cf-bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 16rpx;
+  padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 249, 240, 0.96);
+  box-shadow: 0 -6rpx 20rpx rgba(150, 180, 210, 0.15);
+}
+.cf-btn {
+  flex: 1;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 800;
+  padding: 22rpx 0;
+  border-radius: 40rpx;
+}
+.cf-btn-ai { background: #FFFFFF; color: var(--c-blue-deep); border: 3rpx solid var(--c-blue); }
+.cf-btn-save { background: var(--c-blue-deep); color: #FFFFFF; }
+.cf-btn-save.disabled { opacity: 0.4; }

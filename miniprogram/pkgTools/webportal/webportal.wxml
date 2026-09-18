@@ -1,0 +1,66 @@
+<view class="page-wrap">
+
+  <!-- HERO -->
+  <view class="hero">
+    <view class="hero-main">
+      <view class="hero-emoji">🖥️</view>
+      <view class="hero-body">
+        <view class="hero-name-row"><text class="hero-name">网页看板</text></view>
+        <text class="hero-streak">用电脑浏览器查看孩子的打卡与导学数据</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card tip-card">
+    <view class="muted">网页看板只读展示你当前微信账户的小程序数据。生成专属口令后，用电脑打开链接或扫码即可登录——无需记忆管理员口令，也看不到别人的数据。</view>
+  </view>
+
+  <!-- 未生成：引导生成 -->
+  <view class="card" wx:if="{{!token}}">
+    <view class="section-head">
+      <view class="dot" style="background:#00A3A3"></view><text class="section-title">生成网页口令</text>
+    </view>
+    <view class="tools-desc">生成一个与你微信绑定的访问口令（含直达链接与二维码）。口令仅保存在云端，可随时撤销。</view>
+    <view class="backup-row" style="margin-top:14rpx">
+      <view class="btn btn-block btn-green" bindtap="generate" wx:if="{{!loading}}">＋ 生成网页口令</view>
+      <view class="btn btn-block btn-line" wx:else>生成中…</view>
+    </view>
+  </view>
+
+  <!-- 已生成：展示口令 / 链接 / 二维码 -->
+  <view class="card" wx:if="{{token}}">
+    <view class="section-head">
+      <view class="dot" style="background:#5FBF6B"></view><text class="section-title">当前口令</text>
+      <view class="entry-go" bindtap="revoke">撤销 ›</view>
+    </view>
+
+    <view class="qr-wrap">
+      <image wx:if="{{qrDataUrl}}" class="qr" src="{{qrDataUrl}}" mode="aspectFit"></image>
+      <view wx:else class="muted">二维码需重新生成（点下方「重新生成口令」即可获取）</view>
+    </view>
+
+    <view class="field">
+      <view class="field-label">直达链接</view>
+      <text class="field-val" user-select>{{deepLink}}</text>
+      <view class="btn btn-sm btn-yellow" bindtap="copyLink">复制链接</view>
+    </view>
+
+    <view class="field">
+      <view class="field-label">访问口令</view>
+      <view class="field-val mono">{{mask}}</view>
+      <view class="btn btn-sm btn-yellow" bindtap="copyToken">复制口令</view>
+    </view>
+
+    <view class="tools-desc" style="margin-top:10rpx">在电脑浏览器打开链接（或扫码），即自动以本微信账户登录，仅展示该账户数据。</view>
+
+    <view class="backup-row" style="margin-top:16rpx">
+      <view class="btn btn-sm btn-line" bindtap="generate" wx:if="{{!loading}}">重新生成口令</view>
+      <view class="btn btn-sm btn-line" wx:else>生成中…</view>
+    </view>
+  </view>
+
+  <view class="card tip-card warn">
+    <view class="muted">⚠️ 重新生成会作废此前全部口令（旧链接/二维码立即失效）。撤销后同样立即失效。</view>
+  </view>
+
+</view>

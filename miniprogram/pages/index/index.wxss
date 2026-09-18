@@ -1,62 +1,149 @@
-/* 学习乐园枢纽页样式（幼儿化：大圆角、明亮、活泼） */
+/* ============ 首页（成长乐园）—— 卡通化：状态 → 行动 → 奖励 → 入口 ============ */
 
-/* 顶部吉祥物问候 */
+/* ===== 状态 Hero ===== */
 .hero {
-  display: flex; align-items: center; gap: 16rpx;
+  display: flex; align-items: center; gap: 18rpx;
   background: linear-gradient(135deg, #FFF7EA, #FFE7C2);
-  border-radius: var(--radius); padding: 22rpx; margin-bottom: 22rpx;
+  border-radius: var(--radius); padding: 24rpx 26rpx; margin-bottom: 22rpx;
   box-shadow: 0 8rpx 24rpx rgba(150,180,210,.14);
 }
-.mascot {
+.hero-mascot-wrap { position: relative; flex: 0 0 96rpx; width: 96rpx; height: 96rpx; }
+.hero-mascot {
   width: 96rpx; height: 96rpx; border-radius: 50%; background: var(--c-yellow);
-  display: flex; align-items: center; justify-content: center; font-size: 54rpx; flex: 0 0 96rpx;
-  box-shadow: inset 0 -8rpx 0 rgba(0,0,0,.06);
+  display: flex; align-items: center; justify-content: center; font-size: 52rpx;
+  box-shadow: inset 0 -8rpx 0 rgba(0,0,0,.06),
+              0 0 0 6rpx rgba(255,226,154,.55),
+              0 0 0 12rpx rgba(255,226,154,.28);
+  animation: float 3.2s ease-in-out infinite;
 }
-.hero-txt { flex: 1; }
-.h-greet { font-size: 34rpx; font-weight: 800; }
-.h-sub { font-size: 24rpx; color: var(--c-sub); margin-top: 4rpx; }
-.star-badge {
-  background: #fff; color: var(--c-yellow-deep); font-weight: 800; font-size: 30rpx;
-  border-radius: 30rpx; padding: 10rpx 20rpx; box-shadow: 0 4rpx 14rpx rgba(245,183,64,.25);
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6rpx); } }
+/* 卡通腮红 */
+.hero-blush { position: absolute; top: 56rpx; width: 15rpx; height: 10rpx; border-radius: 50%; background: rgba(255,150,170,.62); }
+.hero-blush.l { left: 20rpx; }
+.hero-blush.r { right: 20rpx; }
+/* 摇摆的小熊伙伴 */
+.hero-buddy {
+  position: absolute; top: -24rpx; right: -28rpx; font-size: 36rpx;
+  transform-origin: bottom center; animation: wave 2.2s ease-in-out infinite; z-index: 2;
+}
+@keyframes wave { 0%,100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+
+.hero-body { flex: 1; min-width: 0; }
+.hero-greet { font-size: 34rpx; font-weight: 800; color: #4A3B22; }
+.hero-grade {
+  font-size: 22rpx; font-weight: 700; color: #fff; background: #5FBF6B;
+  border-radius: 18rpx; padding: 3rpx 14rpx; margin-left: 12rpx; vertical-align: middle;
+}
+.hero-sub { font-size: 24rpx; color: #B0894F; margin-top: 6rpx; }
+.hero-streak {
+  display: flex; align-items: center; gap: 6rpx; flex: 0 0 auto;
+  background: #fff; border-radius: 30rpx; padding: 10rpx 18rpx;
+  box-shadow: 0 4rpx 14rpx rgba(245,183,64,.25);
+}
+.hs-fire { font-size: 30rpx; }
+.hs-text { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.hs-n { font-size: 28rpx; font-weight: 800; color: #BA7517; }
+.hs-u { font-size: 18rpx; color: #C79A5B; margin-top: 2rpx; }
+
+/* ===== 主行动卡片 ===== */
+.act-card {
+  position: relative;
+  background: #fff; border-radius: var(--radius); padding: 26rpx 24rpx 24rpx;
+  margin-bottom: 22rpx; box-shadow: 0 8rpx 24rpx rgba(150,180,210,.14);
+}
+.act-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.act-title { display: flex; align-items: center; font-size: 34rpx; font-weight: 800; }
+.act-title .dot { width: 16rpx; height: 16rpx; border-radius: 50%; margin-right: 14rpx; }
+.act-count {
+  font-size: 28rpx; font-weight: 800; color: #BA7517;
+  background: #FFF3DA; border-radius: 20rpx; padding: 6rpx 18rpx;
+}
+.act-count.done { color: #3B6D11; background: #EAF3DE; }
+
+/* 打卡列表：每科一张横向卡片（纵向排列），导学任务获得完整展示宽度 */
+.sub-list { display: flex; flex-direction: column; gap: 14rpx; }
+.sub-row {
+  display: flex; align-items: center; gap: 16rpx;
+  border-radius: 24rpx; padding: 20rpx 22rpx; color: #36302B;
+  box-shadow: 0 8rpx 18rpx rgba(150,170,200,.22);
+  transition: transform .15s ease;
+  /* 兜底底色：万一 JS 渐变未挂上，也绝不留纯白底导致白字看不见 */
+  background: linear-gradient(135deg, #FFC2DB 0%, #BFE3FF 100%);
+}
+.sub-row:active { transform: scale(.98); }
+
+/* 主体：科目名 + 右上角状态角标 + 今日导学任务 */
+.sr-main { flex: 1; min-width: 0; }
+.sr-head { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.sr-name { font-size: 30rpx; font-weight: 800; line-height: 1.2; flex-shrink: 0; }
+.sr-state {
+  flex-shrink: 0; font-size: 20rpx; font-weight: 700; color: #5B463A;
+  background: rgba(255,255,255,.72); border-radius: 16rpx; padding: 3rpx 12rpx;
+}
+/* 今日导学任务（与导学计划同步，完整展示） */
+.sr-task {
+  margin-top: 10rpx; display: flex; align-items: center; gap: 8rpx;
+  background: rgba(0,0,0,.08); border-radius: 12rpx; padding: 8rpx 12rpx;
+}
+.sr-task-ic { font-size: 22rpx; flex-shrink: 0; }
+.sr-task-tx {
+  flex: 1; min-width: 0; font-size: 23rpx; font-weight: 600; color: #5B463A;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* 三扇学科大门 */
-.gate { display: flex; flex-direction: column; gap: 18rpx; }
-.door {
-  border-radius: var(--radius); padding: 24rpx; color: #fff;
-  display: flex; align-items: center; gap: 20rpx; box-shadow: 0 8rpx 22rpx rgba(150,170,200,.22);
-  position: relative; min-height: 120rpx;
-}
-.door-cn { background: linear-gradient(135deg, #FFB3D1, #FF6FA5); }
-.door-ma { background: linear-gradient(135deg, #7FD4FF, #2BB0F0); }
-.door-en { background: linear-gradient(135deg, #8FE88A, #43C95A); }
-.door-emoji { font-size: 60rpx; flex: 0 0 70rpx; text-align: center; }
-.door-info { flex: 1; }
-.door-name { font-size: 40rpx; font-weight: 800; }
-.door-tip { font-size: 24rpx; opacity: .95; margin-top: 4rpx; }
-.door-status {
-  position: absolute; right: 22rpx; top: 22rpx; background: rgba(255,255,255,.32);
-  border-radius: 20rpx; padding: 6rpx 16rpx; font-size: 24rpx;
-}
-.door-status.ok { background: #fff; color: #43C95A; font-weight: 800; }
+.sub-row.done { opacity: .95; }
+.sub-row.done .sr-state { background: #EAF3DE; color: #3B6D11; }
 
-.hint {
-  font-size: 24rpx; color: var(--c-sub); text-align: center;
-  margin: 20rpx 8rpx; line-height: 1.6;
+/* 待办提醒条（今日中枢：错题待订正） */
+.act-todo {
+  margin-top: 16rpx; display: flex; align-items: center; gap: 10rpx;
+  background: #FFF3DA; border-radius: 16rpx; padding: 14rpx 18rpx;
+}
+.todo-dot { width: 14rpx; height: 14rpx; border-radius: 50%; background: #F5A623; flex-shrink: 0; }
+.todo-tx { flex: 1; min-width: 0; font-size: 25rpx; color: #854F0B; font-weight: 700; }
+.todo-go { font-size: 24rpx; color: #BA7517; font-weight: 700; flex-shrink: 0; }
+
+/* 进度条 */
+.act-bar { height: 16rpx; border-radius: 8rpx; background: #EDF3F8; overflow: hidden; margin-top: 20rpx; }
+.act-fill { height: 100%; border-radius: 8rpx; background: linear-gradient(90deg, #FFD27A, #F5B740); transition: width .5s ease; }
+.act-card.all .act-fill { background: linear-gradient(90deg, #A8E6A1, #5FBF6B); }
+
+.act-tip { font-size: 26rpx; color: var(--c-sub); text-align: center; margin-top: 16rpx; }
+.act-tip .hl { color: #BA7517; font-weight: 800; }
+.act-cheer {
+  font-size: 27rpx; font-weight: 700; color: #3B6D11; text-align: center; margin-top: 16rpx;
+  background: #EAF3DE; border-radius: 16rpx; padding: 14rpx;
 }
 
-/* 今日三科进度 */
-.go-checkin { margin-top: 16rpx; font-size: 26rpx; color: var(--c-blue-deep); font-weight: 700; }
+/* 今日课表条（录入过课表才展示，点击进课表页） */
+.act-courses {
+  display: flex; align-items: center; gap: 10rpx;
+  margin-top: 16rpx; padding: 14rpx 18rpx;
+  background: #F2FAFF; border: 2rpx solid var(--c-blue); border-radius: 18rpx;
+}
+.act-courses .ac-ic { font-size: 28rpx; }
+.act-courses .ac-tx {
+  flex: 1; min-width: 0;
+  font-size: 25rpx; color: var(--c-blue-deep); font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
-/* 农场联动卡（复用全局 .farm-card 基础） */
-.farm-card { display: flex; align-items: center; justify-content: space-between; }
+/* ===== 农场奖励联动卡 ===== */
+.farm-card {
+  position: relative;
+  display: flex; align-items: center; justify-content: space-between;
+  background: #EAF4FF; border-radius: var(--radius); padding: 24rpx; margin-bottom: 22rpx;
+  box-shadow: 0 8rpx 24rpx rgba(150,180,210,.14);
+}
 .farm-card.danger { background: #FFF1F1; }
 .fc-left { flex: 1; padding-right: 16rpx; }
-.fc-title { font-size: 32rpx; font-weight: 800; }
-.fc-desc { font-size: 24rpx; color: var(--c-sub); margin: 8rpx 0; line-height: 1.5; }
-.fc-meta { font-size: 22rpx; color: var(--c-sub); }
-.fc-right { display: flex; flex-direction: column; align-items: center; }
-.go { font-size: 24rpx; color: var(--c-blue-deep); font-weight: 700; margin-top: 8rpx; }
+.fc-title { font-size: 32rpx; font-weight: 800; color: #185FA5; }
+.farm-card.danger .fc-title { color: #A32D2D; }
+.fc-desc { font-size: 24rpx; color: #4A6A8A; margin: 8rpx 0; line-height: 1.5; }
+.farm-card.danger .fc-desc { color: #A32D2D; }
+.fc-meta { font-size: 22rpx; color: #6A819A; }
+.fc-right { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+.go { font-size: 24rpx; color: #185FA5; font-weight: 700; margin-top: 8rpx; }
 
 /* 迷你农场图标 */
 .mini-farm { width: 120rpx; height: 110rpx; position: relative; }
@@ -68,6 +155,16 @@
 .mf-leaf.l { left: 26rpx; border-radius: 18rpx 0 18rpx 0; }
 .mf-leaf.r { left: 56rpx; border-radius: 0 18rpx 0 18rpx; }
 
-/* 家长工具按钮行 */
-.backup-row { display: flex; gap: 16rpx; flex-wrap: wrap; }
-.add-btn { margin-left: auto; }
+/* ===== 快捷入口卡 ===== */
+.entry-card {
+  position: relative;
+  display: flex; align-items: center; gap: 18rpx;
+  background: #fff; border-radius: var(--radius); padding: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(150,180,210,.14);
+}
+.entry-card:active { background: #F7FAFD; }
+.ec-icon { font-size: 44rpx; flex: 0 0 auto; }
+.ec-body { flex: 1; min-width: 0; }
+.ec-title { font-size: 30rpx; font-weight: 800; color: #3A4350; }
+.ec-sub { font-size: 23rpx; color: var(--c-sub); margin-top: 4rpx; }
+.ec-go { font-size: 40rpx; color: #C9D3DC; flex: 0 0 auto; }

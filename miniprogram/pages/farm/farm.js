@@ -15,6 +15,39 @@ const engine = require('../../utils/farmEngine.js');
 const util = require('../../utils/util.js');
 const CFG = require('../../utils/config.js');
 
+/**
+ * 把 root 级合种数据整理成农场页可直接渲染的结构。
+ * 仅当孩子数 ≥ 2（家庭内才有"一起"的意义）时由 wxml 显示卡片。
+ */
+function buildCoop(root) {
+  const coop = root.coop;
+  if (!coop || !coop.plants || !coop.plants.length) {
+    return { has: false, canCreate: true };
+  }
+  const active = coop.plants.find(p => !p.done);
+  if (!active) {
+    const last = coop.plants[coop.plants.length - 1];
+    return { has: true, done: true, canCreate: true, last: { name: last.name, emoji: last.emoji } };
+  }
+  const contributors = Object.keys(active.contributors).map(cid => {
+    const u = root.users.find(x => x.id === cid) || { avatar: '🧒', nickname: '成员' };
+    return { avatar: u.avatar, nickname: u.nickname, count: active.contributors[cid] };
+  });
+  const percent = Math.min(100, Math.round((active.progress / active.goal) * 100));
+  return {
+    has: true,
+    done: false,
+    name: active.name,
+    emoji: active.emoji,
+    color: active.color,
+    colorDeep: active.colorDeep,
+    progress: active.progress,
+    goal: active.goal,
+    percent: percent,
+    contributors: contributors
+  };
+}
+
 Page({
   data: {
     tab: 'farm',                 // farm 种植地块 / depot 仓库 / shop 商店 / bag 背包
@@ -32,7 +65,7 @@ Page({
     showSeed: false, seedPlot: -1,
     showAction: false, actionIndex: -1, actionPlant: null,
     // 其它 tab 数据
-    shopList: [], harvestLog: [], depotStat: [], logs: [], ownedList: [],
+    shopList: [], harvestLog: [], depotStat: [], logs: [],
     stageNames: CFG.GROWTH.STAGE_NAMES
   },
 
@@ -43,7 +76,7 @@ Page({
   onUnload() { store.off(this._onChange); },
 
   onShow() {
-    if (this.getTabBar) { const tb = this.getTabBar(); if (tb) tb.setData({ selected: 4 }); }
+    if (this.getTabBar) { const tb = this.getTabBar(); if (tb) tb.setData({ selected: 2 }); }
 
     const app = getApp();
     app.runDailyRollover();          // ← 联动 1：跨天重置 + 夜间结算
@@ -57,7 +90,8 @@ Page({
       this.checkHomeworkWarn();      // ← 联动 2：未完成作业弹窗
     }
 
-    // 页面停留时每 30 秒推进一次自然生长
+    // 页面停留时每 30 秒推进一次自然生长（先清旧的，避免 onHide 异常时叠加）
+    if (this._timer) clearInterval(this._timer);
     this._timer = setInterval(() => {
       if (engine.growTick(store.get())) this.render();
     }, 30000);
@@ -69,12 +103,14 @@ Page({
   render() {
     const d = store.get();
     const f = d.farm;
+    const root = store.getRoot();
     const night = util.isNight(CFG.PUNISH.NIGHT_HOUR);
+    const coop = buildCoop(root);
 
     // 地块
     const plots = f.plots.map((p, i) => {
       if (!p) return { index: i, empty: true };
-      const s = CFG.getSubject(p.subject);
+      const s = store.getType(p.subject);
       const hearts = [];
       for (let h = 0; h < CFG.GROWTH.MAX_HEALTH; h++) hearts.push(h < p.health);
       return {
@@ -89,7 +125,7 @@ Page({
     });
 
     // 种子（未完成作业 = 数量 0 = 未解锁）
-    const seedList = CFG.SUBJECTS.map(s => ({
+    const seedList = store.getTypeList().map(s => ({
       key: s.key, name: s.name, seedName: s.seedName, cropName: s.cropName,
       color: s.color, colorDeep: s.colorDeep, shape: s.shape,
       count: f.seeds[s.key] || 0,
@@ -112,22 +148,15 @@ Page({
     });
 
     // 仓库统计
-    const depotStat = CFG.SUBJECTS.map(s => {
+    const depotStat = store.getTypeList().map(s => {
       const rows = f.harvestLog.filter(h => h.subject === s.key);
       return { name: s.cropName, subName: s.name, color: s.color, count: rows.length, coin: rows.reduce((a, b) => a + b.coin, 0) };
     });
 
-    // 背包里的商城奖励
-    const ownedList = f.owned.map(id => {
-      const it = CFG.MALL.find(m => m.id === id);
-      if (!it) return null;
-      return Object.assign({}, it, {
-        equipped: d.profile.equipped.skin === id || d.profile.equipped.frame === id
-      });
-    }).filter(Boolean);
-
+    // 背包里的商城奖励（金币商城页已移除，奖励兑换入口不再提供）
     this.setData({
       night,
+      child: { avatar: d.avatar, nickname: d.nickname, grade: d.grade },
       skinClass: d.profile.equipped.skin ? 'skin-' + d.profile.equipped.skin.replace('skin_', '') : '',
       res: { coins: f.coins, suns: f.suns, pesticide: f.pesticide, shields: f.shields, seeds: f.seeds },
       seedList, plots,
@@ -138,8 +167,9 @@ Page({
       harvestLog: f.harvestLog.slice(0, 30),
       depotStat,
       logs: f.logs.slice(0, 10).map(l => Object.assign({}, l, { dateText: util.cnDate(l.date) })),
-      ownedList,
-      lockHarvest: f.lockHarvestDate === util.today()
+      lockHarvest: f.lockHarvestDate === util.today(),
+      canCoop: root.users.length >= 2,   // 家庭内合种：仅当孩子数 ≥ 2 时显示
+      coop: coop
     });
   },
 
@@ -148,7 +178,7 @@ Page({
     const d = store.get();
     const missing = engine.missingSubjects(d, util.today());
     if (missing.length === 0) return;
-    const names = missing.map(k => CFG.getSubject(k).name).join('、');
+    const names = missing.map(k => store.getType(k).name).join('、');
     const text = CFG.TEXT.FARM_WARN_CONTENT.replace('{n}', missing.length).replace('{s}', names);
     this.setData({ showWarn: true, warnText: text });
   },
@@ -217,6 +247,14 @@ Page({
     if (res.ok) this.setData({ showAction: false });
   },
 
+  /* ======================= 家庭内合种（阶段 0） ======================= */
+  createCoop() {
+    if (this.data.canCoop !== true) return util.toast('添加第二个孩子后，才能发起家庭合种哦');
+    const p = store.createCoop();
+    this.render();
+    util.toast(`「${p.name}」已发起！大家打卡一起培育它`, 'success');
+  },
+
   /* ======================= 联动 4：杀虫剂修复 ======================= */
   doPesticide() {
     const res = engine.usePesticide(store.get());
@@ -235,14 +273,5 @@ Page({
     const id = e.currentTarget.dataset.id;
     const res = engine.buyShop(store.get(), id);
     util.toast(res.msg, res.ok ? 'success' : 'none');
-  },
-
-  /* ======================= 背包：装备奖励 ======================= */
-  equip(e) {
-    const id = e.currentTarget.dataset.id;
-    const res = engine.equipItem(store.get(), id);
-    util.toast(res.msg, res.ok ? 'success' : 'none');
-  },
-
-  goMall() { wx.navigateTo({ url: '/pages/mall/mall' }); }
+  }
 });

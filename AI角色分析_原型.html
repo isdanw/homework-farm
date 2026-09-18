@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="heV09uwFODdAZHrpFGSHEk">
+<head data-page-node-id="DuDzorS162cz8WL9xj89mb">
+<meta charset="UTF-8" data-page-node-id="9yXxs9AsnzeRFqJyay1f0E" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="PVkUnCe4ImIWxXDvxGqlw0" />
+<title>AI 角色分析 · 打卡页原型</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: #eef2f6; font-family: -apple-system, "PingFang SC", sans-serif;
+    display: flex; justify-content: center; padding: 24px 12px; color: #4A4A4A;
+  }
+  .phone {
+    width: 390px; height: 844px; background: #FFF9F0; border-radius: 44px;
+    box-shadow: 0 24px 60px rgba(80,110,150,.28); position: relative; overflow: hidden;
+    border: 10px solid #2b2f36;
+  }
+  .statusbar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 13px; font-weight: 700; color: #4A4A4A; }
+  .nav { background: #BFE6FF; padding: 6px 16px 14px; font-size: 17px; font-weight: 800; text-align: center; color: #2b3a45; }
+  .screen { position: absolute; inset: 44px 0 0 0; overflow-y: auto; padding: 16px; }
+  .screen::-webkit-scrollbar { display: none; }
+
+  /* 卡片 */
+  .card { background: #fff; border-radius: 20px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(150,180,210,.16); }
+  .card-title { font-size: 18px; font-weight: 800; display: flex; align-items: center; margin-bottom: 12px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #3FA9F5; margin-right: 8px; }
+  .task { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f4f8; }
+  .task:last-child { border-bottom: none; }
+  .ticon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; font-weight: 800; }
+  .tbody { flex: 1; }
+  .tname { font-size: 15px; font-weight: 800; }
+  .tstatus { font-size: 12px; color: #3B6D11; font-weight: 600; }
+  .taction { font-size: 12px; font-weight: 800; background: #EAF3DE; color: #3B6D11; padding: 6px 12px; border-radius: 16px; }
+
+  /* 入口链接 */
+  .entry { display: flex; align-items: center; background: #F0F7FF; border: 1px solid #B5D4F4; border-radius: 14px; padding: 14px 16px; font-size: 15px; font-weight: 700; color: #185FA5; margin-bottom: 12px; }
+  .entry.ai { background: linear-gradient(90deg,#EAF7EE,#EAF1FB); border-color: #9FD8B0; color: #2b7a3f; }
+
+  /* 遮罩 + 抽屉 */
+  .mask { position: absolute; inset: 0; background: rgba(60,70,90,.45); z-index: 20; display: none; }
+  .mask.on { display: block; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 80%; background: #fff; border-radius: 28px 28px 0 0; z-index: 21; transform: translateY(100%); transition: transform .28s cubic-bezier(.2,1,.4,1); display: flex; flex-direction: column; }
+  .sheet.on { transform: translateY(0); }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 10px; }
+  .sheet-title { font-size: 19px; font-weight: 800; }
+  .sheet-close { width: 30px; height: 30px; border-radius: 50%; background: #F0F4F8; color: #6A7480; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .sheet-body { flex: 1; overflow-y: auto; padding: 4px 20px 16px; }
+  .scope { font-size: 13px; background: #F0F7FF; color: #185FA5; border-radius: 12px; padding: 9px 12px; margin-bottom: 12px; }
+  textarea { width: 100%; min-height: 120px; background: #F6F9FC; border-radius: 14px; padding: 14px; font-size: 15px; border: none; resize: none; font-family: inherit; }
+  .helper { font-size: 12px; color: #8A8A8A; margin: 8px 2px 14px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chip { font-size: 13px; font-weight: 700; background: #EAF3DE; color: #3B6D11; border-radius: 16px; padding: 7px 12px; display: flex; align-items: center; gap: 6px; }
+  .chip .x { color: #b06; opacity: .55; font-size: 12px; }
+  .chip.builtin { background: #FFF1CF; color: #C8860A; }
+  .save-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .save-row input { flex: 1; background: #F6F9FC; border: none; border-radius: 14px; padding: 12px 14px; font-size: 14px; }
+  .save-btn { background: #fff; color: #5FBF6B; border: 2px solid #A8E6A1; border-radius: 14px; padding: 0 16px; font-size: 14px; font-weight: 800; }
+  .sheet-foot { padding: 14px 20px calc(20px + env(safe-area-inset-bottom)); border-top: 1px solid #f0f4f8; }
+  .abtn { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 50px; border-radius: 25px; font-size: 17px; font-weight: 800; color: #fff; background: #5FBF6B; box-shadow: 0 4px 0 rgba(0,0,0,.08); }
+  .abtn:active { transform: translateY(2px); box-shadow: none; }
+  .abtn.disabled { opacity: .5; }
+
+  /* 结果弹窗 */
+  .result-mask { position: absolute; inset: 0; background: rgba(20,28,40,.5); z-index: 30; display: none; align-items: center; justify-content: center; padding: 24px; }
+  .result-mask.on { display: flex; }
+  .dialog { width: 100%; max-width: 330px; background: #fff; border-radius: 22px; display: flex; flex-direction: column; max-height: 70%; overflow: hidden; animation: pop .26s cubic-bezier(.2,1.3,.5,1); }
+  @keyframes pop { from { transform: scale(.8); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+  .d-head { display: flex; align-items: center; gap: 8px; padding: 18px 18px 12px; border-bottom: 1px solid #f0f4f8; }
+  .d-title { flex: 1; font-size: 18px; font-weight: 800; }
+  .d-date { font-size: 12px; color: #9AA5B1; font-weight: 600; }
+  .d-close { width: 28px; height: 28px; border-radius: 50%; background: #F0F4F8; color: #6A7480; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .d-body { padding: 16px 18px; overflow-y: auto; font-size: 14px; line-height: 1.7; white-space: pre-wrap; color: #3A4350; }
+  .spinner { width: 26px; height: 26px; border: 3px solid #cfe9d3; border-top-color: #5FBF6B; border-radius: 50%; animation: spin .8s linear infinite; margin: 40px auto; }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  .err { color: #C0392B; font-size: 14px; text-align: center; padding: 30px 16px; line-height: 1.6; }
+  .toast { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(40,50,60,.9); color: #fff; font-size: 13px; padding: 9px 16px; border-radius: 20px; z-index: 40; opacity: 0; transition: opacity .2s; }
+  .toast.on { opacity: 1; }
+</style>
+</head>
+<body data-page-node-id="zR2gNEwkCfdchQMEqFjK39">
+<div class="phone" data-page-node-id="OSRy0MLp8AjKhX4lhSGJ0z">
+  <div class="statusbar" data-page-node-id="fTBySXLewFkn5rhIdFJH7G"><span data-page-node-id="JMFRusOgfwia2Rol9t53a0">9:41</span><span data-page-node-id="i8GRnCDBkyNmb3kfrETJ7T">📶 🔋</span></div>
+  <div class="nav" data-page-node-id="lSBkyXUl4C2bP6LwfcAjJQ">每日打卡</div>
+  <div class="screen" id="screen" data-page-node-id="floJ7RjCGai0bvuDwfmrMp">
+    <div class="card" data-page-node-id="BXauQf9Mircl9TgYVKndAt">
+      <div class="card-title" data-page-node-id="ah5CNrNyOUus9RqxWY18MG"><span class="dot" data-page-node-id="nicFncxnCII4kV6HoZjwU9"></span>今日任务</div>
+      <div class="task" data-page-node-id="e29lNuA6bWP8ukcNjjIKbS"><div class="ticon" style="background:#FFB3C6" data-page-node-id="KYKkXTKi40HiOF1um5xbIp">语</div><div class="tbody" data-page-node-id="x7jLdDPyNYV6mB7RE7HwfO"><div class="tname" data-page-node-id="mxMAcrGNltpDrvX3kGxWOI">语文任务</div><div class="tstatus" data-page-node-id="pPtmwwpUpfIj0b6TanhsrT">已完成 · 17:05 · 用时 22 分钟</div></div><div class="taction" data-page-node-id="SxSUj5YVLLYrbsqlLEWOaM">已完成</div></div>
+      <div class="task" data-page-node-id="0GLOEPGDI1wrj8aKXEEvun"><div class="ticon" style="background:#9AD5FF" data-page-node-id="QJDH00o98BEPTq19lHpgys">数</div><div class="tbody" data-page-node-id="JY8pBPyA4OQvRGLt55O8q1"><div class="tname" data-page-node-id="dZr5CHmm3C1PQwopsDHhYA">数学任务</div><div class="tstatus" data-page-node-id="4OxBmTXiVTC7swPZbIJDGn">已完成 · 17:20 · 用时 15 分钟</div></div><div class="taction" data-page-node-id="h5tQZNYlPfJ57hFiEyEMgJ">已完成</div></div>
+      <div class="task" data-page-node-id="U9s8AA5E32V9nH66KS81X3"><div class="ticon" style="background:#A8E6A1" data-page-node-id="s1uoVUmnzdQnmsvtExYvHA">英</div><div class="tbody" data-page-node-id="HLT2nz5qpcZOczM8vUb4CY"><div class="tname" data-page-node-id="eOGxslVGgrLTJbgnKhDqdS">英语任务</div><div class="tstatus" style="color:#999" data-page-node-id="ASR3GCfBh9u0XSlCdUTUPg">还没打卡</div></div><div class="taction" style="background:#F0F4F8;color:#999" data-page-node-id="k0aJa1OQK91Xbb2bh5Y3je">待打卡</div></div>
+    </div>
+
+    <div class="entry" onclick="alert('跳转老师评语页')" data-page-node-id="S9nt9GrReLKqnsSVWfSN48">✏️ 老师评语分析 ›</div>
+    <div class="entry ai" id="aiEntry" data-page-node-id="HG2fWrVvSpoEAmBneBk3Zj">🤖 AI 角色分析 ›</div>
+  </div>
+
+  <!-- 底部抽屉 -->
+  <div class="mask" id="mask" data-page-node-id="1ndhDRWslN1UiIH4nxHfwW"></div>
+  <div class="sheet" id="sheet" data-page-node-id="mgIA1CM5uw3pmM4v0vzYAs">
+    <div class="sheet-head" data-page-node-id="3yZaPAem5n3zNbUdhW21Jy">
+      <div class="sheet-title" data-page-node-id="o1zEDjaWxFYVnpAf73Spvw">🤖 AI 角色分析</div>
+      <div class="sheet-close" id="sheetClose" data-page-node-id="YR1hE8ud0BtqIJ3hITiDl0">✕</div>
+    </div>
+    <div class="sheet-body" data-page-node-id="YDHTcfV6GIjY2ScfE8EHzE">
+      <div class="scope" data-page-node-id="RVfOvynIWvhEvKus0YhFec">将分析：2026年9月2日 星期三（今日）</div>
+      <textarea id="prompt" placeholder="例如：你是一位严厉的数学老师，专抓孩子计算粗心、进退位错误，给出可落地的纠正动作"></textarea>
+      <div class="helper" data-page-node-id="xqfYLDFgDQDbrP0CFE5XSt">提示词决定 AI 以什么身份、怎么分析，越具体越好</div>
+      <div class="chip-row" id="chips" data-page-node-id="utHTrQUXLmCuJ7zBijkroJ"></div>
+      <div class="save-row" data-page-node-id="YXplqq5HLcFhJZIhBwuM8d">
+        <input id="roleName" placeholder="给这个角色起个名" data-page-node-id="nOI4pr05lz3BvqzgmxsHwN" />
+        <button class="save-btn" id="saveBtn" data-page-node-id="OwFEYV7JSeFfy7BxDsqbcT">存为预设</button>
+      </div>
+    </div>
+    <div class="sheet-foot" data-page-node-id="8gvdqERhe58MQ6YUBs7ldj">
+      <div class="abtn disabled" id="analyzeBtn" data-page-node-id="mB22HexzSqpNGEYJ2Wcqt9">🤖 开始分析</div>
+    </div>
+  </div>
+
+  <!-- 结果弹窗 -->
+  <div class="result-mask" id="resultMask" data-page-node-id="JeaJdHNfFYZFy9E3dR9zuy">
+    <div class="dialog" data-page-node-id="3B3UygaC5mORFkPEhbJiVv">
+      <div class="d-head" data-page-node-id="KAbPRtFp2lGWhKvB8CklVU">
+        <div class="d-title" data-page-node-id="TJxfD4RPSfA18RHleVi6gq">AI 分析报告</div>
+        <div class="d-date" id="resultDate" data-page-node-id="0OaG88s6FLUYzhPLjqIzq5">2026年9月2日</div>
+        <div class="d-close" id="resultClose" data-page-node-id="vLWeswnZTNUwFMzyF6rBvS">✕</div>
+      </div>
+      <div class="d-body" id="resultBody" data-page-node-id="1YpkrU2U4x8C49kDgRcwD8">
+        <div class="spinner" data-page-node-id="hDwP8rARzTRy5JbFk4H32Y"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" data-page-node-id="AHCOGShURIqByhCOAm0V8B"></div>
+</div>
+
+<script>
+  const builtins = [
+    { name: '温和鼓励型', prompt: '你是一位温和、会鼓励孩子的家庭教育顾问，先肯定做得好的地方，再给一条明天能落地的改进。' },
+    { name: '严厉纠错型', prompt: '你是一位严格的学科老师，直接点出当前最该纠正的1个问题，并给出今天就能执行的训练动作。' },
+    { name: '习惯养成导师', prompt: '你专注学习行为习惯，分析打卡规律性、拖延与中断，给出培养稳定习惯的具体策略。' }
+  ];
+  let roles = []; // 用户自定义预设（模拟按孩子存储）
+
+  const $ = id => document.getElementById(id);
+  function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),1600); }
+
+  function renderChips(){
+    const box = $('chips'); box.innerHTML='';
+    roles.forEach((r,i)=>{
+      const c=document.createElement('div'); c.className='chip';
+      c.innerHTML = r.name + ' <span class="x" data-i="'+i+'">✕</span>';
+      c.onclick = (e)=>{ if(e.target.classList.contains('x')){ roles.splice(i,1); renderChips(); toast('已删除预设'); } else { $('prompt').value=r.prompt; syncBtn(); } };
+      box.appendChild(c);
+    });
+    builtins.forEach(b=>{
+      const c=document.createElement('div'); c.className='chip builtin'; c.textContent=b.name;
+      c.onclick=()=>{ $('prompt').value=b.prompt; syncBtn(); };
+      box.appendChild(c);
+    });
+  }
+  function syncBtn(){ $('analyzeBtn').classList.toggle('disabled', !$('prompt').value.trim()); }
+
+  $('aiEntry').onclick = ()=>{ $('mask').classList.add('on'); $('sheet').classList.add('on'); };
+  $('mask').onclick = ()=>{ $('mask').classList.remove('on'); $('sheet').classList.remove('on'); };
+  $('sheetClose').onclick = ()=>{ $('mask').classList.remove('on'); $('sheet').classList.remove('on'); };
+  $('prompt').oninput = syncBtn;
+  $('saveBtn').onclick = ()=>{
+    const name=$('roleName').value.trim(), prompt=$('prompt').value.trim();
+    if(!prompt){ toast('请先写提示词'); return; }
+    if(!name){ toast('给角色起个名'); return; }
+    roles.push({ name, prompt }); $('roleName').value=''; renderChips(); toast('已存为预设');
+  };
+  $('analyzeBtn').onclick = ()=>{
+    if($('analyzeBtn').classList.contains('disabled')) return;
+    $('mask').classList.remove('on'); $('sheet').classList.remove('on');
+    $('resultMask').classList.add('on'); $('resultBody').innerHTML='<div class="spinner"></div>';
+    // 模拟云函数返回
+    setTimeout(()=>{
+      $('resultBody').textContent =
+`【角色视角】严厉的数学老师
+
+整体判断：
+今日数学已打卡（用时15分钟），但英语未打卡，存在"偏科式中断"苗头，需警惕。
+
+最该纠正的1点：
+数学计算仍偏慢，建议重点盯"进退位"与"审题漏字"两类错误，而非题量。
+
+今天就能做的动作：
+1. 用5分钟让孩子口述一道错题的解题步骤，逼出思维断点。
+2. 英语今晚必须补打卡，避免连续中断形成习惯缺口。
+
+⚠️ 若不干预：英语长期缺勤会拉低整体语感，且中断会惯性化。`;
+    }, 1200);
+  };
+  $('resultClose').onclick = ()=> $('resultMask').classList.remove('on');
+  $('resultMask').onclick = (e)=>{ if(e.target===$('resultMask')) $('resultMask').classList.remove('on'); };
+
+  renderChips(); syncBtn();
+</script>
+</body>
+</html>

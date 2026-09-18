@@ -1,0 +1,9 @@
+{
+  "name": "webAdminQuery",
+  "version": "1.0.0",
+  "description": "家长数据看板·只读代理云函数（跨 openid 聚合，token 校验，纯读）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  }
+}

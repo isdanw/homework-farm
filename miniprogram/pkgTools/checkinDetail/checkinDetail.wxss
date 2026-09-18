@@ -1,0 +1,97 @@
+/* ===== 打卡详情页 ===== */
+
+/* 卡片标题右侧的「学科画像」入口 */
+.tp-link {
+  margin-left: auto;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #3FA9F5;
+  padding: 4rpx 16rpx;
+  border-radius: 18rpx;
+  background: #EAF4FF;
+}
+.tp-link:active { background: #D8EBFF; }
+
+/* 课表联动提示 */
+.cd-course {
+  background: #F2FAFF; border: 2rpx solid var(--c-blue);
+  color: var(--c-blue-deep);
+  border-radius: 20rpx; padding: 16rpx 22rpx;
+  font-size: 27rpx; font-weight: 700; margin-bottom: 22rpx;
+}
+
+/* 今日导学任务（成长计划同步） */
+.cd-plan {
+  display: flex; align-items: center; gap: 16rpx;
+  background: #F6F3FF; border: 2rpx solid #CBBFF0;
+  border-radius: 20rpx; padding: 18rpx 22rpx;
+  margin-bottom: 22rpx;
+}
+.cd-plan-tag {
+  flex-shrink: 0; font-size: 22rpx; font-weight: 700; color: #fff;
+  background: #9B7BF0; border-radius: 999rpx; padding: 4rpx 16rpx;
+}
+.cd-plan-body { flex: 1; min-width: 0; }
+.cd-plan-task { font-size: 28rpx; font-weight: 700; color: var(--c-text); word-break: break-word; }
+.cd-plan-stage { font-size: 23rpx; color: #8A7BC0; margin-top: 4rpx; }
+/* 任务卡右侧动作：计划（回链定位）/ 导学（进入 AI 导学） */
+.cd-plan-acts { flex-shrink: 0; display: flex; align-items: center; gap: 10rpx; }
+.cd-plan-act {
+  font-size: 23rpx; font-weight: 700; color: #8A7BC0; white-space: nowrap;
+  background: #fff; border: 2rpx solid #DCD2F7; border-radius: 999rpx;
+  padding: 8rpx 18rpx;
+}
+.cd-plan-act-on { color: #fff; background: #9B7BF0; border-color: #9B7BF0; }
+.cd-plan-act:active { opacity: .75; }
+
+.done-card { background: #F4FFF2; }
+.dc-title { font-size: 34rpx; font-weight: 800; color: #3B6D11; }
+.dc-sub { font-size: 25rpx; color: var(--c-sub); margin-top: 8rpx; }
+
+.cd-tip { margin-bottom: 14rpx; }
+
+/* AI 分析卡片内「当前角色」标签（语文固定显示） */
+.role-tag {
+  display: inline-block;
+  margin-left: 14rpx;
+  vertical-align: middle;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #B3621B;
+  background: #FFF3E0;
+  border: 2rpx solid #FFD9A8;
+  border-radius: 22rpx;
+  padding: 4rpx 16rpx;
+}
+
+.cd-textarea {
+  min-height: 200rpx; font-size: 32rpx; line-height: 1.7;
+  background: #F6F9FC; margin-bottom: 8rpx;
+}
+.cd-count { text-align: right; font-size: 24rpx; color: var(--c-sub); margin-bottom: 16rpx; }
+
+/* 用时输入：确保占位文字完整显示 */
+.cd-minutes-input {
+  height: 96rpx;
+  line-height: 56rpx;
+  padding: 20rpx 24rpx;
+}
+
+/* AI 分析结果 */
+.ai-result { margin-top: 22rpx; }
+.sect { margin-bottom: 20rpx; }
+.sect-h { font-size: 30rpx; font-weight: 800; color: var(--c-text); margin-bottom: 6rpx; }
+.sect-b {
+  font-size: 28rpx; line-height: 1.75; color: #5A5A5A;
+  background: #F6F9FC; border-radius: 18rpx; padding: 18rpx 22rpx;
+}
+.ai-plain {
+  font-size: 28rpx; line-height: 1.8; color: #5A5A5A;
+  background: #F6F9FC; border-radius: 18rpx; padding: 20rpx 22rpx;
+  white-space: pre-wrap;
+}
+
+/* 底部操作 */
+.cd-foot { margin-top: 8rpx; }
+.cd-row { display: flex; gap: 20rpx; }
+.cd-row .btn { flex: 1; }

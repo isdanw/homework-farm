@@ -12,3 +12,26 @@ $RECYCLE.BIN/
 
 # Node.js
 node_modules/
+
+# CI 私钥（勿提交到仓库）
+private.key
+private.*.key
+
+# 环境变量
+.env
+.env.local
+
+# 工具目录
+.edgeone/
+.workbuddy/
+.codebuddy/
+
+# 临时文件
+16fba2d39f7473bde31548c7d6c97fa1/
+_tmp_*/
+
+# 死资源暂存（attic，不入库；原件仍在 git 历史中）
+_attic_dead_audio/
+
+# CloudBase CLI 状态目录（含临时密钥 tmpSecretId/tmpSecretKey/refreshToken，严禁提交）
+.tcb_home/

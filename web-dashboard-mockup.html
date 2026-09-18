@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="0AZoEFfddrL5uAKVuXgFy1">
+<head data-page-node-id="JbdzjBuCAxC6EOYUXNBtaC">
+<meta charset="UTF-8" data-page-node-id="KMjnY2PWUStfUk7YG8rDv6">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="5A8CbuFAj0JJLOsWBQJJD4">
+<title>家长数据看板 · 重设计原型 V2</title>
+<!-- 本工作台为只读云数据控制台原型（单文件 HTML，零外部依赖，待接入 webAdminQuery 代理） -->
+<style>
+  :root{
+    --navy:#1d2b53; --gold:#c9a227; --gold-soft:#faf3dd;
+    --bg:#f7f8fa; --card:#fff; --line:#eaecef; --line2:#f0f1f4;
+    --ink:#1c2130; --ink2:#4b5265; --mut:#8b92a5;
+    --green:#2e7d32; --green-soft:#e6f2e7;
+    --amber:#b26a00; --amber-soft:#fdf1de;
+    --blue:#1565c0; --blue-soft:#e7eff9;
+    --red:#c0392b; --red-soft:#fbeae7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:100vh}
+  /* ---- 侧边栏（PC） ---- */
+  .side{width:224px;flex:none;background:var(--navy);color:#fff;padding:20px 0;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease;z-index:30}
+  .brand{padding:0 20px 16px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:8px}
+  .brand b{font-size:15px;letter-spacing:.03em}
+  .brand span{display:block;font-size:11px;color:#e3cf8f;margin-top:3px;letter-spacing:.18em}
+  .navgrp{font-size:11px;color:#8b92a5;padding:14px 20px 6px;letter-spacing:.12em}
+  .nav a{display:flex;align-items:center;gap:11px;padding:10px 20px;color:#d9dfeb;text-decoration:none;font-size:13.5px;border-left:3px solid transparent;cursor:pointer}
+  .nav a svg{width:17px;height:17px;flex:none;stroke:#aeb6c9;fill:none;stroke-width:1.7}
+  .nav a:hover{background:rgba(255,255,255,.06)}
+  .nav a.on{background:rgba(201,162,39,.16);border-left-color:var(--gold);color:#fff;font-weight:700}
+  .nav a.on svg{stroke:var(--gold)}
+  /* ---- 主区 ---- */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{background:#fff;border-bottom:1px solid var(--line);padding:13px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+  .topbar .left{display:flex;align-items:center;gap:12px;min-width:0}
+  .hamb{display:none;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;align-items:center;justify-content:center}
+  .hamb svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2}
+  .topbar h1{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .sub{font-size:12px;color:var(--mut);margin-top:1px}
+  .tools{display:flex;gap:8px;align-items:center;flex:none}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{border:0;background:#fff;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink2)}
+  .seg button.on{background:var(--navy);color:#fff}
+  .sel{border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:12.5px;color:var(--ink2);background:#fff;max-width:130px}
+  .content{padding:20px 22px 90px;max-width:1180px;width:100%}
+  /* ---- 今日待关注 ---- */
+  .alerts{background:#fff;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;padding:14px 16px;margin-bottom:18px}
+  .alerts .hd{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .alerts .hd svg{width:16px;height:16px;stroke:var(--red);fill:none;stroke-width:1.8}
+  .arow{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line2);font-size:13px}
+  .arow:last-child{border-bottom:none}
+  .arow .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .arow .dot.r{background:var(--red)} .arow .dot.a{background:var(--amber)}
+  .arow .txt{flex:1;color:var(--ink2)}
+  .arow .txt b{color:var(--ink)}
+  .arow .btn{flex:none;border:1px solid var(--navy);color:var(--navy);background:#fff;border-radius:8px;padding:5px 13px;font-size:12px;cursor:pointer;white-space:nowrap}
+  .arow .btn:hover{background:var(--navy);color:#fff}
+  /* ---- KPI ---- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:13px;margin-bottom:18px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:15px 16px}
+  .kpi .lab{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:6px}
+  .kpi .lab svg{width:14px;height:14px;stroke:var(--mut);fill:none;stroke-width:1.7}
+  .kpi .num{font-size:26px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums}
+  .kpi .hint{font-size:11.5px;color:var(--ink2);margin-top:3px}
+  .kpi.g .num{color:var(--green)} .kpi.a .num{color:var(--amber)} .kpi.n .num{color:var(--navy)}
+  /* ---- 卡片 ---- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px 18px}
+  .card h3{font-size:14px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .card h3::before{content:"";width:4px;height:15px;border-radius:3px;background:var(--gold);display:inline-block}
+  /* 柱状 */
+  .brow{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:4px 0}
+  .brow .nm{width:72px;flex:none;color:var(--ink2)}
+  .brow .track{flex:1;height:12px;background:#eef0f4;border-radius:6px;overflow:hidden}
+  .brow .track i{display:block;height:100%;background:linear-gradient(90deg,var(--navy),var(--gold))}
+  .brow .v{width:32px;flex:none;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  /* 表格 */
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{background:#f6f7f9;text-align:left;padding:8px 10px;font-weight:700;color:var(--ink2);border-bottom:2px solid var(--line);white-space:nowrap}
+  td{padding:8px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;padding:1px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .t-g{background:var(--green-soft);color:var(--green)} .t-a{background:var(--amber-soft);color:var(--amber)}
+  .t-b{background:var(--blue-soft);color:var(--blue)} .t-n{background:#eef0f6;color:var(--navy)}
+  .t-r{background:var(--red-soft);color:var(--red)}
+  .mut{color:var(--mut);font-size:11.5px}
+  .chip{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:20px;padding:7px 16px;font-size:13px;cursor:pointer}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
+  /* 活动流 */
+  .fi{display:flex;gap:11px;padding:9px 0;border-bottom:1px dashed var(--line2);font-size:12.5px}
+  .fi:last-child{border-bottom:none}
+  .fi .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);margin-top:6px;flex:none}
+  .fi .t{color:var(--mut);font-size:11px;flex:none;width:48px}
+  .fi b{color:var(--ink)}
+  .note{background:var(--gold-soft);border-left:4px solid var(--gold);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--ink2);margin-bottom:16px}
+  /* 视图切换 */
+  .view{display:none} .view.on{display:block}
+  /* 移动端底部 Tab */
+  .tabbar{display:none}
+  .overlay{display:none}
+  @media(max-width:900px){
+    .side{position:fixed;left:0;top:0;transform:translateX(-100%);box-shadow:0 0 30px rgba(0,0,0,.25)}
+    .side.open{transform:translateX(0)}
+    .hamb{display:flex}
+    .overlay.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:25}
+    .grid2{grid-template-columns:1fr}
+    .tabbar{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+    .tabbar a{flex:1;text-align:center;padding:8px 0 6px;color:var(--mut);text-decoration:none;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px}
+    .tabbar a svg{width:21px;height:21px;stroke:var(--mut);fill:none;stroke-width:1.7}
+    .tabbar a.on{color:var(--navy)} .tabbar a.on svg{stroke:var(--gold)}
+    .content{padding:16px 14px 86px}
+    .sel{max-width:96px}
+    .tools .seg button{padding:6px 9px}
+    /* 表格转卡片 */
+    .tbl-card thead{display:none}
+    .tbl-card tr{display:block;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:10px}
+    .tbl-card td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0;font-size:12.5px}
+    .tbl-card td::before{content:attr(data-l);color:var(--mut);font-weight:600;flex:none}
+    .tbl-card td>*{text-align:right}
+  }
+</style>
+</head>
+<body data-page-node-id="s9qgWGmukPCqBfErA4QOob">
+<div class="app" data-page-node-id="DpGQZ7GDCpEVSfJ2AddQwC">
+  <div class="overlay" id="overlay" data-page-node-id="FxmMabjGe4o836L3SBIKIN"></div>
+  <!-- 侧边栏 -->
+  <aside class="side" id="side" data-page-node-id="dSQJ92EDhBQgu4ITfCvFda">
+    <div class="brand" data-page-node-id="PDLgDMCip4xlrGI2qODbVX"><b data-page-node-id="PHHsLkJGl7MuCYeK3kt4KE">家长数据看板</b><span data-page-node-id="FVVVhSWD7CGvDJRCS652Yz">HW-FARM · V2</span></div>
+    <div class="navgrp" data-page-node-id="A39kXdBXpgbEfd2rAdnX1A">总览</div>
+    <nav class="nav" data-page-node-id="RALoZOZWWBalS9VUWS5hI4">
+      <a class="on" data-v="overview" data-page-node-id="dGh1vEgKAvckY3yB2D44p2"><svg viewBox="0 0 24 24" data-page-node-id="lRJfHYaMpHSkfVhzBy9ZLX"><rect x="3" y="3" width="7" height="9" rx="1.5" data-page-node-id="zY8cZG0oyiwpMIG2Cm8iGq"/><rect x="14" y="3" width="7" height="5" rx="1.5" data-page-node-id="nCjQFGpRSfx5ha8GEWDJTA"/><rect x="14" y="11" width="7" height="10" rx="1.5" data-page-node-id="2SHAoB5jWrwK3zrocyGQlr"/><rect x="3" y="15" width="7" height="6" rx="1.5" data-page-node-id="eVFLMG9h06nE4CknxrDudy"/></svg>概览 Dashboard</a>
+    </nav>
+    <div class="navgrp" data-page-node-id="dm7xJcFLvdJesKyQnYGFOo">儿童</div>
+    <nav class="nav" data-page-node-id="L0JqWBJwcN8xKfoC3gIpbI">
+      <a data-v="profile" data-page-node-id="rA2lsCEDVoF3DXyfBp8wGN"><svg viewBox="0 0 24 24" data-page-node-id="VQCMK0gFjY527PAxYxDSvy"><circle cx="12" cy="8" r="4" data-page-node-id="uyWWwSWzr9BkDeLrk0zTCp"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" data-page-node-id="W9ouKnhfYEkBkksI4EEKEM"/></svg>儿童画像</a>
+    </nav>
+    <div class="navgrp" data-page-node-id="8ks6duP5A5eEa4HWfWrEBM">农场打卡</div>
+    <nav class="nav" data-page-node-id="oiwLHp83qvWupuEkVHdw2q">
+      <a data-v="farm" data-page-node-id="jcfzjOePkp7gmHj5YqmArW"><svg viewBox="0 0 24 24" data-page-node-id="PjE0w7gLIvY8NgCxgCZiru"><path d="M12 21V11" data-page-node-id="n5FFaQyjN98ZeUwLGVmC0T"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6Z" data-page-node-id="oSdUyPINQiMf2DeelcfvhS"/><path d="M12 13c0-3 3-5 7-5 0 4-3 6-7 5Z" data-page-node-id="OYKmLw0JeDGoWPBvPMQoGS"/></svg>打卡与农场</a>
+    </nav>
+    <div class="navgrp" data-page-node-id="q3UrJAdUiHWEoRGhETiNkK">全科导学</div>
+    <nav class="nav" data-page-node-id="fuO0sfDd4hREe7wB7QH2dq">
+      <a data-v="tutor" data-page-node-id="FHnf6k2OvxXPLWqynBdRVV"><svg viewBox="0 0 24 24" data-page-node-id="3OydspVKjEF7Z6zG8dChv6"><path d="M4 5h16v11H7l-3 3Z" data-page-node-id="coF2EcDUTPKzrAzb3UR2nE"/><path d="M8 9h8M8 12h5" data-page-node-id="L2R0a8Qip9zSKkJ5yxVlla"/></svg>导学数据</a>
+    </nav>
+    <div class="navgrp" data-page-node-id="TLjT05FUbuYvZdDPup7cbh">设置</div>
+    <nav class="nav" data-page-node-id="6Hf5vck4xlN5G6eT33xBOK">
+      <a data-v="set" data-page-node-id="6AD7JZESAb3csGxfPFLUq1"><svg viewBox="0 0 24 24" data-page-node-id="EuPpnhZ5H7WIiuDzP8G6zd"><circle cx="12" cy="12" r="3.2" data-page-node-id="g0DRct3nWdP7YHuRpoelRA"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" data-page-node-id="sCiPH04WtfspMqDsMjQWZK"/></svg>环境与口令</a>
+    </nav>
+  </aside>
+
+  <main class="main" data-page-node-id="OBB5LqdtSXhLHyQ7zvQyR3">
+    <div class="topbar" data-page-node-id="L63yGlmJ9r6hoiAJcrB80g">
+      <div class="left" data-page-node-id="E8Y0UPWtBPA4Rv2Qti49W0">
+        <button class="hamb" id="hamb" data-page-node-id="yZhoUNLFBYsDg5cNMhEuL5"><svg viewBox="0 0 24 24" data-page-node-id="mxhnm9gigDJaMiXaHdzC76"><path d="M4 7h16M4 12h16M4 17h16" data-page-node-id="Kiye3EVhbDqobYl6O6bNa4"/></svg></button>
+        <div data-page-node-id="K3W6by75RNTnz4NM8BAZXL"><h1 id="title" data-page-node-id="PnmWzVv2K9HyO5pKGy0HtT">概览 Dashboard</h1><div class="sub" id="sub" data-page-node-id="WjqAkcMXEnC2OZtacWmTuQ">全家当日 / 累计核心指标 · 只读</div></div>
+      </div>
+      <div class="tools" data-page-node-id="G47s6he2RohmnLJSHqWlTI">
+        <div class="seg" id="range" data-page-node-id="JPXXqLVfsHqsG2aJrA9FFr"><button data-page-node-id="ZWLTxyCBAe2NSpEVKkR5nM">今日</button><button class="on" data-page-node-id="bnUyydyeqylfNT8tTNWjj5">7日</button><button data-page-node-id="sIQsQnDSy6Eo5XD6Rthc9C">30日</button></div>
+        <select class="sel" id="child" data-page-node-id="8bWPnmrEMMthcXZTGbE8fx"><option data-page-node-id="1zaRfmCoSXTNdQKEAz1AX8">全部孩子</option><option data-page-node-id="r5mAOLfuqYPBUeKQxJRYlN">加一</option><option data-page-node-id="IA2TGveEXCeJD0YwDQJCzu">妹妹</option></select>
+      </div>
+    </div>
+
+    <div class="content" data-page-node-id="jc0gxIDsZysvh5OvPVAdyW">
+      <!-- 概览 -->
+      <section class="view on" id="overview" data-page-node-id="AxhrVoA56WrbtsEB5rpX3i">
+        <div id="alerts" class="alerts" data-page-node-id="tpL74LChFRkKaFZNoe6Fk4">
+          <div class="hd" data-page-node-id="fAOVtCCoE43v8SQNFA85UU"><svg viewBox="0 0 24 24" data-page-node-id="byuzDtzqKBSqCIgzxZ536W"><path d="M12 3 2 20h20Z" data-page-node-id="XUNXWGEAjKIi6mSDEdc6Am"/><path d="M12 10v5M12 17.5v.5" data-page-node-id="K2iKVFgAZ4mTL6JhWaQH1K"/></svg>今日待关注</div>
+          <div id="alertList" data-page-node-id="cavOigquUcjqAs7Leg1Hbb"></div>
+        </div>
+        <div class="kpis" id="kpiWrap" data-page-node-id="tCD3ZjS5zhDfGXzgTFwA6J"></div>
+        <div class="grid2" data-page-node-id="U4PF1VwTPMzPQs2w1tVoTH">
+          <div class="card" data-page-node-id="nV511ac4ez34HjnMMjELAh"><h3 data-page-node-id="etCO5FaYvcIwqEx8YnElWf">学科分布（会话量）</h3><div id="subjBars" data-page-node-id="uDzormALNf3VBWXpB8VH60"></div></div>
+          <div class="card" data-page-node-id="r81IuwXZarjyZ5L7HFiAd0"><h3 data-page-node-id="2FSCUwGM4s2GqGkd4Kf3Zu">错因分布（E1–E9）</h3>
+            <div style="display:flex;gap:16px;align-items:center" data-page-node-id="Q4iH3tygLYHO5Spuetbgtd">
+              <svg id="donut" viewBox="0 0 140 140" width="140" height="140" style="flex:none" data-page-node-id="Jq5fS3E2AePKIzDRLHQ7jT"></svg>
+              <div id="errLegend" style="font-size:12.5px;flex:1;color:var(--ink2)" data-page-node-id="YDIN5HfMadqDD32p1w9j8M"></div>
+            </div>
+          </div>
+        </div>
+        <div class="grid2" data-page-node-id="6Ra54H7PiaFIUfAhcoiHfD">
+          <div class="card" data-page-node-id="Iu2Tz5uT6KZZFNy3cQvGpD"><h3 data-page-node-id="G9NaNlDMFLT3zotmrMcD4o">近 7 日打卡率</h3>
+            <svg id="trend" viewBox="0 0 520 180" width="100%" height="170" style="display:block" data-page-node-id="pl02lmE2yPeIPCaeCeGs7q"></svg>
+            <div class="mut" style="margin-top:6px" data-page-node-id="KglPNMVe1d7XYpMcELmYJS">完成=绿、未完成=金灰（学习数据非股市语义）</div>
+          </div>
+          <div class="card" data-page-node-id="a3EWUzemYX1MiS3rSrpRSZ"><h3 data-page-node-id="D41SKro8XnKOSNy5YRdnRa">最近活动流</h3><div id="activity" data-page-node-id="kolRfY3WjnoFMVObEDs7B8"></div></div>
+        </div>
+      </section>
+
+      <!-- 儿童画像 -->
+      <section class="view" id="profile" data-page-node-id="NzgpsyljVLas4rCeHv2q8M">
+        <div class="note" data-page-node-id="ueVin5xXFTYYmYvCWNfjop">「儿童画像」跨模块聚合每个孩子的核心数据（打卡 + 导学），活动≠证据≠掌握。</div>
+        <div id="childChips" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px" data-page-node-id="U9hQE2Dy8ySna7t1TiPkqI"></div>
+        <div id="profileContent" data-page-node-id="vsP9dNON3kjDGpxAH3XenE"></div>
+      </section>
+
+      <!-- 导学 -->
+      <section class="view" id="tutor" data-page-node-id="3o3X2WiZxdAvUAeJdbjxxc">
+        <div class="note" data-page-node-id="x4GcRXGOK65ha7OgBSDceU">「全科导学」模块结构示意。真实数据经 <code data-page-node-id="lqYR9v8LHhVYOiyfdqTz1q">webAdminQuery</code> 只读聚合后渲染，活动≠证据≠掌握。</div>
+        <div class="card" style="margin-bottom:14px" data-page-node-id="CJJXwPyMqr7doEGG4huX2G"><h3 data-page-node-id="cCJ4fgUDaWGPbSRmD0JDMN">错题本（tutor_mistakes）</h3>
+          <table class="tbl-card" id="mistakeTbl" data-page-node-id="cFHAQ1ZFTXpOcwkuX1wSIi"><thead data-page-node-id="CulphNiOSuyCoIeibp7ogz"><tr data-page-node-id="rMWyOCZShEIk7U0Gx5OeXH"><th data-page-node-id="rZCZfuCz9nMRO2T4RjkAHP">学科</th><th data-page-node-id="AGyIzBnO7UCiq4e5RAgV46">主题</th><th data-page-node-id="ZcPfqPp21PM5DukCA4ZEjl">错因</th><th data-page-node-id="AVVo3TMYVHeE2w18BsfkWI">状态</th><th data-page-node-id="91aMko4N1MftsQ9eKgSqa3">时间</th></tr></thead><tbody data-page-node-id="1HpOnkHiiycIxKYkOdtPjC"></tbody></table>
+        </div>
+        <div class="grid2" data-page-node-id="AfAK4qiDcxcsRMNJE9OFl2">
+          <div class="card" data-page-node-id="YDF8TBDnqJSG4oXiKLjyRg"><h3 data-page-node-id="Zzh1wYgzQUyDIiWibhH1Mr">复习窗口（tutor_reviews）</h3>
+            <table class="tbl-card" id="reviewTbl" data-page-node-id="iWlIMPsOhCaW3eVeZByK7B"><thead data-page-node-id="qp79VRcRyvqQpOL7ifBRJ7"><tr data-page-node-id="B5ao2NxLG7FZQqYIp4CpWK"><th data-page-node-id="46TuFYaxxpiJpEjWZE50kV">主题</th><th data-page-node-id="WlO3j0MEVVQ4uXQ9cBvGIZ">档位</th><th data-page-node-id="67SXUnPV9UEM5Nu0VHeI2s">到期</th><th data-page-node-id="4Y0gG06KeAg4VoRcx4a1hi">状态</th></tr></thead><tbody data-page-node-id="lyYNXH8dQTwRAX31taRGI3"></tbody></table>
+          </div>
+          <div class="card" data-page-node-id="dmrCroizOasbeVrhDKsHvP"><h3 data-page-node-id="8JDhuQTOpFYw327O7LzXHB">掌握证据（tutor_evidence·仅 passed）</h3>
+            <table class="tbl-card" id="evidTbl" data-page-node-id="FDUIYxBQeELagWoPepfnOh"><thead data-page-node-id="5q9ATFgWW33w9v2IaC6iI3"><tr data-page-node-id="VzskxalR0kWkyFZIy6y98b"><th data-page-node-id="7WrduG49t0Q8DUdWXiVSUA">学科</th><th data-page-node-id="CJc8H6CI1lEneUJSBCEqo8">主题</th><th data-page-node-id="UEv5v7ShQjOzLkkqsSSoch">正确率</th><th data-page-node-id="gLL2mrEYF3CZ2vtqyntQOw">时间</th></tr></thead><tbody data-page-node-id="ycGA0GPMSV6lzLZeqNP3Rm"></tbody></table>
+            <div class="mut" style="margin-top:8px" data-page-node-id="fObdaI5wdEXtBzPyhWOqdW">仅 <code data-page-node-id="IlHuOjo1WGP7aozFjUX9V4">passed=true</code> 计入掌握；订正/会话不在此列。</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 农场 -->
+      <section class="view" id="farm" data-page-node-id="xcokfK8FcuGy6VS6CMvXgv">
+        <div class="note" data-page-node-id="abVjeGkP9gdmheZ9EiPiRO">「农场打卡」模块示意：打卡矩阵 / 完成趋势 / 农场状态 / 惩罚结算 / 行为事件。</div>
+        <div class="card" data-page-node-id="O8yUpVTE9xlj4swwf4KNYh"><h3 data-page-node-id="6WyTw8KBypsIvQxC8eqY0x">惩罚结算（hw_farm_settle）</h3>
+          <table class="tbl-card" id="settleTbl" data-page-node-id="WuBVLWGL5fUx5AAEGMmtli"><thead data-page-node-id="ujK5sEh3eo65WIvL6kMVFq"><tr data-page-node-id="GL79skmqFqG9PdVpbw3wcv"><th data-page-node-id="AfLHoEg5HzodOj4U8TaQHg">日期</th><th data-page-node-id="eJIXjMObGguCqIQHkgOFpf">漏科</th><th data-page-node-id="7fz5Ys47CWDNWtxJDNGBhG">等级</th><th data-page-node-id="1qgoHl2dnVWZQDExta2kdA">小狗熊</th><th data-page-node-id="zV3UPAF10KqwT6uUOzAUm1">被偷金币</th><th data-page-node-id="q4yAZht6KBBOiGhy3PVivz">枯萎</th></tr></thead><tbody data-page-node-id="bLIy8UW90UIKGfiSVImkmL"></tbody></table>
+        </div>
+      </section>
+
+      <!-- 设置 -->
+      <section class="view" id="set" data-page-node-id="2hBkj4UrRSf0o4xWWhkgmy">
+        <div class="card" data-page-node-id="of3RUwG9RYDlv6jStbGSOe"><h3 data-page-node-id="rtGFLmUeYHnvAQXRVxHJ0U">环境与口令</h3>
+          <p style="font-size:13px;color:var(--ink2);line-height:1.9" data-page-node-id="beAnfMwKpY7ieLJx0cgUDE">· 数据源：云开发同一环境只读代理云函数 <code data-page-node-id="Aug4jXFSArgjHOQg7IffBY">webAdminQuery</code>（管理员权限，跨 openid 聚合）。<br data-page-node-id="FAbruvNft2u3BtB3lvbTeY">· 访问口令：云函数环境变量 <code data-page-node-id="scgSJXthVpkVqUdcXJaM4G">WEB_DASHBOARD_TOKEN</code>，前端请求头带入；不符即拒绝。<br data-page-node-id="2pnlHmNqZF8lDy3hMGj4GQ">· 不展示真实姓名，统一用 childId + 家长代号（与小程序脱敏一致）。<br data-page-node-id="iSmDx2NH5EMmDj2OTPUfxs">· 强制 HTTPS + 自定义域名（部署阶段配置）。<br data-page-node-id="ly2EDpLkxN1to4bGCh8Wbz">· 本原型为静态样例，未接入真实数据。</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- 移动端底部 Tab -->
+    <nav class="tabbar" id="tabbar" data-page-node-id="tGZfj0ujGI48sObBYGavig">
+      <a class="on" data-v="overview" data-page-node-id="DxITtaKo09mIoheeE8pIdm"><svg viewBox="0 0 24 24" data-page-node-id="MeTAhTjLsBngoP9fi7L7je"><rect x="3" y="3" width="7" height="9" rx="1.5" data-page-node-id="GReKTKvSzgnHLy9NYJbzTI"/><rect x="14" y="3" width="7" height="5" rx="1.5" data-page-node-id="f1iG06mBS7avH7cNW7Pwju"/><rect x="14" y="11" width="7" height="10" rx="1.5" data-page-node-id="9Ho1L7nMhUMZghidDLbBLE"/><rect x="3" y="15" width="7" height="6" rx="1.5" data-page-node-id="FiDrIuaQMaLlCK8bAV69jy"/></svg>概览</a>
+      <a data-v="profile" data-page-node-id="afQdjGPzHgM6MmXYHKZzfL"><svg viewBox="0 0 24 24" data-page-node-id="OPNvt2m88PsOOxnF27Hp2t"><circle cx="12" cy="8" r="4" data-page-node-id="7oeDqZQ2JBUdjARtgr4zkI"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" data-page-node-id="wPWkFdrZ9KrMZMWRs7MVaG"/></svg>画像</a>
+      <a data-v="farm" data-page-node-id="rAj5qTlcpLSVC8CO73UTAv"><svg viewBox="0 0 24 24" data-page-node-id="m44IFwX30bEPucvvz2o80t"><path d="M12 21V11" data-page-node-id="dEDfAeEOL9JeLbDFf5nEwj"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6Z" data-page-node-id="FgFz4tlvk1FYpWErBueKEX"/><path d="M12 13c0-3 3-5 7-5 0 4-3 6-7 5Z" data-page-node-id="bwHmGGn9NEGIDLRdlyb6v8"/></svg>农场</a>
+      <a data-v="tutor" data-page-node-id="F2cNBgggeL2ddScKRjMdW3"><svg viewBox="0 0 24 24" data-page-node-id="oZYwsThjIHjolzkMxaNDIQ"><path d="M4 5h16v11H7l-3 3Z" data-page-node-id="7yUCqlGRFQu2U1czgQU9EB"/><path d="M8 9h8M8 12h5" data-page-node-id="oQKhNrr3AUDaTDHndBGhjt"/></svg>导学</a>
+      <a data-v="set" data-page-node-id="J00R37gBIGN1AEF1WHnUx3"><svg viewBox="0 0 24 24" data-page-node-id="Hji3n2bl87S99xGlQSJhkz"><circle cx="12" cy="12" r="3.2" data-page-node-id="2lW04faY9xIWdbUfDtuCEh"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" data-page-node-id="efNDxx2HdyUITuAIRjJszB"/></svg>设置</a>
+    </nav>
+  </main>
+</div>
+
+<script>
+/* ============ 样例数据（静态原型，非真实数据） ============ */
+const SAMPLE = {
+  kpi:{checkinRate:83, sessions:142, mistakes:37, dueReviews:9, mastered:12, corrected:21},
+  subjects:[{n:'数学',v:58},{n:'语文',v:44},{n:'英语',v:28},{n:'物理',v:12},{n:'化学',v:9}],
+  errors:[{t:'E1 审题',v:8,c:'#1d2b53'},{t:'E2 概念',v:7,c:'#c9a227'},{t:'E4 关系',v:5,c:'#1565c0'},{t:'E6 推理',v:4,c:'#b26a00'},{t:'E7 信息',v:3,c:'#2e7d32'}],
+  trend:[{d:'09-02',r:70},{d:'09-03',r:62},{d:'09-04',r:80},{d:'09-05',r:88},{d:'09-06',r:90},{d:'09-07',r:92},{d:'09-08',r:83}],
+  alerts:[
+    {dot:'r', txt:'<b>数学·一元一次方程移项</b> 复习窗口今日到期', btn:'去复习'},
+    {dot:'r', txt:'<b>妹妹</b> 昨日漏 2 科，惩罚结算待关注', btn:'看结算'},
+    {dot:'a', txt:'<b>英语·时态一致性</b> 新错题待订正', btn:'看错题'}
+  ],
+  activity:[
+    {t:'09-08', html:'<b>加一</b> 完成数学导学会话 · 归因 <span class="tag t-a">E2 概念</span>'},
+    {t:'09-08', html:'语文打卡 <span class="tag t-g">完成</span> · 35 分钟'},
+    {t:'09-07', html:'英语复测达标 → <span class="tag t-g">掌握证据 +1</span>'},
+    {t:'09-07', html:'<b>妹妹</b> 漏 2 科 → 惩罚 <span class="tag t-a">小狗熊×2</span>'},
+    {t:'09-06', html:'物理复习窗口到期 <span class="tag t-a">待复习</span>'}
+  ],
+  mistakes:[
+    {s:'数学',topic:'一元一次方程移项',err:'E2 概念',errc:'t-a',st:'pending',stc:'t-n',d:'09-08'},
+    {s:'语文',topic:'文言文断句',err:'E1 审题',errc:'t-b',st:'corrected',stc:'t-g',d:'09-07'},
+    {s:'英语',topic:'时态一致性',err:'E6 推理',errc:'t-a',st:'pending',stc:'t-n',d:'09-06'},
+    {s:'物理',topic:'浮力浸没判断',err:'E4 关系',errc:'t-b',st:'corrected',stc:'t-g',d:'09-05'}
+  ],
+  reviews:[
+    {topic:'一元一次方程移项',stage:'stage 2',due:'09-09',st:'待复习',stc:'t-a'},
+    {topic:'时态一致性',stage:'stage 3',due:'09-10',st:'待复习',stc:'t-a'},
+    {topic:'文言文断句',stage:'—',due:'09-07',st:'已关闭',stc:'t-g'}
+  ],
+  evidence:[
+    {s:'英语',topic:'时态一致性',rate:'100%',d:'09-07'},
+    {s:'数学',topic:'分数加减',rate:'90%',d:'09-04'},
+    {s:'语文',topic:'近义词辨析',rate:'80%',d:'09-02'}
+  ],
+  settle:[
+    {d:'09-07',miss:2,lv:'L2',bears:2,coin:15,w:1},
+    {d:'09-03',miss:1,lv:'L1',bears:1,coin:6,w:0},
+    {d:'08-29',miss:3,lv:'L3',bears:3,coin:28,w:2}
+  ],
+  children:{
+    '加一':{code:'child_01',grade:'三年级',book:'人教版',since:'2026-08',checkinRate:90,streak:12,coins:128,bears:2,plots:8,shields:1,sessions:96,mistakes:22,dueReviews:5,mastered:9,
+      subjects:[{n:'数学',v:40},{n:'语文',v:30},{n:'英语',v:18},{n:'物理',v:8}],
+      errors:[{t:'E1 审题',v:5},{t:'E2 概念',v:5},{t:'E4 关系',v:3},{t:'E6 推理',v:3}],
+      mastery:[{s:'数学',mist:9,mas:4},{s:'语文',mist:7,mas:3},{s:'英语',mist:4,mas:2},{s:'物理',mist:2,mas:0}]},
+    '妹妹':{code:'child_02',grade:'一年级',book:'人教版',since:'2026-08',checkinRate:72,streak:5,coins:64,bears:5,plots:4,shields:0,sessions:46,mistakes:15,dueReviews:4,mastered:3,
+      subjects:[{n:'数学',v:18},{n:'语文',v:14},{n:'英语',v:10},{n:'美术',v:4}],
+      errors:[{t:'E1 审题',v:3},{t:'E2 概念',v:2},{t:'E4 关系',v:2},{t:'E7 信息',v:1}],
+      mastery:[{s:'数学',mist:6,mas:1},{s:'语文',mist:5,mas:1},{s:'英语',mist:3,mas:1},{s:'美术',mist:1,mas:0}]}
+  }
+};
+let selectedChild='加一';
+
+/* ============ 渲染层（单向：各函数只读 SAMPLE，互不调用） ============ */
+function renderAlerts(){const w=document.getElementById('alertList');w.innerHTML=SAMPLE.alerts.map(a=>`<div class="arow"><span class="dot ${a.dot}"></span><span class="txt">${a.txt}</span><button class="btn">${a.btn}</button></div>`).join('');}
+function renderKPI(){const k=SAMPLE.kpi;const items=[['g','打卡率',k.checkinRate+'%','3科×2孩，5/6 完成','M3 3h18v4H3Z M3 21h18'],['n','导学会话(活动)',k.sessions,'累计·非掌握度','M4 5h16v11H7l-3 3Z'],['n','错题总量',k.mistakes,'E1–E9 归因','M12 3 2 8l10 5 10-5Z'],['a','待复习',k.dueReviews,'dueAt≤现在','M12 8v5l3 3'],['g','已掌握证据',k.mastered,'复测≥5题≥80%','M20 6 9 17l-5-5'],['n','已订正',k.corrected,'≠掌握，单独计','M5 13l4 4L19 7']];document.getElementById('kpiWrap').innerHTML=items.map(it=>`<div class="kpi ${it[0]}"><div class="lab"><svg viewBox="0 0 24 24"><path d="${it[4]}"/></svg>${it[1]}</div><div class="num">${it[2]}</div><div class="hint">${it[3]}</div></div>`).join('');}
+function renderSubj(){const max=Math.max(...SAMPLE.subjects.map(s=>s.v));document.getElementById('subjBars').innerHTML=SAMPLE.subjects.map(s=>`<div class="brow"><span class="nm">${s.n}</span><span class="track"><i style="width:${Math.round(s.v/max*100)}%"></i></span><span class="v">${s.v}</span></div>`).join('');}
+function renderDonut(){const total=SAMPLE.errors.reduce((a,b)=>a+b.v,0);const C=2*Math.PI*54;let off=0;const segs=SAMPLE.errors.map(e=>{const len=e.v/total*C;const s=`<circle cx="70" cy="70" r="54" fill="none" stroke="${e.c}" stroke-width="16" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>`;off+=len;return s;}).join('');document.getElementById('donut').innerHTML=segs+`<text x="70" y="66" text-anchor="middle" font-size="20" font-weight="800" fill="#1c2130">${total}</text><text x="70" y="84" text-anchor="middle" font-size="11" fill="#8b92a5">错题</text>`;document.getElementById('errLegend').innerHTML=SAMPLE.errors.map(e=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0"><span style="width:10px;height:10px;border-radius:3px;background:${e.c};display:inline-block"></span>${e.t} <b style="margin-left:auto">${e.v}</b></div>`).join('');}
+function renderTrend(){const t=SAMPLE.trend;const W=520,H=170,pl=40,pr=14,pt=18,pb=26;const xs=i=>pl+(W-pl-pr)*i/(t.length-1);const ys=v=>pt+(H-pt-pb)*(1-v/100);const pts=t.map((p,i)=>`${xs(i)},${ys(p.r)}`).join(' ');const area=`${pl},${H-pb} ${pts} ${W-pr},${H-pb}`;const grid=[0,25,50,75,100].map(g=>`<line x1="${pl}" y1="${ys(g)}" x2="${W-pr}" y2="${ys(g)}" stroke="#eef0f4"/><text x="6" y="${ys(g)+3}" font-size="9" fill="#8b92a5">${g}</text>`).join('');const dots=t.map((p,i)=>`<circle cx="${xs(i)}" cy="${ys(p.r)}" r="3" fill="#1d2b53"/>`).join('');const lbls=t.map((p,i)=>`<text x="${xs(i)}" y="${H-8}" font-size="9" fill="#8b92a5" text-anchor="middle">${p.d.slice(3)}</text>`).join('');document.getElementById('trend').innerHTML=grid+`<polygon points="${area}" fill="rgba(201,162,39,.10)"/><polyline points="${pts}" fill="none" stroke="#c9a227" stroke-width="2.5"/>`+dots+lbls;}
+function renderActivity(){document.getElementById('activity').innerHTML=SAMPLE.activity.map(a=>`<div class="fi"><span class="t">${a.t}</span><span class="dot"></span><span>${a.html}</span></div>`).join('');}
+function fillTbl(id,rows,cols){const tb=document.querySelector('#'+id+' tbody');tb.innerHTML=rows.map(r=>`<tr>${cols.map(c=>`<td data-l="${c.l}">${c.f(r)}</td>`).join('')}</tr>`).join('');}
+function renderTables(){
+  fillTbl('mistakeTbl',SAMPLE.mistakes,[{l:'学科',f:r=>r.s},{l:'主题',f:r=>r.topic},{l:'错因',f:r=>`<span class="tag ${r.errc}">${r.err}</span>`},{l:'状态',f:r=>`<span class="tag ${r.stc}">${r.st}</span>`},{l:'时间',f:r=>r.d}]);
+  fillTbl('reviewTbl',SAMPLE.reviews,[{l:'主题',f:r=>r.topic},{l:'档位',f:r=>r.stage},{l:'到期',f:r=>r.due},{l:'状态',f:r=>`<span class="tag ${r.stc}">${r.st}</span>`}]);
+  fillTbl('evidTbl',SAMPLE.evidence,[{l:'学科',f:r=>r.s},{l:'主题',f:r=>r.topic},{l:'正确率',f:r=>`<span class="tag t-g">${r.rate}</span>`},{l:'时间',f:r=>r.d}]);
+  fillTbl('settleTbl',SAMPLE.settle,[{l:'日期',f:r=>r.d},{l:'漏科',f:r=>r.miss},{l:'等级',f:r=>`<span class="tag t-a">${r.lv}</span>`},{l:'小狗熊',f:r=>r.bears},{l:'被偷金币',f:r=>r.coin},{l:'枯萎',f:r=>r.w}]);
+}
+/* 儿童画像（只读 SAMPLE.children[selectedChild]，不调用其它渲染） */
+function renderChips(){const w=document.getElementById('childChips');w.innerHTML=Object.keys(SAMPLE.children).map(c=>`<button class="chip ${c===selectedChild?'on':''}" data-c="${c}">${c}</button>`).join('');w.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{selectedChild=b.dataset.c;renderChips();renderProfile(selectedChild);}));}
+function renderProfile(c){
+  const d=SAMPLE.children[c]; if(!d) return;
+  const maxS=Math.max(...d.subjects.map(s=>s.v));
+  const maxE=Math.max(...d.errors.map(s=>s.v));
+  const masteryRows=d.mastery.map(m=>{const weak=m.mist-m.mas;const st=weak===0?'<span class="tag t-g">已闭环</span>':weak<=2?'<span class="tag t-a">跟进中</span>':'<span class="tag t-r">重点</span>';return `<tr><td data-l="学科">${m.s}</td><td data-l="错题">${m.mist}</td><td data-l="已掌握">${m.mas}</td><td data-l="薄弱">${weak}</td><td data-l="状态">${st}</td></tr>`;}).join('');
+  document.getElementById('profileContent').innerHTML=`
+   <div class="card" style="margin-bottom:14px"><h3>基础档案</h3>
+     <table class="tbl-card"><tbody>
+       <tr><td data-l="代号">${d.code}</td></tr><tr><td data-l="年级">${d.grade}</td></tr><tr><td data-l="教材">${d.book}</td></tr><tr><td data-l="入册">${d.since}</td></tr>
+     </tbody></table>
+   </div>
+   <div class="kpis" style="margin-bottom:14px">
+     <div class="kpi g"><div class="lab">打卡率</div><div class="num">${d.checkinRate}%</div></div>
+     <div class="kpi n"><div class="lab">连续天数</div><div class="num">${d.streak}</div></div>
+     <div class="kpi n"><div class="lab">导学会话</div><div class="num">${d.sessions}</div></div>
+     <div class="kpi n"><div class="lab">错题</div><div class="num">${d.mistakes}</div></div>
+     <div class="kpi a"><div class="lab">待复习</div><div class="num">${d.dueReviews}</div></div>
+     <div class="kpi g"><div class="lab">已掌握</div><div class="num">${d.mastered}</div></div>
+   </div>
+   <div class="grid2">
+     <div class="card"><h3>农场状态</h3>
+       <table class="tbl-card"><tbody>
+         <tr><td data-l="金币">${d.coins}</td></tr><tr><td data-l="小狗熊">${d.bears}</td></tr><tr><td data-l="地块">${d.plots}</td></tr><tr><td data-l="护盾">${d.shields}</td></tr>
+       </tbody></table>
+     </div>
+     <div class="card"><h3>学科分布（会话量）</h3>
+       <div>${d.subjects.map(s=>`<div class="brow"><span class="nm">${s.n}</span><span class="track"><i style="width:${Math.round(s.v/maxS*100)}%"></i></span><span class="v">${s.v}</span></div>`).join('')}</div>
+     </div>
+   </div>
+   <div class="grid2">
+     <div class="card"><h3>错因分布（E1–E9）</h3>
+       <div>${d.errors.map(s=>`<div class="brow"><span class="nm">${s.t}</span><span class="track"><i style="width:${Math.round(s.v/maxE*100)}%"></i></span><span class="v">${s.v}</span></div>`).join('')}</div>
+     </div>
+     <div class="card"><h3>学科掌握度（薄弱 vs 已验证掌握）</h3>
+       <table class="tbl-card"><thead><tr><th>学科</th><th>错题</th><th>已掌握</th><th>薄弱</th><th>状态</th></tr></thead><tbody>${masteryRows}</tbody></table>
+     </div>
+   </div>`;
+}
+/* 统一刷新入口（铁律 9） */
+function refreshAll(){renderAlerts();renderKPI();renderSubj();renderDonut();renderTrend();renderActivity();renderTables();renderChips();renderProfile(selectedChild);}
+
+/* ============ 视图切换（与渲染层解耦） ============ */
+function switchView(v){
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
+  const el=document.getElementById(v); if(el) el.classList.add('on');
+  const map={overview:'概览 Dashboard',profile:'儿童画像',farm:'农场打卡',tutor:'全科导学',set:'环境与口令'};
+  document.getElementById('title').textContent=map[v]||v;
+  document.getElementById('sub').textContent=(map[v]||'')+' · 只读';
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
+  document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
+  closeDrawer();
+}
+document.querySelectorAll('.nav a,.tabbar a').forEach(a=>a.addEventListener('click',()=>switchView(a.dataset.v)));
+document.querySelectorAll('#range button').forEach(b=>b.addEventListener('click',()=>{b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');}));
+/* 移动抽屉 */
+function closeDrawer(){document.getElementById('side').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+document.getElementById('hamb').addEventListener('click',()=>{document.getElementById('side').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');});
+document.getElementById('overlay').addEventListener('click',closeDrawer);
+
+/* 初始化（DOMContentLoaded 后单向执行） */
+window.addEventListener('DOMContentLoaded',refreshAll);
+</script>
+</body>
+</html>

@@ -51,6 +51,59 @@ function diffDays(a, b) {
   return Math.round((t1 - t2) / 86400000);
 }
 
+/**
+ * 取「周一为起点」的、包含 key 的那一周 7 个日期（'YYYY-MM-DD'，周一..周日）
+ */
+function weekDates(key) {
+  const d = new Date((key || today()).replace(/-/g, '/'));
+  const day = d.getDay();                 // 0=周日 .. 6=周六
+  const offset = (day === 0 ? 6 : day - 1); // 距离周一的天数
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - offset);
+  const arr = [];
+  for (let i = 0; i < 7; i++) {
+    const t = new Date(monday);
+    t.setDate(monday.getDate() + i);
+    arr.push(dateKey(t));
+  }
+  return arr;
+}
+
+/** 星期简称：周一..周日（以周一为一周起点） */
+function weekdayShort(key) {
+  const names = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  const d = key ? new Date(key.replace(/-/g, '/')) : new Date();
+  const idx = (d.getDay() + 6) % 7;       // 周一=0
+  return names[idx];
+}
+
+/**
+ * 生成包含 key 所在月份的日历矩阵：6 行 × 7 列，共 42 格
+ * 每格 { key, day, inMonth }
+ */
+function monthMatrix(key) {
+  const d = new Date((key || today()).replace(/-/g, '/'));
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const first = new Date(y, m, 1);
+  const startOffset = (first.getDay() + 6) % 7;   // 周一起点的偏移
+  const gridStart = new Date(y, m, 1 - startOffset);
+  const cells = [];
+  for (let i = 0; i < 42; i++) {
+    const t = new Date(gridStart);
+    t.setDate(gridStart.getDate() + i);
+    const k = dateKey(t);
+    cells.push({ key: k, day: t.getDate(), inMonth: t.getMonth() === m });
+  }
+  return cells;
+}
+
+/** 'YYYY-MM-DD' → '2026年8月' */
+function cnYearMonth(key) {
+  const p = (key || today()).split('-');
+  return `${p[0]}年${Number(p[1])}月`;
+}
+
 /** 当前是否已进入「夜晚」（小狗熊出没时间） */
 function isNight(nightHour) {
   return new Date().getHours() >= (nightHour || 19);
@@ -67,5 +120,7 @@ function toast(title, icon) {
 }
 
 module.exports = {
-  pad, dateKey, today, daysAgo, yesterday, cnDate, weekday, diffDays, isNight, uid, toast
+  pad, dateKey, today, daysAgo, yesterday, cnDate, weekday, diffDays,
+  weekDates, weekdayShort, monthMatrix, cnYearMonth,
+  isNight, uid, toast
 };

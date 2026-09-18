@@ -1,0 +1,90 @@
+<view class="page-wrap">
+
+  <!-- 头部 -->
+  <view class="lp-head">
+    <view class="lp-back" bindtap="goBack">‹ 返回</view>
+    <view class="lp-title">儿童画像</view>
+    <view class="lp-spacer"></view>
+  </view>
+
+  <!-- 孩子身份（只读，年级在「我的」维护） -->
+  <view class="child-card">
+    <view class="cc-avatar">{{avatar}}</view>
+    <view class="cc-info">
+      <view class="cc-name">{{nickname}}<text wx:if="{{grade}}" class="cc-grade">{{grade}}</text></view>
+      <view class="cc-sub">年级可在「我的 → 编辑资料」设置，或填写下方「学校进度」自动识别</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#3FA9F5"></view><text class="section-title">基本信息</text>
+    </view>
+
+    <!-- 学段 -->
+    <view class="opt-row">
+      <view class="opt-name">学段</view>
+      <picker class="opt-picker" mode="selector" range="{{stages}}" value="{{stageIndex < 0 ? 0 : stageIndex}}" bindchange="onStage">
+        <view class="picker-val {{stageIndex < 0 ? 'ph' : ''}}">{{stageIndex < 0 ? '请选择' : stages[stageIndex]}} ›</view>
+      </picker>
+    </view>
+
+    <!-- 每周可学习时间 -->
+    <view class="opt-row">
+      <view class="opt-name">每周可学习时间</view>
+      <view class="opt-input-wrap">
+        <input class="opt-input-min" type="number" placeholder="如 300" placeholder-class="opt-ph"
+               value="{{weeklyMinutes}}" bindinput="onMinutes" maxlength="4" />
+        <text class="opt-unit">分钟</text>
+      </view>
+    </view>
+
+    <!-- 学校进度 -->
+    <view class="opt-row col">
+      <view class="opt-name">学校进度</view>
+      <input class="opt-input-full" placeholder="如：一年级上学期开学" placeholder-class="opt-ph"
+             value="{{schoolProgress}}" bindinput="onProgress" maxlength="40" cursor-spacing="20" />
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#F5B740"></view><text class="section-title">学习习惯与偏好</text>
+    </view>
+
+    <!-- 常用时段 -->
+    <view class="opt-label">常用时段（可多选）</view>
+    <view class="chip-row">
+      <view wx:for="{{timeSlots}}" wx:key="name"
+            class="chip {{item.on ? 'on' : ''}}"
+            data-val="{{item.name}}" bindtap="toggleSlot">{{item.name}}</view>
+    </view>
+
+    <!-- 讲解偏好 -->
+    <view class="opt-row">
+      <view class="opt-name">讲解偏好</view>
+      <picker class="opt-picker" mode="selector" range="{{teachStyles}}" value="{{teachIndex < 0 ? 0 : teachIndex}}" bindchange="onTeach">
+        <view class="picker-val {{teachIndex < 0 ? 'ph' : ''}}">{{teachIndex < 0 ? '请选择' : teachStyles[teachIndex]}} ›</view>
+      </picker>
+    </view>
+
+    <!-- 期望内容 -->
+    <view class="opt-label">期望内容（可多选）</view>
+    <view class="chip-row">
+      <view wx:for="{{expectations}}" wx:key="name"
+            class="chip {{item.on ? 'on' : ''}}"
+            data-val="{{item.name}}" bindtap="toggleExpect">{{item.name}}</view>
+    </view>
+
+    <!-- 自我感受 -->
+    <view class="opt-row">
+      <view class="opt-name">自我感受</view>
+      <picker class="opt-picker" mode="selector" range="{{selfFeelings}}" value="{{feelingIndex < 0 ? 0 : feelingIndex}}" bindchange="onFeeling">
+        <view class="picker-val {{feelingIndex < 0 ? 'ph' : ''}}">{{feelingIndex < 0 ? '请选择' : selfFeelings[feelingIndex]}} ›</view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="btn btn-block btn-green lp-save" bindtap="save">保存画像</view>
+
+</view>

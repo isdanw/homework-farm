@@ -1,0 +1,9 @@
+{
+  "name": "ocrSchedule",
+  "version": "1.0.0",
+  "description": "课程表拍照识别（调用 CloudBase 内置 AI 视觉能力 hy3）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

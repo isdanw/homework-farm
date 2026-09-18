@@ -1,106 +1,130 @@
 <view class="page-wrap">
 
-  <view class="page-head">
-    <view>
-      <view class="t">每日打卡</view>
-      <view class="s">{{dateText}} · 今天完成 {{doneNum}}/3 科</view>
+  <!-- ===== HEADER：日期 + 进度 + 孩子（一行紧凑） ===== -->
+  <view class="ck-header">
+    <view class="ck-h-left">
+      <text class="ck-date">{{selDateText}}</text>
+      <text class="ck-progress">完成 <text class="ck-num">{{doneNum}}</text>/{{typeTotal}} 项</text>
+    </view>
+    <view class="ck-h-right" bindtap="switchChild">
+      <view class="ck-avatar-sm">{{child.avatar}}</view>
+      <text class="ck-child-name">{{child.nickname}}</text>
+      <text class="ck-switch-hint">切换 ›</text>
     </view>
   </view>
 
-  <!-- 今晚农场预告：没写完就会挨罚（联动提示） -->
-  <view class="forecast {{forecast.danger ? 'bad' : 'good'}}" bindtap="goFarm">
-    <view class="fx-icon">
-      <!-- 危险时显示小狗熊头，安全时显示太阳 -->
-      <view wx:if="{{forecast.danger}}" class="mini-bear">
-        <view class="ear l"></view><view class="ear r"></view>
-        <view class="face"><view class="eye l"></view><view class="eye r"></view><view class="nose"></view></view>
+  <!-- ===== TAB + 日期选择（合并为一行） ===== -->
+  <view class="ck-toolbar">
+    <view class="seg">
+      <view class="seg-item {{mode === 'day' ? 'on' : ''}}" data-m="day" bindtap="switchMode">日</view>
+      <view class="seg-item {{mode === 'week' ? 'on' : ''}}" data-m="week" bindtap="switchMode">周</view>
+      <view class="seg-item {{mode === 'month' ? 'on' : ''}}" data-m="month" bindtap="switchMode">月</view>
+    </view>
+    <!-- 日模式才显示日期选择器 -->
+    <block wx:if="{{mode === 'day'}}">
+      <picker class="dp-picker-compact" mode="date" value="{{selDate}}" end="{{todayDate}}" bindchange="onPickDate">
+        <view class="dp-pill">{{selIsToday ? '今天' : selDateText}} ▾</view>
+      </picker>
+      <view wx:if="{{!selIsToday}}" class="dp-back-tiny" bindtap="backToToday">回今天</view>
+    </block>
+  </view>
+
+  <!-- ============ 日模式 ============ -->
+  <block wx:if="{{mode === 'day'}}">
+
+    <!-- 农场预告（仅今天，紧凑） -->
+    <view class="forecast {{forecast.danger ? 'bad' : 'good'}}" bindtap="goFarm" wx:if="{{selIsToday}}">
+      <view class="fx-icon">
+        <view wx:if="{{forecast.danger}}" class="mini-bear">
+          <view class="ear l"></view><view class="ear r"></view>
+          <view class="face"><view class="eye l"></view><view class="eye r"></view><view class="nose"></view></view>
+        </view>
+        <view wx:else class="mini-sun"></view>
       </view>
-      <view wx:else class="mini-sun"></view>
+      <view class="fx-text">{{forecast.text}}</view>
     </view>
-    <view class="fx-text">{{forecast.text}}</view>
-  </view>
 
-  <!-- 用时选择 -->
-  <view class="card">
-    <view class="card-title"><view class="dot"></view>这次写了多久？</view>
-    <view class="min-row">
-      <view wx:for="{{minuteOptions}}" wx:key="*this"
-            class="min-chip {{pickMinutes === item ? 'on' : ''}}"
-            data-m="{{item}}" bindtap="pickMinute">{{item}} 分钟</view>
-    </view>
-    <view class="muted">先选用时，再点下面对应科目的「我完成啦」</view>
-  </view>
+    <!-- 当日三科打卡状态（HERO 卡片） -->
+    <view class="card task-hero">
+      <view class="card-title"><view class="dot" style="background:#A8E6A1"></view>{{selIsToday ? '今日' : '当日'}}任务</view>
 
-  <!-- 三科大卡片 -->
-  <view wx:for="{{cards}}" wx:key="key" class="card hw-card {{item.done ? 'done' : ''}}">
-    <view class="hw-top">
-      <view class="sub-badge big" style="background:{{item.color}}">{{item.icon}}</view>
-      <view class="hw-info">
-        <view class="hw-name">{{item.name}}任务</view>
-        <view class="hw-state" wx:if="{{item.done}}">已完成 · {{item.timeText}} · 用时 {{item.minutes}} 分钟</view>
-        <view class="hw-state warn" wx:else>还没打卡，完成后可领 1 阳光 + 1 {{item.seedName}}</view>
+      <view class="task-card" wx:for="{{cards}}" wx:key="key" wx:for-item="c"
+            bindtap="{{c.done ? '' : 'goIndex'}}" data-subject="{{c.key}}">
+        <view class="task-icon" style="background:{{c.color}}">{{c.icon}}</view>
+        <view class="task-body">
+          <view class="task-name">{{c.name}}任务</view>
+          <view class="task-status {{c.done ? 'done' : 'pending'}}">
+            {{c.done ? ('已完成 · ' + c.timeText + ' · 用时 ' + c.minutes + ' 分钟') : '还没打卡'}}
+          </view>
+        </view>
+        <view class="task-action {{c.done ? 'done' : ''}}">
+          {{c.done ? '已完成' : '待打卡'}}
+        </view>
       </view>
+
+      <view class="muted task-tip" wx:if="{{selIsToday}}">想打卡？回到首页「成长乐园」点学科图标即可</view>
     </view>
 
-    <view wx:if="{{item.note}}" class="hw-note">备注：{{item.note}}</view>
-
-    <view class="hw-btns">
-      <view wx:if="{{!item.done}}" class="btn btn-block btn-green big-btn" data-key="{{item.key}}" bindtap="doCheckin">我完成啦！</view>
-      <block wx:else>
-        <view class="btn btn-sm btn-line" data-key="{{item.key}}" bindtap="openNote">写备注</view>
-        <view class="btn btn-sm btn-gray" data-key="{{item.key}}" bindtap="undoCheckin">撤销打卡</view>
+    <!-- 当日各科目 AI 学习评价（只读展示，分析入口在打卡详情页 checkinDetail） -->
+    <view class="ai-readouts">
+      <block wx:for="{{cards}}" wx:key="key" wx:for-item="c">
+        <view wx:if="{{c.analysis}}" class="ai-readout">
+          <view class="ai-readout-head"><text class="ai-readout-emoji">🤖</text><text class="ai-readout-title">{{c.name}} · 学习评价</text></view>
+          <view class="ai-readout-body">{{c.analysis}}</view>
+        </view>
       </block>
     </view>
-  </view>
+  </block>
 
-  <!-- 近 7 天 -->
-  <view class="card">
-    <view class="card-title"><view class="dot" style="background:#F5B740"></view>最近 7 天打卡</view>
-    <view class="week-row">
-      <view wx:for="{{week}}" wx:key="key" class="wk">
-        <view class="wk-bars">
-          <view class="wk-b {{item.num >= 1 ? 'f' : ''}}"></view>
-          <view class="wk-b {{item.num >= 2 ? 'f' : ''}}"></view>
-          <view class="wk-b {{item.num >= 3 ? 'f' : ''}}"></view>
+  <!-- ============ 周模式 ============ -->
+  <block wx:elif="{{mode === 'week'}}">
+    <view class="card">
+      <view class="card-title"><view class="dot" style="background:#9AD5FF"></view>本周三科打卡</view>
+      <view class="wk-grid">
+        <view class="wk-col" wx:for="{{weekCols}}" wx:key="key" wx:for-item="col">
+          <view class="wk-col-head {{col.isToday ? 'today' : ''}}">
+            <text class="wk-wd">{{col.label}}</text>
+            <text class="wk-dt">{{col.date}}</text>
+          </view>
+        <view wx:for="{{col.dots}}" wx:for-item="dot" wx:key="name" class="wk-dot"
+            style="{{dot.on ? 'background:' + dot.color + ';border-color:' + dot.colorDeep : 'background:#F0F4F8;border-color:#E2E8EE'}}">
+            <text wx:if="{{dot.on}}" class="wk-dot-ic">✓</text>
+          </view>
+          <view wx:if="{{col.commentCount}}" class="wk-cm">💬{{col.commentCount}}</view>
         </view>
-        <view class="wk-d {{item.isToday ? 'today' : ''}}">{{item.isToday ? '今天' : item.label}}</view>
+      </view>
+      <view class="wk-legend">
+        <text wx:for="{{weekSubjects}}" wx:key="name" wx:for-item="s" class="lg">
+          <text class="lg-dot" style="background:{{s.color}}"></text>{{s.name}}
+        </text>
+      </view>
+      <view class="muted center">本周已有 {{weekFullDays}} 天全勤，点亮全部小圆点最棒啦～</view>
+    </view>
+  </block>
+
+  <!-- ============ 月模式 ============ -->
+  <block wx:else>
+    <view class="card">
+      <view class="card-title"><view class="dot" style="background:#A8E6A1"></view>{{monthTitle}}</view>
+      <view class="mo-weekhead">
+        <text wx:for="{{['一','二','三','四','五','六','日']}}" wx:key="*this" class="mo-wd">{{item}}</text>
+      </view>
+      <view class="mo-grid">
+        <view class="mo-cell {{!c.inMonth ? 'out' : ''}} {{c.isToday ? 'today' : ''}} {{c.commentCount ? 'has-cm' : ''}}"
+              wx:for="{{monthCells}}" wx:key="key" wx:for-item="c" style="background:{{c.color}}">
+          <text class="mo-day">{{c.day}}</text>
+          <text class="mo-num">{{c.done}}/{{typeTotal}}</text>
+          <text wx:if="{{c.commentCount}}" class="mo-cm">💬</text>
+        </view>
+      </view>
+      <view class="muted center">本月已全勤 {{monthFullDays}}/{{monthTotal}} 天</view>
+      <view class="mo-legend">
+        <text class="lg"><text class="lg-dot" style="background:#F4F7FA;border:2rpx solid #E2E8EE"></text>未打卡</text>
+        <text class="lg"><text class="lg-dot" style="background:#E4F3DF"></text>1 科</text>
+        <text class="lg"><text class="lg-dot" style="background:#C8E9BE"></text>2 科</text>
+        <text class="lg"><text class="lg-dot" style="background:#A6DEA0"></text>{{typeTotal}} 项全勤</text>
+        <text class="lg"><text class="lg-dot" style="background:#FFE3A3"></text>💬 有评语</text>
       </view>
     </view>
-  </view>
-</view>
-
-<!-- ============ 奖励弹窗 ============ -->
-<view wx:if="{{reward}}" class="mask" bindtap="closeReward">
-  <view class="dialog reward-dialog" catchtap="">
-    <view class="rw-burst">
-      <view class="ray" wx:for="{{[0,1,2,3,4,5,6,7]}}" wx:key="*this" style="transform:rotate({{item*45}}deg)"></view>
-      <view class="rw-sun"></view>
-    </view>
-    <view class="d-title">{{reward.allDone ? '三科全部完成！超级棒！' : reward.subName + '任务完成啦！'}}</view>
-    <view class="gain-row">
-      <view class="gain"><view class="ic-sun"></view><text>阳光 +{{reward.sun}}</text></view>
-      <view class="gain"><view class="ic-seed"></view><text>{{reward.seedName}} +{{reward.seed}}</text></view>
-      <view wx:if="{{reward.coin > 0}}" class="gain"><view class="ic-coin"></view><text>金币 +{{reward.coin}}</text></view>
-      <view wx:if="{{reward.pesticide > 0}}" class="gain"><view class="ic-spray"></view><text>杀虫剂 +{{reward.pesticide}}</text></view>
-    </view>
-    <view class="d-text" wx:if="{{reward.pesticide > 0}}">补齐任务奖励杀虫剂！快去农场赶走小狗熊，把植物治好～</view>
-    <view class="d-text" wx:elif="{{reward.allDone}}">今晚农场很安全，小狗熊不敢来啦，去种下你的新种子吧！</view>
-    <view class="d-text" wx:else>解锁了新的{{reward.seedName}}，去农场种下它吧～</view>
-    <view class="d-btns">
-      <view class="btn btn-gray" bindtap="closeReward">继续做任务</view>
-      <view class="btn btn-green" bindtap="goFarmFromReward">去农场种下</view>
-    </view>
-  </view>
-</view>
-
-<!-- 备注弹窗 -->
-<view wx:if="{{editing}}" class="mask" bindtap="closeNote">
-  <view class="dialog" catchtap="">
-    <view class="d-title">今天的备注</view>
-    <textarea class="textarea" placeholder="例如：朗读课文 2 遍，妈妈已签字" value="{{noteText}}" bindinput="onNoteInput" maxlength="120" />
-    <view class="d-btns">
-      <view class="btn btn-gray" bindtap="closeNote">取消</view>
-      <view class="btn btn-green" bindtap="saveNote">保存</view>
-    </view>
-  </view>
+  </block>
 </view>

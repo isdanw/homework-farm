@@ -1,0 +1,191 @@
+/**
+ * mistakes.wxss —— 错题本页（沿用全局马卡龙规范：奶油底 + 圆角卡片）
+ */
+
+page { background: var(--c-cream); }
+
+.mk-page {
+  padding: 24rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ---------------- 学科筛选 chips（九科横向滚动） ---------------- */
+.mk-filter {
+  display: flex;
+  white-space: nowrap;
+  margin-bottom: 20rpx;
+}
+.mk-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 14rpx 28rpx;
+  margin-right: 16rpx;
+  border-radius: 40rpx;
+  background: #FFFFFF;
+  border: 3rpx solid #EDF1F5;
+  font-size: 28rpx;
+  color: var(--c-sub);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.mk-chip.on {
+  border-color: var(--c-blue);
+  color: var(--c-blue-deep);
+  background: #F2FAFF;
+  font-weight: 800;
+}
+
+/* ---------------- 拍照收录入口 ---------------- */
+.mk-photo-bar { margin-bottom: 20rpx; }
+.mk-photo-btn {
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: var(--c-blue-deep);
+  border-radius: 24rpx;
+  padding: 22rpx 0;
+  box-shadow: 0 6rpx 16rpx rgba(63, 169, 245, 0.3);
+}
+.mk-photo-btn.disabled { opacity: 0.5; }
+.mk-photo-hint {
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--c-sub);
+  margin-top: 10rpx;
+}
+
+/* ---------------- 来源角标 + 题干 ---------------- */
+.mk-source {
+  font-size: 20rpx;
+  color: var(--c-blue-deep);
+  background: #EAF5FF;
+  border-radius: 999rpx;
+  padding: 4rpx 12rpx;
+}
+.mk-question {
+  font-size: 26rpx;
+  color: var(--c-text);
+  background: #F6F9FC;
+  border-radius: 14rpx;
+  padding: 12rpx 16rpx;
+  margin-top: 14rpx;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* ---------------- 概览 ---------------- */
+.mk-summary {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  background: #EAF5FF;
+  border-radius: 20rpx;
+  margin-bottom: 20rpx;
+}
+.mk-sum-num {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: var(--c-blue-deep);
+}
+.mk-sum-text {
+  font-size: 24rpx;
+  color: var(--c-sub);
+}
+
+/* ---------------- 空态 ---------------- */
+.empty { text-align: center; padding: 100rpx 40rpx; }
+.empty-emoji { font-size: 96rpx; }
+.empty-title { font-size: 32rpx; font-weight: 700; margin-top: 20rpx; }
+.empty-sub { font-size: 26rpx; color: var(--c-sub); margin-top: 12rpx; line-height: 1.7; }
+
+/* ---------------- 错题卡片 ---------------- */
+.mk-card {
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+}
+
+.mk-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.mk-subject {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--c-blue-deep);
+  background: #EAF5FF;
+  border-radius: 999rpx;
+  padding: 4rpx 16rpx;
+}
+.mk-time {
+  flex: 1;
+  font-size: 24rpx;
+  color: var(--c-sub);
+}
+.mk-status {
+  font-size: 22rpx;
+  border-radius: 999rpx;
+  padding: 4rpx 16rpx;
+}
+.mk-status.pending { color: #F5A623; background: #FFF3E0; }
+.mk-status.ok { color: var(--c-green-deep); background: #EBF7EC; }
+
+.mk-topic {
+  font-size: 32rpx;
+  font-weight: 700;
+  margin-top: 16rpx;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.mk-tag-row { margin-top: 12rpx; }
+.mk-tag {
+  font-size: 24rpx;
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+  font-weight: 600;
+}
+
+.mk-desc {
+  font-size: 26rpx;
+  color: var(--c-sub);
+  line-height: 1.6;
+  margin-top: 14rpx;
+}
+.mk-sug {
+  font-size: 26rpx;
+  color: var(--c-text);
+  line-height: 1.6;
+  margin-top: 10rpx;
+  background: #F6F9FC;
+  border-radius: 14rpx;
+  padding: 14rpx 18rpx;
+}
+
+.mk-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.mk-btn {
+  flex: 1;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  padding: 18rpx 0;
+  border-radius: 36rpx;
+}
+.mk-btn-main { background: var(--c-blue-deep); color: #FFFFFF; }
+.mk-btn-retest { background: #FFFFFF; color: var(--c-green-deep); border: 3rpx solid var(--c-green); }
+.mk-status-toggle {
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--c-sub);
+  margin-top: 16rpx;
+  padding: 8rpx 0;
+}

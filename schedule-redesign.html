@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="3yt7s1ONMEziAiMkBib417">
+<head data-page-node-id="6yBYFCumuvysJT5JAucFAG">
+<meta charset="UTF-8" data-page-node-id="hO2eqPYzmc7lFZznJQmFCY">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="7DEmnFab7ApoiPrYKD2VVV">
+<title>课表页重设计 · 预览</title>
+<style>
+  :root{
+    --cream:#FFF9F0; --text:#4A4A4A; --sub:#8A8A8A;
+    --blue:#BFE6FF; --blue-deep:#3FA9F5;
+    --yellow-deep:#F5B740;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    background:#2A2E37; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+    display:flex; justify-content:center; padding:24px 0 60px; min-height:100vh;
+  }
+  /* 手机壳 */
+  .phone{
+    width:375px; background:var(--cream); color:var(--text);
+    font-size:15px; line-height:1.6; border-radius:28px; overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .navbar{
+    height:44px; background:var(--blue); display:flex; align-items:center; justify-content:center;
+    position:relative; color:#1a1a1a; font-weight:700; font-size:15px;
+  }
+  .navbar .back{ position:absolute; left:12px; font-size:18px; }
+  .wrap{ padding:12px 12px 24px; position:relative; }
+
+  /* 头部 */
+  .head{ padding:4px 3px 11px; }
+  .head-top{ display:flex; align-items:center; gap:8px; }
+  .head-top .t{ font-size:22px; font-weight:800; letter-spacing:1px; }
+  .badge{ font-size:11px; font-weight:700; color:#3D9BE8; background:#E3F2FF; padding:3px 8px; border-radius:10px; }
+  .head .s{ font-size:13px; color:var(--sub); display:block; margin-top:3px; }
+
+  /* 卡片 */
+  .card{ background:#fff; border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 4px 12px rgba(150,180,210,.14); }
+  .card-title{ font-size:18px; font-weight:700; display:flex; align-items:center; margin-bottom:9px; }
+  .card-title .dot{ width:8px; height:8px; border-radius:50%; background:var(--blue-deep); margin-right:7px; }
+  .card-head-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
+  .card-head-row .card-title{ margin-bottom:0; }
+  .muted{ color:var(--sub); font-size:13px; }
+
+  /* 学期卡 */
+  .term-row{ display:flex; align-items:center; gap:6px; margin-bottom:10px; }
+  .term-ic{ font-size:19px; }
+  .term-input{ flex:1; background:#F6F9FC; border:1.5px solid #E8EDF2; border-radius:10px; padding:10px 12px; font-size:15px; color:#2B3340; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; min-height:44px; border-radius:22px; font-size:16px; font-weight:700; color:#fff; }
+  .btn-cam{ background:linear-gradient(135deg,#5FB6F5,#3FA9F5); box-shadow:0 4px 0 rgba(63,169,245,.25); width:100%; }
+  .cam-ic{ margin-right:6px; font-size:19px; }
+  .term-hint{ margin-top:8px; text-align:center; font-size:12px; }
+
+  /* 网格 */
+  .sch-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .sch{ min-width:100%; display:inline-block; }
+  .sch-row{ display:grid; gap:3px; margin-bottom:3px; }
+  .sch-row.head{ margin-bottom:5px; }
+  .sch-corner{ font-size:10px; color:var(--sub); font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .sch-th{ background:#EAF4FF; color:var(--blue-deep); font-size:12px; font-weight:800; text-align:center; padding:7px 0; border-radius:6px; }
+  .sch-tp{ background:#F6F9FC; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 0; }
+  .tp-n{ font-size:13px; font-weight:800; line-height:1.2; }
+  .tp-t{ font-size:9px; color:var(--sub); line-height:1.2; }
+  .sch-cell{ min-height:48px; border-radius:7px; background:#F7F9FC; border:1px dashed #DFE6EE; display:flex; align-items:center; justify-content:center; padding:5px 3px; }
+  .sch-cell.on{ border-style:solid; box-shadow:inset 0 -2px 0 rgba(0,0,0,.05); }
+  .sc-tx{ font-size:12px; line-height:1.3; font-weight:800; text-align:center; word-break:break-all; }
+
+  /* 空态 */
+  .grid-empty{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:14px 0 2px; }
+  .ge-ic{ font-size:24px; }
+  .ge-tx{ font-size:12.5px; color:var(--sub); }
+
+  /* 网格底部 */
+  .grid-foot{ margin-top:10px; padding-top:10px; border-top:1px solid #F0F3F7; display:flex; flex-direction:column; gap:8px; }
+  .size-ctl{ display:flex; gap:22px; }
+  .sz-item{ display:flex; align-items:center; gap:8px; }
+  .sz-l{ font-size:12.5px; color:var(--sub); font-weight:700; }
+  .sz-box{ display:flex; align-items:center; gap:6px; }
+  .sz-btn{ width:28px; height:28px; border-radius:50%; background:#F2F7FC; border:1px solid #E2E8EF; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:var(--blue-deep); }
+  .sz-n{ font-size:15px; font-weight:800; min-width:22px; text-align:center; }
+  .btn-line{ background:#fff; color:var(--blue-deep); border:1.5px solid var(--blue); min-height:35px; font-size:14px; width:100%; margin-top:10px; }
+
+  /* 识别卡 */
+  .rec-count{ font-size:12px; font-weight:700; color:var(--sub); }
+  .rec-bar{ height:8px; border-radius:4px; background:#F0EEF8; overflow:hidden; margin:6px 0 10px; }
+  .rec-fill{ height:100%; border-radius:4px; background:linear-gradient(90deg,#B4A7F0,#9B7BF0); }
+  .rec-list{ display:flex; flex-direction:column; gap:5px; }
+  .rec-item{ display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:8px; background:#FAFAFC; }
+  .rec-dot{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .rec-name{ font-size:14px; font-weight:800; }
+  .rec-tag{ margin-left:auto; font-size:12px; font-weight:700; }
+  .rec-tag.ok{ color:#3E9B4F; }
+  .rec-tag.warn{ color:#E08A1E; }
+  .btn-yellow{ background:var(--yellow-deep); width:100%; margin-top:11px; }
+  .mt16{ margin-top:8px; }
+</style>
+</head>
+<body data-page-node-id="mejuebarC0vjIGkrrAF4VJ">
+<div class="phone" data-page-node-id="9YitATdliR1SEh6EkA6tTi">
+  <div class="navbar" data-page-node-id="EJhOQuzZ83eNKYEE3QFj7t"><span class="back" data-page-node-id="z9O91S5p46z7CKuA1Qw7fJ">‹</span>课程表</div>
+  <div class="wrap" data-page-node-id="a5A2MHtMR78hwGsadxH6fZ">
+
+    <!-- 头部 -->
+    <div class="head" data-page-node-id="NFJqXk9SEufWaMP2kb7iuT">
+      <div class="head-top" data-page-node-id="8sDYDMEB26A0EE2lfQy6A9"><span class="t" data-page-node-id="KMlbtaVN9FTbSCLEFQULnb">课程表</span><span class="badge" data-page-node-id="R5UfZl8TVXkUkRLsgn9cUS">已录 24 节课</span></div>
+      <span class="s" data-page-node-id="xrsImqvQGDIt1sPRaZYJpv">一学期一张表，录好就能自动对应打卡内容</span>
+    </div>
+
+    <!-- 学期 + 拍照 -->
+    <div class="card" data-page-node-id="qb1LYgBGUgvPX0yKjVgAR0">
+      <div class="term-row" data-page-node-id="42XIUyrLo3uCZkMVFjD27a"><span class="term-ic" data-page-node-id="9lyjRoijgCTmHKSxCWjAr3">📅</span><input class="term-input" value="2026 秋季学期" readonly data-page-node-id="GN93EzESDY3zhkWrlcvRej"></div>
+      <div class="btn btn-cam" data-page-node-id="BhFH44oGubLF7Bs6RcFDvH"><span class="cam-ic" data-page-node-id="RA0kmtQzYtxy5jvQLIWSM3">📷</span>重新拍照 / 选图</div>
+      <div class="muted term-hint" data-page-node-id="qqeu9svBO9CXtRbIOiwj1L">识别不准没关系，照片会留着，对照照片点格子改就行</div>
+    </div>
+
+    <!-- 课表网格 -->
+    <div class="card" data-page-node-id="0H5PnSDRwcXKCCPfIyitCM">
+      <div class="card-head-row" data-page-node-id="oZeRCqOEgSB1EmbMijATym">
+        <div class="card-title" data-page-node-id="RqRWKbiogF92aQtZjxeaMG"><span class="dot" style="background:#3FA9F5" data-page-node-id="ta8KP5GpPIkURt1MsQfyBc"></span>课程表</div>
+      </div>
+      <div class="sch-wrap" data-page-node-id="5N74yYHiCRxwiBEymSGRZk">
+        <div class="sch" id="grid" data-page-node-id="UIka5264jaHbqN2HcstDEA"></div>
+      </div>
+      <div class="grid-foot" data-page-node-id="qNws80vPDwoJLmEHBOP0S2">
+        <div class="muted" data-page-node-id="LlGpAJ2ds5qyu2iSeFc4B8">点格子填科目 · 左右滑动查看更多</div>
+        <div class="size-ctl" data-page-node-id="19MxFsGUS7yvO7sT70FDZf">
+          <div class="sz-item" data-page-node-id="zZtvcthynwbRl9FlODgGfI"><span class="sz-l" data-page-node-id="9hFfTBOOCghBxBghQsZXIm">每天节数</span><div class="sz-box" data-page-node-id="KtLOhjstuHtawuVwnOzsBC"><div class="sz-btn" data-page-node-id="zp8PCUVf75gkebcfRhZoz5">−</div><span class="sz-n" data-page-node-id="q7p1IL0O86oZaknnT4TCiM">8</span><div class="sz-btn" data-page-node-id="gQfiLchLk2zm8gSZHJdu6t">＋</div></div></div>
+          <div class="sz-item" data-page-node-id="QEAETFKPTeVVW3Ecrx5HFG"><span class="sz-l" data-page-node-id="EsY4GuhefnC7bEOAvhCKv3">排课天数</span><div class="sz-box" data-page-node-id="nUvTEIyK9tYBwxp3KCNC9J"><div class="sz-btn" data-page-node-id="PEqCMCHB0zEcuWzUk7EX9y">−</div><span class="sz-n" data-page-node-id="TBd2BYlqKpr6iO68AKkugO">5</span><div class="sz-btn" data-page-node-id="VRb3gPauDeyDk3eVut7fCD">＋</div></div></div>
+        </div>
+      </div>
+      <div class="btn btn-line" data-page-node-id="0ecVd9e29b7bEN8bF08gsH">清空课表</div>
+    </div>
+
+    <!-- 打卡内容识别 -->
+    <div class="card" data-page-node-id="t5juEoIF1eAql8EDsHzuY0">
+      <div class="card-head-row" data-page-node-id="AB9LwqR90h3wBwtvd7dSi6">
+        <div class="card-title" data-page-node-id="NDQvu3I9J3XrospKEh0xsS"><span class="dot" style="background:#9B7BF0" data-page-node-id="a4g6exDsquQzDfm4xsSb6f"></span>打卡内容识别</div>
+        <span class="rec-count" data-page-node-id="nG1KUI1YMJsEBf3p7r4utr">3/11 已关联</span>
+      </div>
+      <div class="rec-bar" data-page-node-id="jLUkGI2o7zxssQs4YF10Pm"><div class="rec-fill" style="width:27%" data-page-node-id="UqrqlgFtTrxozUVaxOMiZs"></div></div>
+      <div class="rec-list" id="reclist" data-page-node-id="tWkIKGmLrytqpITz3RM80Z"></div>
+      <div class="btn btn-yellow" data-page-node-id="LHfYxI9HpH93vmsxJXOxnU">＋ 一键把 8 个科目加入打卡</div>
+      <div class="btn btn-line mt16" data-page-node-id="0LWoGY7SWZAXmyJJacSQ3l">管理打卡类型</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const CELLS = {
+    '语文':['#FFE9F0','#D6457A'],'数学':['#E3F2FF','#2E86DE'],'英语':['#E7F6E8','#3E9B4F'],
+    '体育':['#FFF3E0','#E08A1E'],'音乐':['#E0F7F4','#1BA39C'],'科学':['#EAF2FF','#4A6FD0'],
+    '道法':['#F1EEF8','#6E63A8'],'美术':['#FDE7F1','#C2508A'],'自习':['#EDF4FF','#5A7BB8'],
+    '阅读':['#FFF6E6','#C98A1B'],'班会':['#F0EEF8','#8A6FA8']
+  };
+  const DAYS = ['周一','周二','周三','周四','周五'];
+  const TIMES = ['08:20','09:15','10:10','11:05','14:00','14:55','15:50','16:45'];
+  const TABLE = [
+    ['语文','数学','语文','数学','语文'],
+    ['数学','语文','数学','语文','数学'],
+    ['英语','体育','英语','科学','英语'],
+    ['体育','英语','音乐','英语','道法'],
+    ['音乐','科学','体育','道法','体育'],
+    ['科学','道法','美术','音乐','美术'],
+    ['道法','美术','道法','体育','科学'],
+    ['自习','阅读','班会','自习','阅读']
+  ];
+
+  const grid = document.getElementById('grid');
+  const cols = '84px repeat(5, minmax(68px, 1fr))';
+  // 表头
+  let html = `<div class="sch-row head" style="grid-template-columns:${cols}">
+    <div class="sch-corner">节次</div>${DAYS.map(d=>`<div class="sch-th">${d}</div>`).join('')}</div>`;
+  // 行
+  TABLE.forEach((row, r) => {
+    html += `<div class="sch-row" style="grid-template-columns:${cols}">
+      <div class="sch-tp"><span class="tp-n">${r+1}</span><span class="tp-t">${TIMES[r]}</span></div>`;
+    row.forEach(name => {
+      const [bg,fg] = CELLS[name];
+      html += `<div class="sch-cell on" style="background:${bg};color:${fg};border-color:${bg}"><span class="sc-tx">${name}</span></div>`;
+    });
+    html += '</div>';
+  });
+  grid.innerHTML = html;
+
+  // 识别列表
+  const matched = [
+    ['语文','✓ 语文打卡','ok', '#FFE9F0'],
+    ['数学','✓ 数学打卡','ok', '#E3F2FF'],
+    ['英语','✓ 英语打卡','ok', '#E7F6E8']
+  ];
+  const unmatched = [
+    ['体育','待添加','warn','#FFF3E0'],
+    ['音乐','待添加','warn','#E0F7F4'],
+    ['科学','待添加','warn','#EAF2FF'],
+    ['道法','待添加','warn','#F1EEF8'],
+    ['美术','待添加','warn','#FDE7F1'],
+    ['自习','待添加','warn','#EDF4FF'],
+    ['阅读','待添加','warn','#FFF6E6'],
+    ['班会','待添加','warn','#F0EEF8']
+  ];
+  const rec = document.getElementById('reclist');
+  rec.innerHTML = [...matched, ...unmatched].map(([n, tag, cls, bg]) =>
+    `<div class="rec-item"><span class="rec-dot" style="background:${bg}"></span><span class="rec-name">${n}</span><span class="rec-tag ${cls}">${tag}</span></div>`
+  ).join('');
+</script>
+</body>
+</html>

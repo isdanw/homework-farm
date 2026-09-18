@@ -1,0 +1,9 @@
+{
+  "name": "tutorRetest",
+  "version": "1.0.0",
+  "description": "全科导学复测：生成 5 道同类题 + 硬编码证据契约判定（≥5 题且 ≥80% 才写 tutor_evidence）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

@@ -1,0 +1,261 @@
+<view class="page-wrap">
+
+  <!-- ===== HERO：身份 + 资源 + 微信状态 合一 ===== -->
+  <view class="hero" wx:if="{{current}}">
+    <!-- 主信息行：头像 + 名字 + 年级 + 编辑 -->
+    <view class="hero-main">
+      <view class="hero-avatar-wrap">
+        <image wx:if="{{wxAvatar && bind.bound}}" class="hero-wx-avatar" src="{{wxAvatar}}" mode="aspectFill"></image>
+        <view wx:else class="hero-emoji">{{current.avatar}}</view>
+      </view>
+      <view class="hero-body">
+        <view class="hero-name-row">
+          <text class="hero-name">{{current.nickname}}</text>
+          <text wx:if="{{current.grade}}" class="hero-grade">{{current.grade}}</text>
+        </view>
+        <text class="hero-streak">连续打卡 {{current.streak}} 天</text>
+      </view>
+      <view class="btn btn-sm btn-yellow" bindtap="openEdit">编辑 ›</view>
+    </view>
+
+    <!-- 资源条（嵌入 Hero 底部） -->
+    <view class="res-bar" wx:if="{{current}}">
+      <view class="res-item res-gold"><text class="res-ic">🪙</text>{{current.coins}} 金币</view>
+      <view class="res-item res-sun"><text class="res-ic">☀️</text>{{current.suns}} 阳光</view>
+      <view class="res-item res-plant"><text class="res-ic">🌱</text>{{current.plants}} 株植物</view>
+    </view>
+
+    <!-- 微信绑定状态（Hero 内底部一行小字） -->
+    <view class="bind-status {{bind.bound ? 'bound' : 'unbound'}}"
+          bindtap="{{bind.bound ? 'toggleWxDetail' : 'bindWechat'}}">
+      <view class="bind-dot {{bind.bound ? 'on' : ''}}"></view>
+      <block wx:if="{{bind.bound}}">
+        <text class="bind-label">已绑定微信</text>
+        <text wx:if="{{wxName}}" class="bind-user">· {{wxName}}</text>
+        <text class="bind-action">{{showWxDetail ? '收起' : '设置'}}</text>
+      </block>
+      <block wx:else>
+        <text class="bind-label">本地模式 · 数据仅存本机</text>
+        <text class="bind-action">去绑定 ›</text>
+      </block>
+    </view>
+
+    <!-- 游客体验模式提示（未绑定微信时） -->
+    <view wx:if="{{!bind.bound}}" class="guest-tip">
+      👀 体验模式：操作后数据不会保存，绑定微信后自动存档
+    </view>
+
+    <!-- 微信资料编辑（点击上方展开） -->
+    <view class="wx-detail" wx:if="{{showWxDetail && bind.bound}}">
+      <view class="wx-row">
+        <image wx:if="{{wxAvatar}}" class="wx-avatar" src="{{wxAvatar}}" mode="aspectFill"></image>
+        <view wx:else class="wx-avatar wx-avatar-empty">👤</view>
+        <view class="wx-fields">
+          <view class="wx-name-label">当前显示名</view>
+          <view class="wx-name">{{wxName || '未设置'}}</view>
+        </view>
+      </view>
+      <view class="wx-actions">
+        <button class="btn btn-sm btn-green wx-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">获取头像</button>
+        <input class="wx-nick" type="nickname" placeholder="使用微信昵称" bindnickname="onNickname" value="{{wxName}}"></input>
+      </view>
+    </view>
+
+    <!-- 其他孩子：点击整行即切换（当前孩子已在上方展示，不重复列出） -->
+    <view class="kid-others" wx:if="{{others.length > 0}}">
+      <view class="kid-others-head">其他孩子</view>
+      <view class="ulist">
+        <view
+          wx:for="{{others}}"
+          wx:key="id"
+          class="urow"
+          data-id="{{item.id}}"
+          hover-class="urow-hover"
+          bindtap="switchUser">
+          <view class="u-avatar">{{item.avatar}}</view>
+          <view class="u-info">
+            <view class="u-name">{{item.nickname}}<text wx:if="{{item.grade}}" class="u-grade">{{item.grade}}</text></view>
+            <view class="u-sub">连续打卡 {{item.streak}} 天 · 农场 {{item.coins}} 金币</view>
+          </view>
+          <view class="u-switch">切换</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 孩子管理操作 -->
+    <view class="kid-actions">
+      <view class="kid-add" bindtap="openAdd">＋ 添加孩子</view>
+      <view wx:if="{{users.length > 1}}" class="kid-del" bindtap="removeUser">删除当前孩子</view>
+    </view>
+  </view>
+
+  <!-- 未有孩子时的空态提示 -->
+  <view class="hero hero-empty" wx:if="{{!current}}">
+    <text class="hero-empty-text">还没有添加孩子哦</text>
+    <view class="btn btn-sm btn-green" style="margin-top:16rpx" bindtap="openAdd">＋ 添加第一个孩子</view>
+  </view>
+
+  <!-- ===== 儿童画像（全局儿童信息） ===== -->
+  <view class="card tools-card" bindtap="goLearnerProfile">
+    <view class="section-head">
+      <view class="dot" style="background:#3FA9F5"></view><text class="section-title">儿童画像</text>
+      <view class="entry-go">去设置 ›</view>
+    </view>
+    <view class="muted tools-desc">{{learnerSummary || '定义孩子的学段、学习时长、讲解偏好与期望，让评价更贴合'}}</view>
+  </view>
+
+  <!-- ===== 导学中心（学习主线聚合：AI 导学 / 错题本 / 导学报告） ===== -->
+  <view class="card tools-card" bindtap="goTutorHub">
+    <view class="section-head">
+      <view class="dot" style="background:#9B7BF0"></view><text class="section-title">导学中心</text>
+      <view class="entry-go">去学习 ›</view>
+    </view>
+    <view class="muted tools-desc">{{hubInfo}}</view>
+  </view>
+
+  <!-- ===== 成长计划（阶段计划生成 + 打卡进度对照） ===== -->
+  <view class="card tools-card" bindtap="goPlan">
+    <view class="section-head">
+      <view class="dot" style="background:#5FBF6B"></view><text class="section-title">成长计划</text>
+      <view class="entry-go">去查看 ›</view>
+    </view>
+    <view class="muted tools-desc">{{planInfo}}</view>
+  </view>
+
+  <!-- ===== 课程表（录入一学期课表 → 识别对应打卡内容） ===== -->
+  <view class="card tools-card" bindtap="goSchedule">
+    <view class="section-head">
+      <view class="dot" style="background:#9B7BF0"></view><text class="section-title">课程表</text>
+      <view class="entry-go">去设置 ›</view>
+    </view>
+    <view class="muted tools-desc">{{scheduleInfo || '录入一学期课程表，自动识别对应的打卡内容'}}</view>
+  </view>
+
+  <!-- ===== 打卡类型管理（家长可增删自定义打卡项） ===== -->
+  <view class="card tools-card" bindtap="goTypeManage">
+    <view class="section-head">
+      <view class="dot" style="background:#5FBF6B"></view><text class="section-title">打卡类型管理</text>
+      <view class="entry-go">去设置 ›</view>
+    </view>
+    <view class="muted tools-desc">在语数英之外，增加阅读、运动、练琴等自定义打卡项，每种类型对应一种作物。</view>
+  </view>
+
+  <!-- ===== 网页看板（生成与微信绑定的网页访问口令，电脑端只读查看） ===== -->
+  <view class="card tools-card" bindtap="goWebPortal">
+    <view class="section-head">
+      <view class="dot" style="background:#00A3A3"></view><text class="section-title">网页看板</text>
+      <view class="entry-go">去生成 ›</view>
+    </view>
+    <view class="muted tools-desc">生成与微信绑定的网页口令，用电脑浏览器查看孩子的打卡与导学数据（只读）。</view>
+  </view>
+
+  <!-- ===== 家长工具（数据备份 / 体验数据，放页面最底部） ===== -->
+  <view class="card tools-card">
+    <view class="section-head">
+      <view class="dot" style="background:#F5B740"></view><text class="section-title">家长工具</text>
+      <view class="btn btn-sm btn-line" catchtap="toggleTools">{{showTools ? '收起' : '展开 ›'}}</view>
+    </view>
+    <view wx:if="{{showTools}}">
+      <view class="muted tools-desc">所有记录都保存在手机本地，换手机前记得导出一份 JSON 备份。</view>
+      <view class="backup-row">
+        <view class="btn btn-sm btn-yellow" bindtap="exportData">导出备份</view>
+        <view class="btn btn-sm btn-line" bindtap="importData">导入恢复</view>
+        <view wx:if="{{isDemo}}" class="btn btn-sm btn-gray" bindtap="clearDemo">清空示例</view>
+      </view>
+      <view class="backup-row">
+        <view class="btn btn-sm btn-line" bindtap="viewBaseline">查看体验数据</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 添加孩子 底部抽屉 ============ -->
+  <view wx:if="{{showAdd}}" class="mask" bindtap="closeAdd">
+    <view class="sheet" catchtap="__stop">
+      <view class="sheet-handle"></view>
+      <view class="sheet-head">
+        <text class="sheet-title">添加孩子</text>
+        <view class="sheet-close" bindtap="closeAdd">✕</view>
+      </view>
+      <scroll-view class="sheet-body" scroll-y>
+        <!-- 所见即所得预览：孩子在档案卡 / 农场里显示的样子 -->
+        <view class="child-preview">
+          <view class="cp-avatar">{{form.avatar}}</view>
+          <view class="cp-name">{{form.nickname || '孩子的昵称'}}</view>
+          <view wx:if="{{form.grade}}" class="cp-grade">{{form.grade}}</view>
+        </view>
+
+        <view class="opt-label">昵称</view>
+        <input class="opt-input" placeholder="给孩子起个昵称" placeholder-class="opt-ph"
+               model:value="{{form.nickname}}" bindinput="onNickAdd" maxlength="12" cursor-spacing="30" />
+
+        <view class="opt-label">头像</view>
+        <scroll-view class="opt-scroll" scroll-x>
+          <view wx:for="{{avatarOptions}}" wx:key="*this"
+                class="emoji {{form.avatar === item ? 'on' : ''}}" data-emoji="{{item}}" bindtap="pickAvatarAdd">{{item}}</view>
+        </scroll-view>
+
+        <view class="opt-label">年级（可不填）</view>
+        <scroll-view class="opt-scroll" scroll-x>
+          <view wx:for="{{gradeOptions}}" wx:key="*this"
+                class="grade {{form.grade === item ? 'on' : ''}}" data-g="{{item}}" bindtap="pickGradeAdd">{{item}}</view>
+        </scroll-view>
+      </scroll-view>
+      <view class="sheet-foot">
+        <view class="btn btn-gray btn-sm" bindtap="closeAdd">取消</view>
+        <view class="btn btn-green btn-sm" bindtap="confirmAdd">添加</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 编辑孩子 底部抽屉 ============ -->
+  <view wx:if="{{showEdit}}" class="mask" bindtap="closeEdit">
+    <view class="sheet" catchtap="__stop">
+      <view class="sheet-handle"></view>
+      <view class="sheet-head">
+        <text class="sheet-title">编辑资料</text>
+        <view class="sheet-close" bindtap="closeEdit">✕</view>
+      </view>
+      <scroll-view class="sheet-body" scroll-y>
+        <view class="child-preview">
+          <view class="cp-avatar">{{form.avatar}}</view>
+          <view class="cp-name">{{form.nickname || '孩子的昵称'}}</view>
+          <view wx:if="{{form.grade}}" class="cp-grade">{{form.grade}}</view>
+        </view>
+
+        <view class="opt-label">昵称</view>
+        <input class="opt-input" placeholder="昵称" placeholder-class="opt-ph"
+               model:value="{{form.nickname}}" bindinput="onNickEdit" maxlength="12" cursor-spacing="30" />
+
+        <view class="opt-label">换头像</view>
+        <scroll-view class="opt-scroll" scroll-x>
+          <view wx:for="{{avatarOptions}}" wx:key="*this"
+                class="emoji {{form.avatar === item ? 'on' : ''}}" data-emoji="{{item}}" bindtap="pickAvatarEdit">{{item}}</view>
+        </scroll-view>
+
+        <view class="opt-label">年级（可不填）</view>
+        <scroll-view class="opt-scroll" scroll-x>
+          <view wx:for="{{gradeOptions}}" wx:key="*this"
+                class="grade {{form.grade === item ? 'on' : ''}}" data-g="{{item}}" bindtap="pickGradeEdit">{{item}}</view>
+        </scroll-view>
+      </scroll-view>
+      <view class="sheet-foot">
+        <view class="btn btn-gray btn-sm" bindtap="closeEdit">取消</view>
+        <view class="btn btn-yellow btn-sm" bindtap="confirmEdit">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 体验数据基线（阶段 0） ============ -->
+  <view wx:if="{{showBaseline}}" class="mask" bindtap="closeBaseline">
+    <view class="dialog" catchtap="__stop">
+      <view class="d-title">我的体验数据</view>
+      <view class="bl-row"><text>近 7 日打卡率</text><text class="bl-num">{{baseline.checkinDays7}}%</text></view>
+      <view class="bl-row"><text>累计打卡天数</text><text class="bl-num">{{baseline.activeDays}} 天</text></view>
+      <view class="bl-row"><text>合种发起 / 完成</text><text class="bl-num">{{baseline.coopCreated}} / {{baseline.coopDone}}</text></view>
+      <view class="bl-row"><text>合种完成率</text><text class="bl-num">{{baseline.coopRate}}%</text></view>
+      <view class="bl-note">{{baseline.sampleNote}}</view>
+      <view class="d-btns"><view class="btn btn-gray btn-block" bindtap="closeBaseline">关闭</view></view>
+    </view>
+  </view>
+
+</view>

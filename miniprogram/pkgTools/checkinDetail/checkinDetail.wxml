@@ -1,0 +1,86 @@
+<view class="page-wrap">
+
+  <!-- ===== 卡通背景氛围层 ===== -->
+  <view class="scene" aria-hidden="true">
+    <text class="sc sc-cloud" style="top:20rpx;left:16rpx">☁️</text>
+    <text class="sc sc-star" style="top:130rpx;right:44rpx">⭐</text>
+    <text class="sc sc-sun" style="top:300rpx;right:26rpx">🌞</text>
+    <view class="page-wave"></view>
+  </view>
+
+  <!-- ===== 课表联动提示 ===== -->
+  <view wx:if="{{courseHint}}" class="cd-course">📅 {{courseHint}}</view>
+
+  <!-- ===== 成长计划任务（单向读取：取计划中「最近一条未勾选」的任务；打卡不回写计划状态） ===== -->
+  <view wx:if="{{planTask}}" class="cd-plan">
+    <view class="cd-plan-tag">{{isToday ? '今日导学' : '当日任务'}}</view>
+    <view class="cd-plan-body">
+      <view class="cd-plan-task">{{planTask}}</view>
+      <view class="cd-plan-stage" wx:if="{{planStage}}">{{planStage}}</view>
+    </view>
+    <view class="cd-plan-acts">
+      <view class="cd-plan-act" catchtap="goPlanTask">计划</view>
+      <view class="cd-plan-act cd-plan-act-on" catchtap="goTutor">导学 ›</view>
+    </view>
+  </view>
+
+  <!-- ===== 已完成态 ===== -->
+  <view wx:if="{{done}}" class="card done-card">
+    <view class="dc-title">🎉 今天的{{type.name}}已经完成啦</view>
+    <view class="dc-sub">完成时间 {{doneAtText}} · 继续补充下面的记录也可以保存</view>
+  </view>
+
+  <!-- ===== 学习情况描述 ===== -->
+  <view class="card">
+    <view class="card-title"><view class="dot" style="background:{{type.colorDeep}}"></view>今天学了什么？</view>
+    <view class="muted cd-tip">简单写几句当天的情况，系统会据此给出评价和建议</view>
+
+    <textarea class="textarea cd-textarea"
+      placeholder="比如：今天做了口算练习，错了 2 道，已经订正；读课文很流畅～"
+      value="{{note}}" bindinput="onNote" maxlength="300"
+      disabled="{{!isToday}}" cursor-spacing="24" />
+    <view class="cd-count">{{noteLen}}/300</view>
+
+  </view>
+
+  <!-- ===== 用时（可选） ===== -->
+  <view class="card">
+    <view class="card-title"><view class="dot" style="background:{{type.colorDeep}}"></view>用了多长时间（可选）</view>
+    <input class="input cd-minutes-input" type="number" placeholder="填写分钟数，如 30"
+      value="{{minutes}}" bindinput="onMinutes" disabled="{{!isToday}}" />
+  </view>
+
+  <!-- ===== AI 分析 ===== -->
+  <view class="card">
+    <view class="card-title"><view class="dot"></view>学习评价
+      <text wx:if="{{roleName}}" class="role-tag">{{roleName}}</text>
+      <text class="tp-link" bindtap="goTypeProfile">学科画像 ›</text>
+    </view>
+    <view class="muted cd-tip">{{ roleName ? '已固定为「' + roleName + '」角色进行分析' : '基于上面的描述，让系统给出评价与改进建议' }}</view>
+
+    <view wx:if="{{isToday}}" class="btn btn-line btn-block {{analyzing ? 'disabled' : ''}}" bindtap="analyze">
+      {{analyzing ? '分析中…' : (result ? '重新分析' : '让系统分析一下')}}
+    </view>
+
+    <view wx:if="{{result}}" class="ai-result">
+      <view class="sect" wx:for="{{result.sections}}" wx:key="key">
+        <view class="sect-h">{{item.emoji}} {{item.title}}</view>
+        <view class="sect-b">{{item.body}}</view>
+      </view>
+      <view wx:if="{{!result.sections.length}}" class="ai-plain">{{result.analysis}}</view>
+    </view>
+    <view wx:elif="{{analysis}}" class="ai-result">
+      <view class="ai-plain">{{analysis}}</view>
+    </view>
+  </view>
+
+  <!-- ===== 底部操作 ===== -->
+  <view wx:if="{{isToday}}" class="cd-foot">
+    <view wx:if="{{!done}}" class="btn btn-green btn-block" bindtap="submit">完成{{type.name}}打卡</view>
+    <view wx:else class="cd-row">
+      <view class="btn btn-gray" bindtap="undo">撤销打卡</view>
+      <view class="btn btn-yellow" bindtap="saveNote">保存记录</view>
+    </view>
+  </view>
+
+</view>

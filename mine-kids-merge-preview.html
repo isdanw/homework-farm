@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="G27xWkUKAEwFbBb9qCpC5T">
+<head data-page-node-id="0I4fmzPRCmCUUiQNKlaH9B">
+<meta charset="utf-8" data-page-node-id="0qfiSVcU8bE95eFhKQzBbQ">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="S2X5Fi1tBpBQdZCUzmg3SP">
+<title>我的页 · 孩子模块合并对照</title>
+<style>
+  :root{
+    --c-blue:#BFE6FF; --c-blue-deep:#3FA9F5;
+    --c-green:#A8E6A1; --c-green-deep:#5FBF6B;
+    --c-yellow-deep:#F5B740;
+    --c-text:#4A4A4A; --c-sub:#8A8A8A;
+    --radius:28px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:28px 24px 60px;
+    background:#EDF1F6; color:#2B3340;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .topbar{max-width:1500px;margin:0 auto 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+  .topbar h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.3px;}
+  .topbar .hint{font-size:13px;color:#7A8698;line-height:1.7;flex:1;min-width:260px;}
+  .seg{display:inline-flex;background:#fff;border-radius:12px;padding:4px;box-shadow:0 2px 8px rgba(120,140,170,.16);}
+  .seg button{
+    border:0;background:transparent;padding:9px 18px;border-radius:9px;
+    font-size:14px;font-weight:700;color:#66707E;cursor:pointer;font-family:inherit;
+  }
+  .seg button.on{background:#5FBF6B;color:#fff;}
+  .stage{display:flex;gap:36px;justify-content:center;flex-wrap:wrap;align-items:flex-start;}
+  .col{width:750px;}
+  .col-tag{
+    display:flex;align-items:center;gap:10px;margin-bottom:12px;
+    font-size:15px;font-weight:800;color:#3B4553;
+  }
+  .col-tag i{display:inline-block;width:26px;height:26px;border-radius:8px;font-style:normal;
+    text-align:center;line-height:26px;font-size:14px;color:#fff;}
+  .tag-bad i{background:#E5726F;} .tag-good i{background:#5FBF6B;}
+  .col-tag em{font-style:normal;font-size:13px;font-weight:600;color:#8C97A6;}
+
+  .phone{
+    width:750px;background:#FFF9F0;border-radius:34px;overflow:hidden;
+    box-shadow:0 16px 44px rgba(90,115,150,.20);
+  }
+  .navbar{
+    height:88px;display:flex;align-items:center;justify-content:center;
+    font-size:32px;font-weight:700;color:#2B3340;
+    background:linear-gradient(180deg,#DFF0FF,#F0F8FF);
+  }
+  .page-wrap{
+    padding:24px 24px 40px;
+    background:#FFF9F0;
+  }
+
+  /* ---------- 卡片通用 ---------- */
+  .card{
+    background:#fff;border-radius:var(--radius);padding:28px;margin-bottom:24px;
+    box-shadow:0 8px 24px rgba(150,180,210,.14);
+  }
+  .section-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+  .section-title{font-size:30px;font-weight:700;color:#333;flex:1;}
+  .entry-go{margin-left:auto;font-size:24px;color:#3FA9F5;font-weight:700;}
+  .tools-desc{font-size:25px;color:#999;line-height:1.6;}
+
+  /* ---------- 按钮 ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-height:88px;padding:0 34px;border-radius:44px;
+    font-size:30px;font-weight:800;color:#fff;
+  }
+  .btn-sm{min-height:70px;font-size:28px;padding:0 24px;}
+  .btn-block{display:flex;width:100%;}
+  .btn-yellow{background:var(--c-yellow-deep);}
+  .btn-green{background:var(--c-green-deep);}
+  .btn-line{background:#fff;color:var(--c-blue-deep);border:3px solid var(--c-blue);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    background:#fff;border-radius:24px;padding:28px 28px 20px;margin-bottom:20px;
+    border:1px solid #E8F0FE;
+  }
+  .hero-main{display:flex;align-items:center;gap:20px;}
+  .hero-avatar-wrap{
+    width:100px;height:100px;border-radius:32px;
+    background:linear-gradient(135deg,#EAF7FF,#F0FFF4);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;box-shadow:0 6px 20px rgba(100,160,220,.15);
+  }
+  .hero-emoji{font-size:56px;line-height:1;}
+  .hero-body{flex:1;min-width:0;}
+  .hero-name-row{display:flex;align-items:center;gap:12px;}
+  .hero-name{font-size:38px;font-weight:800;color:#1a1a2e;}
+  .hero-grade{
+    font-size:22px;font-weight:700;color:#fff;
+    background:linear-gradient(135deg,#5FBF6B,#4AA857);
+    border-radius:16px;padding:3px 14px;flex-shrink:0;
+  }
+  .hero-streak{font-size:26px;color:#999;margin-top:6px;}
+
+  .res-bar{
+    display:flex;gap:14px;margin-top:22px;padding-top:18px;border-top:1px solid #F0F2F5;
+  }
+  .res-item{
+    display:flex;align-items:center;gap:6px;height:60px;padding:0 18px;
+    border-radius:14px;font-size:25px;font-weight:600;
+  }
+  .res-gold{background:#FFFAEC;color:#B8860B;}
+  .res-sun{background:#FFF8E8;color:#CC8400;}
+  .res-plant{background:#F2FCF0;color:#3B8C2E;}
+
+  .bind-status{display:flex;align-items:center;gap:8px;margin-top:16px;padding:10px 0;}
+  .bind-dot{width:12px;height:12px;border-radius:50%;background:#ccc;flex-shrink:0;}
+  .bind-dot.on{background:#5FBF6B;}
+  .bind-label{font-size:24px;color:#999;}
+  .bind-status.bound .bind-label{color:#5FBF6B;}
+  .bind-action{font-size:24px;font-weight:600;color:#3FA9F5;margin-left:auto;flex-shrink:0;}
+
+  /* ---------- 孩子列表 ---------- */
+  .ulist{display:flex;flex-direction:column;gap:12px;}
+  .urow{
+    display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:20px;
+    background:#F9FAFB;
+  }
+  .urow.on{border:2px solid #5FBF6B;background:#FAFFFA;}
+  .u-avatar{
+    width:76px;height:76px;border-radius:22px;background:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:42px;
+    box-shadow:0 3px 10px rgba(150,180,210,.12);flex-shrink:0;
+  }
+  .u-info{flex:1;min-width:0;}
+  .u-name{font-size:30px;font-weight:800;color:#222;}
+  .u-grade{
+    font-size:21px;font-weight:700;color:#fff;background:#5FBF6B;
+    border-radius:14px;padding:2px 10px;margin-left:10px;
+  }
+  .u-sub{font-size:24px;color:#999;margin-top:4px;}
+  .u-cur{
+    font-size:23px;font-weight:800;color:#fff;background:#5FBF6B;
+    border-radius:18px;padding:7px 18px;flex-shrink:0;
+  }
+  .u-switch{
+    font-size:23px;font-weight:700;color:#3FA9F5;background:#fff;
+    border:1px solid #B5D4F4;border-radius:18px;padding:7px 18px;flex-shrink:0;
+  }
+
+  /* ---------- 合并后：Hero 卡内区块 ---------- */
+  .kid-others{margin-top:20px;padding-top:18px;border-top:1px solid #F0F2F5;}
+  .kid-others-head{font-size:25px;font-weight:700;color:#8A93A0;margin-bottom:14px;}
+  .kid-actions{
+    margin-top:20px;padding-top:18px;border-top:1px solid #F0F2F5;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .kid-add{
+    height:84px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+    font-size:28px;font-weight:700;color:#4AA857;
+    background:#F6FDF7;border:2px dashed #A8DDB2;
+  }
+  .kid-del{text-align:center;font-size:25px;color:#C97878;padding:12px 0 2px;}
+
+  /* ---------- 标注框 ---------- */
+  .mark{position:relative;border-radius:30px;}
+  .mark-bad{outline:3px dashed #E5726F;outline-offset:10px;}
+  .mark-good{outline:3px dashed #5FBF6B;outline-offset:10px;}
+  .badge{
+    position:absolute;top:-24px;left:-16px;z-index:5;
+    font-size:20px;font-weight:800;color:#fff;border-radius:14px;padding:5px 14px;
+    box-shadow:0 4px 10px rgba(0,0,0,.14);white-space:nowrap;
+  }
+  .badge-bad{background:#E5726F;} .badge-good{background:#5FBF6B;}
+
+  /* 双孩子态显隐 */
+  .only-two{display:none;}
+  body.two-kids .only-two{display:block;}
+  body.two-kids .urow.only-two{display:flex;}
+  body.two-kids .btn.only-two,
+  body.two-kids .kid-del.only-two{display:flex;}
+
+  /* tabBar 装饰 */
+  .tabbar{
+    display:flex;background:#fff;border-top:1px solid #EEF2F7;
+    padding:14px 0 26px;
+  }
+  .tabbar div{flex:1;text-align:center;font-size:22px;color:#9AA5B1;}
+  .tabbar div span{display:block;font-size:34px;line-height:1.3;}
+  .tabbar div.on{color:#5FBF6B;font-weight:700;}
+</style>
+</head>
+<body data-page-node-id="0bJdp2UlRn6GsnKeskiwW4">
+
+<div class="topbar" data-page-node-id="ksMAM4Pt3ZR4iaYiyvnDAd">
+  <h1 data-page-node-id="KUHO8dqHc4gw53mZ8RcXRo">「我的」页 · 孩子模块合并</h1>
+  <div class="seg" data-page-node-id="CZSoi4HfUNzKtxdN51ozMG">
+    <button class="on" data-state="one" data-page-node-id="KwDmLtMZlAWyu0OQyH9dZw">只有 1 个孩子</button>
+    <button data-state="two" data-page-node-id="DKQ9iATg3wfeXCOJ0L6JXl">有 2 个孩子</button>
+  </div>
+  <div class="hint" data-page-node-id="nvhMFFQ5uJpObVCraS7S2I">左＝改动前（两块各自独立）　右＝改动后（合成一张「孩子卡」）</div>
+</div>
+
+<div class="stage" data-page-node-id="eu3Zy7PFLFHQvuAriXWqXH">
+
+  <!-- ==================== 改动前 ==================== -->
+  <div class="col" data-page-node-id="RMAmlZQ3NFcuSCU6IumrGY">
+    <div class="col-tag tag-bad" data-page-node-id="Fj1AmBgcZRF7SHAQDM0NmX"><i data-page-node-id="43rkTJ7WHIykBAioPiGwXz">前</i>改动前 <em data-page-node-id="rgvtGBSwkTkpxX0O00rfLt">· ①孩子信息卡 + ②切换孩子/添加孩子，两块分离</em></div>
+    <div class="phone" data-page-node-id="CmVPGxNmLE2ZJbt88A2xM1">
+      <div class="navbar" data-page-node-id="MBgigDWw0CWjxzBxKM890M">我的</div>
+      <div class="page-wrap" data-page-node-id="gGPPkyE1ia2u8wXQrbykvh">
+
+        <div class="mark mark-bad" data-page-node-id="wWdSEat0fHJcZ8F0KztfXe">
+          <div class="badge badge-bad" data-page-node-id="PBIBo8nBQKNrppdTXo9oeI">① 当前孩子信息</div>
+          <div class="hero" data-page-node-id="U1d5aAJig8XPeTNPLkHaXN">
+            <div class="hero-main" data-page-node-id="5KykAEMiIViDXzFxkIDfWl">
+              <div class="hero-avatar-wrap" data-page-node-id="kBIN7abxkBoY3ibWcJWMj5"><div class="hero-emoji" data-page-node-id="wRlw6EC5FEIrF6A4ryyp4m">🐼</div></div>
+              <div class="hero-body" data-page-node-id="LrU3SzavPX8FAjappgMFU3">
+                <div class="hero-name-row" data-page-node-id="2gVbN36aHChkNnHEGtXRO6"><span class="hero-name" data-page-node-id="0mU2LksBHofucHv856oIEO">加一</span><span class="hero-grade" data-page-node-id="C8BGBLuzzzrzARniH4snAy">一年级</span></div>
+                <div class="hero-streak" data-page-node-id="wm0SXxpGFGNNKaBAmboCEh">连续打卡 1 天</div>
+              </div>
+              <div class="btn btn-sm btn-yellow" data-page-node-id="EQH5o208ND6yRqOf2x3oHj">编辑 ›</div>
+            </div>
+            <div class="res-bar" data-page-node-id="EaUXpPn0zQzF8Ox4N2iKfP">
+              <div class="res-item res-gold" data-page-node-id="fogMwUuvxJh6M8wFhbuPRC">🪙 8 金币</div>
+              <div class="res-item res-sun" data-page-node-id="caxHv0Jg7dDjyMcRN0vLNo">☀️ 5 阳光</div>
+              <div class="res-item res-plant" data-page-node-id="qsqF2m7GT0hSUOaIKAD2c3">🌱 4 株植物</div>
+            </div>
+            <div class="bind-status bound" data-page-node-id="vkjUJiZEDDazBDYA9fSPVM">
+              <span class="bind-dot on" data-page-node-id="6xgPeHsGJbGS55r20on0BG"></span>
+              <span class="bind-label" data-page-node-id="s4Tw1ujKyfs9KTdH5BwByU">已绑定微信</span>
+              <span class="bind-action" data-page-node-id="02z6nPWZIhjUxUjpw7vEsr">设置</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-page-node-id="tdioNCcJtH5IBRmcUZXEUd">
+          <div class="section-head" data-page-node-id="EsIVCvrdyXmbPfgle7nxTn"><span class="dot" style="background:#3FA9F5" data-page-node-id="HBCB3n9DcgFkGgv17QvUZ8"></span><span class="section-title" data-page-node-id="GprM15dVIQyFdEWa2hPk6J">儿童画像</span><span class="entry-go" data-page-node-id="DTsFcNwBtbQmHxqDlj0BB4">去设置 ›</span></div>
+          <div class="tools-desc" data-page-node-id="ZST5QbNEbhL01Oa42kqnuR">一年级 · 小学 · 每周 210 分钟 · 讲解：先提示后讲解</div>
+        </div>
+
+        <div class="card" data-page-node-id="Buv6bgyF7ZfFYBfBM3twM5">
+          <div class="section-head" data-page-node-id="MGkQJPldnhgYFXAz2xtcP5"><span class="dot" style="background:#9B7BF0" data-page-node-id="Z87pbiu2r9sZyIIqJ4Kk76"></span><span class="section-title" data-page-node-id="j9ciRo7uNzSnQjGdHHO9ki">导学中心</span><span class="entry-go" data-page-node-id="q5xZITlVtrMKTJjS3wkHOB">去学习 ›</span></div>
+          <div class="tools-desc" data-page-node-id="tLZSVAPnEsBtSnwpT6YtSN">已验证 1 项</div>
+        </div>
+
+        <div class="mark mark-bad" data-page-node-id="FvxJLAHvfaFg2QnCyO7s53">
+          <div class="badge badge-bad" data-page-node-id="V9HecDy6EeaTplowgxR2Er">② 切换孩子 + 添加孩子</div>
+          <div class="card" data-page-node-id="QJIcqpf10ULI96Rc9vfEjp">
+            <div class="section-head" data-page-node-id="HEy3MAH0hyEXsKicFmcD81"><span class="dot" style="background:#3FA9F5" data-page-node-id="wl8qAniPrpDfRnWzVDqf7K"></span><span class="section-title" data-page-node-id="4RLnQBb1DlWjr6fN7RZHqX">切换孩子</span></div>
+            <div class="ulist" data-page-node-id="ZHFj7gKkhcrtbVRtHu29Rp">
+              <div class="urow on" data-page-node-id="ygKcIu153Z3L1HeoL9AcNa">
+                <div class="u-avatar" data-page-node-id="PQ7UUFDlZbTxcEuEWDBL56">🐼</div>
+                <div class="u-info" data-page-node-id="gVSRRO5sjiReum5Rn8Fw6I">
+                  <div class="u-name" data-page-node-id="cXYgfT8LZUWCIHXXTXQmfp">加一<span class="u-grade" data-page-node-id="HwR9K1exraN0D0XXERiKeu">一年级</span></div>
+                  <div class="u-sub" data-page-node-id="x5hgFPKQt3V2dvBgmOUI9U">连续打卡 1 天 · 农场 8 金币</div>
+                </div>
+                <div class="u-cur" data-page-node-id="77K5X66E35aX1nYn1HOTxy">当前</div>
+              </div>
+              <div class="urow only-two" data-page-node-id="BGhNZuyCANeM1qY53LC51z">
+                <div class="u-avatar" data-page-node-id="TLIaqkQ1TAseSGx8RsE8Ev">🐰</div>
+                <div class="u-info" data-page-node-id="xEoOTTXrWDOPA6ZFrMeLb9">
+                  <div class="u-name" data-page-node-id="nakVHNYEJe2kRb9Hhn32wl">米粒<span class="u-grade" data-page-node-id="WJ42FIByHIFxGN7yUaPTHX">二年级</span></div>
+                  <div class="u-sub" data-page-node-id="WYtXSnulIVlF331Tf8FwtY">连续打卡 5 天 · 农场 21 金币</div>
+                </div>
+                <div class="u-switch" data-page-node-id="ixZxlOaMUlEBLwFKje6ADE">切换</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom:24px;" data-page-node-id="H35biQTPOFow2vG0OTVGRz">
+            <div class="btn btn-block btn-green" data-page-node-id="FEBFoF34JJoTZBTtJlO9gT">＋ 添加孩子</div>
+            <div class="btn btn-block btn-line only-two" style="margin-top:16px;" data-page-node-id="1jjuD4tMsEEj3RWOvCBkvD">删除当前孩子</div>
+          </div>
+        </div>
+
+        <div class="card" data-page-node-id="5lnjfk8ISenqrmoms33Lqq">
+          <div class="section-head" data-page-node-id="423md3WQl3yiZDKHBdu8Gq"><span class="dot" style="background:#F5B740" data-page-node-id="eZbTqNGftyzWTwUbZo7FjM"></span><span class="section-title" data-page-node-id="7mRF1LjBwtTNitGlr3saC1">家长工具</span><span class="btn btn-sm btn-line" data-page-node-id="FjsPNf6kdGGKzpNBAqwzbd">展开 ›</span></div>
+        </div>
+
+        <div class="tabbar" data-page-node-id="vvUaIa4dgQQvJUgfaTSf1I">
+          <div data-page-node-id="ETp8bCDAWrsUOk71iUqA5P"><span data-page-node-id="v6evcHJyUMXWQjzIrLOG2A">🏡</span>今天</div>
+          <div data-page-node-id="17qBhJy7kqeOL5Alf980Gx"><span data-page-node-id="CmzaHXJ3OmyW9NVIx2eA1h">✅</span>打卡</div>
+          <div data-page-node-id="qdbKvBytyDUI4R5y850R6u"><span data-page-node-id="ASAlcXB59M46mbmVRIgguV">🌻</span>农场</div>
+          <div class="on" data-page-node-id="TQsjhy2Ni6EdzXSj5Rq05A"><span data-page-node-id="gFK5z5DOSTEoCm4As5xSbM">👤</span>我的</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 改动后 ==================== -->
+  <div class="col" data-page-node-id="C92UlOCeW7xvdLt0DEOqcF">
+    <div class="col-tag tag-good" data-page-node-id="8bFNcEB8VWH903pZ7zwRsI"><i data-page-node-id="E2sXbnPUCaKcpUyj4A9sMp">后</i>改动后 <em data-page-node-id="4vxjJpvZjB7i8tBXmJ8EOA">· 孩子模块合一（①＋②）· 家长工具已移至页面最底部</em></div>
+    <div class="phone" data-page-node-id="OsFiH0H5FOMyGSZgTLXmHY">
+      <div class="navbar" data-page-node-id="vnrrpRg7zDEPxNu5Weha1f">我的</div>
+      <div class="page-wrap" data-page-node-id="0GUmHU7i3moqPjLlLIkXhQ">
+
+        <div class="mark mark-good" data-page-node-id="noSzwt1CB4w6pQXKoOE6Rv">
+          <div class="badge badge-good" data-page-node-id="Cv37eDGJFTeWgsej94bDPo">① + ② 合为一张「孩子卡」</div>
+          <div class="hero" data-page-node-id="pUpFpbzZHQGMzrc3BwFcFS">
+            <div class="hero-main" data-page-node-id="wxuhDboAT38BEPMvvjT5yS">
+              <div class="hero-avatar-wrap" data-page-node-id="bqS2LiiHImTItIg4QTh8Nv"><div class="hero-emoji" data-page-node-id="UUqEanoUNqykMXB4d9xJfQ">🐼</div></div>
+              <div class="hero-body" data-page-node-id="0ZURK2lXI9z7IaPOFDSbnX">
+                <div class="hero-name-row" data-page-node-id="DxO4iE0oxzosALegjW5zt9"><span class="hero-name" data-page-node-id="RFSux2fSjwFjZN9599aprw">加一</span><span class="hero-grade" data-page-node-id="OsuwUeSkqGsAqGFBLABl8d">一年级</span></div>
+                <div class="hero-streak" data-page-node-id="USkwjCPcwgblpaczjRsomT">连续打卡 1 天</div>
+              </div>
+              <div class="btn btn-sm btn-yellow" data-page-node-id="lg5QDJB4kk5dqTyRNBZNAX">编辑 ›</div>
+            </div>
+            <div class="res-bar" data-page-node-id="ai1znSc1hl8Dh5k8qaNxsc">
+              <div class="res-item res-gold" data-page-node-id="gLMzSCpz1Sfrgq7L2N4TTS">🪙 8 金币</div>
+              <div class="res-item res-sun" data-page-node-id="rU3pdw2wEolKGb8JEVZqBo">☀️ 5 阳光</div>
+              <div class="res-item res-plant" data-page-node-id="dvDo1eqdxiSfGX5aSO1xtL">🌱 4 株植物</div>
+            </div>
+            <div class="bind-status bound" data-page-node-id="7Xl5XCLz6IiQ37LRE3uSym">
+              <span class="bind-dot on" data-page-node-id="8b5sZBoahlG0HYxIU9gIfA"></span>
+              <span class="bind-label" data-page-node-id="xZGKHmeOSBTGcKBwYVw23i">已绑定微信</span>
+              <span class="bind-action" data-page-node-id="UdCbnU3IMU10BtYQRNWjDX">设置</span>
+            </div>
+
+            <div class="kid-others only-two" data-page-node-id="9KR6AdtuOrdl2TyTsK9Nz3">
+              <div class="kid-others-head" data-page-node-id="EJHpM1t5fdeDpHtseJ68kB">其他孩子</div>
+              <div class="ulist" data-page-node-id="ravwX5gPn0ULjBa5Sd8s8r">
+                <div class="urow" data-page-node-id="5jA9z5XeByxwZkTR02nVga">
+                  <div class="u-avatar" data-page-node-id="VJn7eOGDfwOOsMx1HxFt8J">🐰</div>
+                  <div class="u-info" data-page-node-id="Zzy94ae0O7AYK7proC8nOz">
+                    <div class="u-name" data-page-node-id="l5BQoRFR3JzDNlG3Ak4d1n">米粒<span class="u-grade" data-page-node-id="SRnKRSf9D0LCIOTGtkqpwp">二年级</span></div>
+                    <div class="u-sub" data-page-node-id="THX3BqGuwVpcBXdbLx3Zc0">连续打卡 5 天 · 农场 21 金币</div>
+                  </div>
+                  <div class="u-switch" data-page-node-id="NxVqIpCvhg18u4lvpxY0rY">切换</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="kid-actions" data-page-node-id="Cz50TSHVfa3wtrEUgPmnt6">
+              <div class="kid-add" data-page-node-id="MPxj2Vyq1tMwEwmiFljA2y">＋ 添加孩子</div>
+              <div class="kid-del only-two" data-page-node-id="0qW1ANcqdyJaijVAnBCJTX">删除当前孩子</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-page-node-id="go8cvzrVlA0xgjLKOCPPyW">
+          <div class="section-head" data-page-node-id="QF7avzABRCYreqTsUSfP0v"><span class="dot" style="background:#3FA9F5" data-page-node-id="gy9XcZ6L7L5fa7wefuBsXe"></span><span class="section-title" data-page-node-id="xgjerl24ybJ27bjuDMCV0u">儿童画像</span><span class="entry-go" data-page-node-id="rnRAlyQEVkXQbHebOavGbv">去设置 ›</span></div>
+          <div class="tools-desc" data-page-node-id="A0actth1zNzoB3F73j3Ma6">一年级 · 小学 · 每周 210 分钟 · 讲解：先提示后讲解</div>
+        </div>
+
+        <div class="card" data-page-node-id="0vitPxJFHbHqSTUdIaF2DD">
+          <div class="section-head" data-page-node-id="plBbnOhe7nLBfAq9K30n0S"><span class="dot" style="background:#9B7BF0" data-page-node-id="TPpnVFFUExaG2mjPwquzRj"></span><span class="section-title" data-page-node-id="2p9lRplBiEIlHIyrDGxLDW">导学中心</span><span class="entry-go" data-page-node-id="UnpDEoAshSzYgQSDz2Temh">去学习 ›</span></div>
+          <div class="tools-desc" data-page-node-id="XJcm5TK3WHCYPijbdkr6EW">已验证 1 项</div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><span class="dot" style="background:#5FBF6B"></span><span class="section-title">成长计划</span><span class="entry-go">去查看 ›</span></div>
+          <div class="tools-desc">还没有生成计划，点这里按年级、学期与教材为各科编排阶段任务</div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><span class="dot" style="background:#9B7BF0"></span><span class="section-title">课程表</span><span class="entry-go">去设置 ›</span></div>
+          <div class="tools-desc">录入一学期课程表，自动识别对应的打卡内容</div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><span class="dot" style="background:#5FBF6B"></span><span class="section-title">打卡类型管理</span><span class="entry-go">去设置 ›</span></div>
+          <div class="tools-desc">在语数英之外，增加阅读、运动、练琴等自定义打卡项，每种类型对应一种作物。</div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><span class="dot" style="background:#00A3A3"></span><span class="section-title">网页看板</span><span class="entry-go">去生成 ›</span></div>
+          <div class="tools-desc">生成与微信绑定的网页口令，用电脑浏览器查看孩子的打卡与导学数据（只读）。</div>
+        </div>
+
+        <div class="card" data-page-node-id="WUg1VP4xdg2HIw3QRcKjjz">
+          <div class="section-head" data-page-node-id="64iR7mpCEurdpeqt10fXRM"><span class="dot" style="background:#F5B740" data-page-node-id="mLwWMkEN9RzuVY5TBTUfUY"></span><span class="section-title" data-page-node-id="AvqL5p4du3juPy0KHb0PuC">家长工具</span><span class="btn btn-sm btn-line" data-page-node-id="fvWkzlTNhHZUpbJnYRvIh1">展开 ›</span></div>
+        </div>
+
+        <div class="tabbar" data-page-node-id="hp4o3sg9ZbljBkdsKNH1GW">
+          <div data-page-node-id="96xMVoNcTOccSHW2Lo6qHF"><span data-page-node-id="k5RUVGN3YsJmTY3mwM38rL">🏡</span>今天</div>
+          <div data-page-node-id="s9XFxNnCKrjiG5G3jHFsrb"><span data-page-node-id="GyWfGxEVsK6GStQGLHY1Wy">✅</span>打卡</div>
+          <div data-page-node-id="5FyYRrNvFxLgEoS6MSQU1G"><span data-page-node-id="Hzh9aw3QVtBfvOGac6p3d1">🌻</span>农场</div>
+          <div class="on" data-page-node-id="sqDAp6XjonrrMZZS9FBeTH"><span data-page-node-id="KXPFSAMAVILgJdkH7SgPLT">👤</span>我的</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.seg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.seg button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      document.body.classList.toggle('two-kids', b.dataset.state === 'two');
+    });
+  });
+</script>
+</body>
+</html>

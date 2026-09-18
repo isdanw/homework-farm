@@ -1,0 +1,10 @@
+{
+  "name": "webPortalBind",
+  "version": "1.0.0",
+  "description": "网页看板 per-user 口令绑定（小程序 openid ↔ 网页令牌），含二维码",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest",
+    "qrcode": "latest"
+  }
+}

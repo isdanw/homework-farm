@@ -1,0 +1,68 @@
+<view class="tutor-page">
+
+  <!-- 学科切换（九科横向滚动） -->
+  <scroll-view class="subject-bar" scroll-x enhanced show-scrollbar="{{false}}">
+    <view wx:for="{{subjects}}" wx:key="key"
+          class="sub-pill {{item.key === subject ? 'on' : ''}}"
+          data-key="{{item.key}}" bindtap="pickSubject">
+      <text class="sp-emoji">{{item.emoji}}</text>
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 成长计划任务横幅 -->
+  <view class="task-banner" wx:if="{{taskContext}}">
+    <view class="tb-tag">正在导学</view>
+    <view class="tb-body">
+      <view class="tb-name">{{taskContext.stage}} · {{taskContext.task}}</view>
+      <view class="tb-goal" wx:if="{{taskContext.goal}}">目标：{{taskContext.goal}}</view>
+    </view>
+  </view>
+
+  <!-- 错题订正横幅 -->
+  <view class="task-banner" wx:elif="{{mistakeContext}}">
+    <view class="tb-tag">订正</view>
+    <view class="tb-body">
+      <view class="tb-name">{{mistakeContext.topic}}</view>
+      <view class="tb-goal" wx:if="{{mistakeContext.errorType}}">错因：{{mistakeContext.errorTypeLabel}}</view>
+    </view>
+  </view>
+
+  <!-- 归档提示 -->
+  <view class="archive-tip" wx:if="{{archivedCount > 0}}">已归档 {{archivedCount}} 次导学记录</view>
+
+  <!-- 消息区 -->
+  <scroll-view class="msg-scroll" scroll-y scroll-into-view="{{scrollTo}}" scroll-with-animation>
+    <view wx:if="{{!messages.length}}" class="welcome">
+      <view class="welcome-emoji">{{subjectEmoji}}</view>
+      <view class="welcome-title">开始{{subjectName}}导学吧</view>
+      <view class="welcome-sub">把不会的题、或者你的想法发给我，我会一步步引导你想出来，不会直接给答案哦～</view>
+    </view>
+
+    <view wx:for="{{messages}}" wx:key="index"
+          class="msg-row {{item.role === 'user' ? 'from-user' : 'from-ai'}}">
+      <view class="msg-avatar">{{item.role === 'user' ? '🐯' : '🤖'}}</view>
+      <view class="msg-bubble">{{item.content}}</view>
+    </view>
+
+    <view wx:if="{{sending}}" class="msg-row from-ai">
+      <view class="msg-avatar">🤖</view>
+      <view class="msg-bubble typing">老师正在想…</view>
+    </view>
+
+    <view id="msg-bottom" style="height:4rpx"></view>
+  </scroll-view>
+
+  <!-- 底部输入区 -->
+  <view class="input-bar">
+    <input class="input-box" value="{{input}}" placeholder="把题目或你的想法发给我…"
+           confirm-type="send" bindinput="onInput" bindconfirm="send" disabled="{{sending}}" />
+    <view class="send-btn {{sending ? 'disabled' : ''}}" bindtap="send">发送</view>
+  </view>
+
+  <!-- 结束本次导学并归档 -->
+  <view class="end-bar">
+    <view class="end-btn" bindtap="endSession">✓ 结束本次导学并归档</view>
+  </view>
+
+</view>

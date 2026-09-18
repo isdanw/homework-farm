@@ -1,0 +1,55 @@
+<view class="hub-page">
+
+  <!-- ===== 概览卡 ===== -->
+  <view class="hub-overview">
+    <view class="hub-ov-item">
+      <view class="hub-ov-num">{{overview.sessions}}</view>
+      <view class="hub-ov-name">导学归档</view>
+    </view>
+    <view class="hub-ov-item">
+      <view class="hub-ov-num">{{overview.mistakes}}</view>
+      <view class="hub-ov-name">错题总数</view>
+    </view>
+    <view class="hub-ov-item">
+      <view class="hub-ov-num warn">{{overview.pending}}</view>
+      <view class="hub-ov-name">待订正</view>
+    </view>
+    <view class="hub-ov-item">
+      <view class="hub-ov-num ok">{{overview.evidence}}</view>
+      <view class="hub-ov-name">已验证</view>
+    </view>
+  </view>
+
+  <!-- ===== 主入口：AI 导学 ===== -->
+  <view class="hub-card hub-main" bindtap="goTutor">
+    <view class="hub-ic">💡</view>
+    <view class="hub-body">
+      <view class="hub-title">导学助手</view>
+      <view class="hub-desc">不会的题发给我，一步步引导孩子自己想出来，不直接给答案</view>
+    </view>
+    <view class="hub-go">去提问 ›</view>
+  </view>
+
+  <!-- ===== 错题本（含订正 + 复测巩固） ===== -->
+  <view class="hub-card" bindtap="goMistakes">
+    <view class="hub-ic">📝</view>
+    <view class="hub-body">
+      <view class="hub-title">错题本</view>
+      <view class="hub-desc">导学结束自动归因错因（E1-E9），在这里订正、复测巩固</view>
+    </view>
+    <view wx:if="{{overview.pending}}" class="hub-badge">待订正 {{overview.pending}}</view>
+    <view class="hub-go">›</view>
+  </view>
+
+  <!-- ===== 导学报告（错因分布 + 复测证据） ===== -->
+  <view class="hub-card" bindtap="goReport">
+    <view class="hub-ic">📊</view>
+    <view class="hub-body">
+      <view class="hub-title">导学报告</view>
+      <view class="hub-desc">错因分布 + 复测证据，复测达标（≥5 题且 ≥80%）才算过关</view>
+    </view>
+    <view wx:if="{{overview.evidence}}" class="hub-badge ok">已验证 {{overview.evidence}}</view>
+    <view class="hub-go">›</view>
+  </view>
+
+</view>

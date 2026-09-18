@@ -1,0 +1,284 @@
+/* ============ 我的（用户管理）—— 全新设计 ============ */
+
+/* ===== HERO：身份 + 资源 + 微信状态 合一卡片 ===== */
+.hero {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx 28rpx 20rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid #E8F0FE;
+}
+.hero-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 80rpx 28rpx;
+}
+.hero-empty-text { font-size: 30rpx; color: var(--c-sub, #888); }
+
+/* 主信息行 */
+.hero-main {
+  display: flex; align-items: center; gap: 20rpx;
+}
+.hero-avatar-wrap {
+  width: 100rpx; height: 100rpx; border-radius: 32rpx;
+  background: linear-gradient(135deg, #EAF7FF, #F0FFF4);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
+  box-shadow: 0 6rpx 20rpx rgba(100,160,220,.15);
+}
+.hero-emoji { font-size: 56rpx; line-height: 1; }
+.hero-wx-avatar {
+  width: 100%; height: 100%; border-radius: 32rpx;
+}
+
+.hero-body { flex: 1; min-width: 0; }
+.hero-name-row {
+  display: flex; align-items: center; gap: 12rpx;
+}
+.hero-name {
+  font-size: 38rpx; font-weight: 800; color: #1a1a2e;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hero-grade {
+  font-size: 22rpx; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, #5FBF6B, #4AA857);
+  border-radius: 16rpx; padding: 3rpx 14rpx;
+  flex-shrink: 0;
+}
+.hero-streak {
+  font-size: 26rpx; color: #999; margin-top: 6rpx;
+}
+
+/* 资源条（Hero 内底部） */
+.res-bar {
+  display: flex; gap: 14rpx;
+  margin-top: 22rpx; padding-top: 18rpx;
+  border-top: 1rpx solid #F0F2F5;
+}
+.res-item {
+  display: flex; align-items: center; gap: 6rpx;
+  height: 60rpx; padding: 0 18rpx; border-radius: 14rpx;
+  font-size: 25rpx; font-weight: 600;
+}
+.res-gold { background: #FFFAEC; color: #B8860B; }
+.res-sun { background: #FFF8E8; color: #CC8400; }
+.res-plant { background: #F2FCF0; color: #3B8C2E; }
+.res-ic { font-size: 26rpx; }
+
+/* 微信绑定状态（Hero 内底部一行） */
+.bind-status {
+  display: flex; align-items: center; gap: 8rpx;
+  margin-top: 16rpx; padding: 10rpx 0;
+}
+.bind-status.bound { cursor: pointer; }
+.bind-status.unbound {
+  justify-content: space-between;
+  padding: 12rpx 18rpx; margin: 18rpx -4rpx 0;
+  background: #FFF8E8; border-radius: 12rpx;
+  border: 1rpx solid #FFE8A0;
+}
+.bind-dot {
+  width: 12rpx; height: 12rpx; border-radius: 50%;
+  background: #ccc; flex-shrink: 0;
+}
+.bind-dot.on { background: #5FBF6B; }
+.bind-label {
+  font-size: 24rpx; color: #999;
+}
+.bind-status.bound .bind-label { color: #5FBF6B; }
+.bind-user {
+  font-size: 24rpx; color: #aaa;
+}
+.bind-action {
+  font-size: 24rpx; font-weight: 600; color: #3FA9F5;
+  margin-left: auto; flex-shrink: 0;
+}
+
+/* 微信资料编辑（Hero 内展开） */
+.wx-detail {
+  margin-top: 12rpx; padding: 18rpx;
+  border-top: 1rpx dashed #E8EDF2;
+  background: #FAFFFA; border-radius: 14rpx;
+}
+.wx-row { display: flex; align-items: center; gap: 18rpx; margin-bottom: 14rpx; }
+.wx-avatar {
+  width: 80rpx; height: 80rpx; border-radius: 22rpx; background: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 42rpx;
+  box-shadow: 0 3rpx 10rpx rgba(150,180,210,.15);
+}
+.wx-avatar-empty { color: #B7C2CC; }
+.wx-fields { flex: 1; min-width: 0; }
+.wx-name-label { font-size: 22rpx; color: #aaa; }
+.wx-name { font-size: 34rpx; font-weight: 800; color: #2E8B57; }
+.wx-actions { display: flex; align-items: center; gap: 14rpx; }
+.wx-btn { margin: 0; }
+.wx-btn::after { border: none; }
+.wx-nick {
+  flex: 1; min-width: 0; height: 68rpx; line-height: 68rpx;
+  background: #fff; border: 1rpx solid #D8EEE0; border-radius: 14rpx;
+  padding: 0 16rpx; font-size: 27rpx; color: #333;
+}
+
+/* ===== 区块卡片头（工具类卡片通用） ===== */
+.section-head {
+  display: flex; align-items: center; gap: 10rpx;
+  margin-bottom: 16rpx;
+}
+.dot {
+  width: 14rpx; height: 14rpx; border-radius: 50%; flex-shrink: 0;
+}
+.section-title { font-size: 30rpx; font-weight: 700; color: #333; flex: 1; }
+
+/* 孩子列表（Hero 卡内「其他孩子」，点击整行切换） */
+.ulist { display: flex; flex-direction: column; gap: 12rpx; }
+.urow {
+  display: flex; align-items: center; gap: 16rpx;
+  padding: 18rpx 20rpx; border-radius: 20rpx;
+  background: #F9FAFB;
+  transition: all .15s;
+}
+.urow-hover { background: #EEF7F0; }
+.u-avatar {
+  width: 76rpx; height: 76rpx; border-radius: 22rpx; background: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 42rpx;
+  box-shadow: 0 3rpx 10rpx rgba(150,180,210,.12);
+  flex-shrink: 0;
+}
+.u-info { flex: 1; min-width: 0; }
+.u-name { font-size: 30rpx; font-weight: 800; color: #222; }
+.u-grade {
+  font-size: 21rpx; font-weight: 700; color: #fff; background: #5FBF6B;
+  border-radius: 14rpx; padding: 2rpx 10rpx; margin-left: 10rpx;
+}
+.u-sub { font-size: 24rpx; color: #999; margin-top: 4rpx; }
+.u-switch {
+  font-size: 23rpx; font-weight: 700; color: #3FA9F5;
+  background: #fff; border: 1rpx solid #B5D4F4; border-radius: 18rpx;
+  padding: 7rpx 18rpx; flex-shrink: 0;
+}
+
+/* ===== Hero 卡内「其他孩子」区块 ===== */
+.kid-others {
+  margin-top: 20rpx; padding-top: 18rpx;
+  border-top: 1rpx solid #F0F2F5;
+}
+.kid-others-head {
+  font-size: 25rpx; font-weight: 700; color: #8A93A0;
+  margin-bottom: 14rpx;
+}
+
+/* ===== Hero 卡内孩子管理操作 ===== */
+.kid-actions {
+  margin-top: 20rpx; padding-top: 18rpx;
+  border-top: 1rpx solid #F0F2F5;
+  display: flex; flex-direction: column; gap: 8rpx;
+}
+.kid-add {
+  height: 84rpx; border-radius: 18rpx;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 700; color: #4AA857;
+  background: #F6FDF7; border: 2rpx dashed #A8DDB2;
+}
+.kid-add:active { background: #EAF9EC; }
+.kid-del {
+  text-align: center; font-size: 25rpx; color: #C97878;
+  padding: 12rpx 0 2rpx;
+}
+.kid-del:active { color: #E05555; }
+
+/* ===== 家长工具 ===== */
+.tools-card { margin-bottom: 16rpx; }
+.tools-desc { font-size: 25rpx; color: #999; margin-bottom: 16rpx; line-height: 1.6; }
+.backup-row { display: flex; gap: 12rpx; flex-wrap: wrap; }
+.entry-go { margin-left: auto; font-size: 24rpx; color: #3FA9F5; font-weight: 700; }
+
+/* ============ 添加 / 编辑孩子 底部抽屉（与打卡类型管理一致） ============ */
+/* 本页是自定义 tabBar 页：原生 tabBar 层级高于页面内弹层，z-index 盖不住，
+   故抽屉整体抬到 tabBar 顶部之上（底部预留 tabBar 高度），避免确定按钮被挡。 */
+.sheet {
+  position: fixed; left: 0; right: 0; z-index: 901;
+  bottom: calc(128rpx + env(safe-area-inset-bottom));
+  background: #fff; border-radius: 36rpx 36rpx 0 0;
+  display: flex; flex-direction: column;
+  height: calc(95vh - 128rpx - env(safe-area-inset-bottom));
+  box-shadow: 0 -10rpx 40rpx rgba(60,70,90,.20);
+  animation: sheet-up .3s cubic-bezier(.2,.9,.3,1);
+  padding-bottom: 0;
+}
+@keyframes sheet-up { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+
+.sheet-handle { width: 72rpx; height: 8rpx; border-radius: 8rpx; background: #E2E8EF; margin: 18rpx auto 6rpx; flex-shrink: 0; }
+.sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8rpx 30rpx 18rpx; border-bottom: 1rpx solid #F0F3F7; flex-shrink: 0;
+}
+.sheet-title { font-size: 36rpx; font-weight: 800; color: #2B3340; }
+.sheet-close {
+  width: 56rpx; height: 56rpx; border-radius: 50%; background: #F2F5F8;
+  display: flex; align-items: center; justify-content: center; font-size: 30rpx; color: #8A93A0;
+}
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 24rpx 30rpx 10rpx; }
+
+/* 所见即所得预览：孩子在档案卡 / 农场里显示的样子 */
+.child-preview {
+  border-radius: 24rpx; padding: 36rpx 20rpx; text-align: center;
+  background: linear-gradient(135deg, #EAF7FF, #F0FFF4);
+  box-shadow: 0 8rpx 18rpx rgba(150,170,200,.18); margin-bottom: 24rpx;
+}
+.cp-avatar { font-size: 96rpx; line-height: 1; }
+.cp-name { font-size: 38rpx; font-weight: 800; color: #2B3340; margin-top: 12rpx; }
+.cp-grade {
+  display: inline-block; font-size: 23rpx; font-weight: 700; color: #fff;
+  background: #5FBF6B; border-radius: 16rpx; padding: 4rpx 16rpx; margin-top: 10rpx;
+}
+
+.opt-label { font-size: 28rpx; font-weight: 700; color: #555; margin: 22rpx 0 14rpx; }
+.opt-input {
+  width: 100%; box-sizing: border-box; background: #F6F9FC; color: #2B3340;
+  border: 3rpx solid #E8EDF2; border-radius: 22rpx;
+  padding: 36rpx 30rpx; font-size: 46rpx; line-height: 1.5; min-height: 120rpx;
+}
+.opt-input:focus { border-color: var(--c-blue-deep); background: #F2FAFF; }
+.opt-ph { color: #B3BCC7; font-size: 42rpx; }
+
+.opt-scroll { white-space: nowrap; }
+.emoji {
+  display: inline-block; vertical-align: middle;
+  width: 84rpx; height: 84rpx; border-radius: 18rpx; background: #F6F9FC;
+  text-align: center; line-height: 84rpx; font-size: 42rpx; margin-right: 14rpx;
+  border: 3rpx solid transparent;
+}
+.emoji.on { border-color: var(--c-yellow-deep); background: #FFF6DD; }
+
+.grade {
+  display: inline-block; vertical-align: middle;
+  height: 64rpx; line-height: 64rpx; border-radius: 18rpx; background: #F6F9FC;
+  padding: 0 26rpx; margin-right: 14rpx;
+  font-size: 27rpx; font-weight: 700; color: #333; border: 3rpx solid transparent;
+}
+.grade.on { border-color: var(--c-green-deep); background: #FAFFFA; color: #3B6D11; }
+
+.sheet-foot {
+  display: flex; gap: 20rpx; padding: 18rpx 30rpx 24rpx;
+  border-top: 1rpx solid #F0F3F7; flex-shrink: 0;
+}
+.sheet-foot .btn { flex: 1; }
+.sheet-foot .btn-green { box-shadow: 0 6rpx 0 rgba(0,0,0,.08); }
+
+/* 游客体验模式提示 */
+.guest-tip {
+  margin-top: 14rpx; font-size: 24rpx; color: #BA7517; line-height: 1.5;
+  background: #FFF7E6; border: 1rpx dashed #F5D79A; border-radius: 16rpx;
+  padding: 14rpx 18rpx;
+}
+
+/* 体验数据基线弹窗 */
+.bl-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 28rpx; color: #4A5562; padding: 16rpx 6rpx;
+  border-bottom: 2rpx dashed #EEF3F7;
+}
+.bl-num { font-size: 32rpx; font-weight: 800; color: #3B6D11; }
+.bl-note {
+  margin-top: 18rpx; font-size: 22rpx; color: #9AA5B1; line-height: 1.5;
+  background: #F7FAFD; border-radius: 16rpx; padding: 14rpx 18rpx;
+}

@@ -1,0 +1,9 @@
+{
+  "name": "aiRoleAnalyze",
+  "version": "1.0.0",
+  "description": "自定义角色提示词分析：基于当前打卡视图周期数据，按用户定义的 AI 角色产出分析",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

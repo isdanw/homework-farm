@@ -1,0 +1,105 @@
+/**
+ * report.wxss —— 学习报告页（沿用全局马卡龙规范）
+ */
+
+page { background: var(--c-cream); }
+
+.rp-page {
+  padding: 24rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ---------------- 概览 ---------------- */
+.rp-overview {
+  display: flex;
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 28rpx 0;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+}
+.rp-ov-item { flex: 1; text-align: center; }
+.rp-ov-num { font-size: 44rpx; font-weight: 800; color: var(--c-text); }
+.rp-ov-num.warn { color: #F5A623; }
+.rp-ov-num.ok { color: var(--c-green-deep); }
+.rp-ov-name { font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
+
+/* ---------------- 卡片 ---------------- */
+.rp-card {
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+}
+.rp-card-title { font-size: 30rpx; font-weight: 700; margin-bottom: 20rpx; }
+
+/* 错因分布 */
+.rp-err-row { display: flex; align-items: center; gap: 12rpx; margin-bottom: 18rpx; }
+.rp-err-label { display: flex; align-items: center; gap: 8rpx; width: 150rpx; flex-shrink: 0; }
+.rp-err-tag {
+  font-size: 20rpx; font-weight: 700; color: var(--c-blue-deep);
+  background: #EAF5FF; border-radius: 8rpx; padding: 2rpx 8rpx;
+}
+.rp-err-name { font-size: 24rpx; color: var(--c-text); }
+.rp-err-bar { flex: 1; height: 12rpx; background: #F0F2F5; border-radius: 999rpx; overflow: hidden; }
+.rp-err-inner { height: 100%; background: var(--c-blue-deep); border-radius: 999rpx; }
+.rp-err-count { font-size: 22rpx; color: var(--c-sub); width: 120rpx; text-align: right; flex-shrink: 0; }
+
+/* 学科分布 */
+.rp-sub-row { display: flex; align-items: center; gap: 12rpx; padding: 14rpx 0; border-bottom: 1rpx solid #F3F5F7; }
+.rp-sub-row:last-child { border-bottom: none; }
+.rp-sub-emoji { font-size: 32rpx; }
+.rp-sub-name { font-size: 28rpx; flex: 1; }
+.rp-sub-count { font-size: 24rpx; color: var(--c-sub); }
+
+/* 复测记录 */
+.rp-ev-item { padding: 16rpx 0; border-bottom: 1rpx solid #F3F5F7; }
+.rp-ev-item:last-child { border-bottom: none; }
+.rp-ev-head { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.rp-ev-topic { font-size: 28rpx; font-weight: 600; flex: 1; }
+.rp-ev-status { font-size: 22rpx; font-weight: 700; flex-shrink: 0; }
+.rp-ev-status.ok { color: var(--c-green-deep); }
+.rp-ev-status.fail { color: #F5A623; }
+.rp-ev-meta { font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
+
+/* 今日回顾（复习窗口） */
+.rp-rv-item { padding: 16rpx 0; border-bottom: 1rpx solid #F3F5F7; }
+.rp-rv-item:last-child { border-bottom: none; }
+.rp-rv-head { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.rp-rv-topic { font-size: 28rpx; font-weight: 600; flex: 1; }
+.rp-rv-stage { font-size: 22rpx; color: #F5A623; font-weight: 700; flex-shrink: 0; }
+.rp-rv-meta { font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
+.rp-rv-actions { display: flex; gap: 16rpx; margin-top: 14rpx; }
+.rp-rv-btn {
+  flex: 1;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  padding: 14rpx 0;
+  border-radius: 32rpx;
+}
+.rp-rv-btn-main { background: var(--c-blue-deep); color: #FFFFFF; }
+.rp-rv-btn-line { background: #FFFFFF; color: var(--c-blue-deep); border: 3rpx solid var(--c-blue); }
+
+/* 提示 */
+.rp-tip { font-size: 22rpx; color: var(--c-sub); margin-top: 14rpx; line-height: 1.6; }
+
+/* ---------------- 空态 / 按钮 ---------------- */
+.empty { text-align: center; padding: 100rpx 40rpx; }
+.empty-emoji { font-size: 96rpx; }
+.empty-title { font-size: 32rpx; font-weight: 700; margin-top: 20rpx; }
+.empty-sub { font-size: 26rpx; color: var(--c-sub); margin-top: 12rpx; line-height: 1.7; }
+.rp-empty-btn { margin-top: 32rpx; }
+
+.rp-actions { display: flex; gap: 16rpx; margin-top: 4rpx; }
+.rp-btn {
+  flex: 1;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 700;
+  padding: 20rpx 0;
+  border-radius: 36rpx;
+}
+.rp-btn-main { background: var(--c-blue-deep); color: #FFFFFF; }
+.rp-btn-line { background: #FFFFFF; color: var(--c-blue-deep); border: 3rpx solid var(--c-blue); }

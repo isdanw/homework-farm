@@ -1,0 +1,52 @@
+/**
+ * tutorHub.wxss —— 导学中心（学习主线聚合页，沿用全局马卡龙规范）
+ */
+
+page { background: var(--c-cream); }
+
+.hub-page {
+  padding: 24rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ---------------- 概览 ---------------- */
+.hub-overview {
+  display: flex;
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 28rpx 0;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+}
+.hub-ov-item { flex: 1; text-align: center; }
+.hub-ov-num { font-size: 44rpx; font-weight: 800; color: var(--c-text); }
+.hub-ov-num.warn { color: #F5A623; }
+.hub-ov-num.ok { color: var(--c-green-deep); }
+.hub-ov-name { font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
+
+/* ---------------- 入口卡 ---------------- */
+.hub-card {
+  display: flex; align-items: center; gap: 18rpx;
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 26rpx 24rpx;
+  margin-bottom: 18rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+}
+.hub-card:active { background: #F7FAFD; }
+
+/* 主入口（AI 导学）强化 */
+.hub-main { border: 2rpx solid #CDE7FF; }
+
+.hub-ic { font-size: 48rpx; flex: 0 0 auto; }
+.hub-body { flex: 1; min-width: 0; }
+.hub-title { font-size: 30rpx; font-weight: 800; color: var(--c-text); }
+.hub-desc { font-size: 23rpx; color: var(--c-sub); margin-top: 6rpx; line-height: 1.5; }
+.hub-go { font-size: 26rpx; color: var(--c-blue-deep); font-weight: 700; flex-shrink: 0; }
+
+/* 角标（待订正 / 已验证） */
+.hub-badge {
+  flex-shrink: 0; font-size: 22rpx; font-weight: 700; color: #B3621B;
+  background: #FFF3E0; border-radius: 20rpx; padding: 4rpx 14rpx;
+}
+.hub-badge.ok { color: #3B6D11; background: #EAF3DE; }

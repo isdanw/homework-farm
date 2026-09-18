@@ -14,34 +14,47 @@
 const CFG = require('./config.js');
 const util = require('./util.js');
 const store = require('./store.js');
+const analytics = require('./analytics.js');
 
-const SUB_KEYS = CFG.SUBJECTS.map(s => s.key);
+/** 当前可用的打卡类型 key 列表（内置 + 自定义，动态） */
+function getSubKeys() { return store.getTypeList().map(t => t.key); }
 
 /* ==========================================================================
  * 一、作业数据基础操作
  * ========================================================================== */
 
-/** 确保某天的作业记录存在（三科都建好空记录） */
+/** 确保某天的作业记录存在（所有激活类型都建好空记录） */
 function ensureDay(d, date) {
   const key = date || util.today();
   if (!d.homework[key]) d.homework[key] = {};
-  SUB_KEYS.forEach(k => {
+  getSubKeys().forEach(k => {
     if (!d.homework[key][k]) {
-      d.homework[key][k] = { done: false, minutes: 0, note: '', doneAt: 0 };
+      d.homework[key][k] = {
+        done: false, minutes: 0, note: '', doneAt: 0,
+        /* 打卡时绑定的成长计划任务快照（单向读取：打卡读计划，不回写计划状态） */
+        planTask: '', planStage: '', planRef: null
+      };
     }
   });
+  ensureTypeSeeds(d);
   return d.homework[key];
 }
 
-/** 取某天未完成的科目 key 数组 */
-function missingSubjects(d, date) {
-  const hw = ensureDay(d, date);
-  return SUB_KEYS.filter(k => !hw[k].done);
+/** 保证 farm.seeds 覆盖每一个激活类型 key（新增自定义类型后旧数据也能正常显示） */
+function ensureTypeSeeds(d) {
+  if (!d.farm.seeds) d.farm.seeds = {};
+  getSubKeys().forEach(k => { if (d.farm.seeds[k] === undefined) d.farm.seeds[k] = 0; });
 }
 
-/** 取某天已完成科目数 */
+/** 取某天未完成的类型 key 数组 */
+function missingSubjects(d, date) {
+  const hw = ensureDay(d, date);
+  return getSubKeys().filter(k => !hw[k].done);
+}
+
+/** 取某天已完成类型数 */
 function doneCount(d, date) {
-  return SUB_KEYS.length - missingSubjects(d, date).length;
+  return getSubKeys().length - missingSubjects(d, date).length;
 }
 
 /* ==========================================================================
@@ -60,17 +73,22 @@ function checkin(d, subject, extra) {
   hw[subject].doneAt = Date.now();
   hw[subject].minutes = (extra && extra.minutes) || 0;
   hw[subject].note = (extra && extra.note) || '';
+  hw[subject].planTask = (extra && extra.planTask) || '';    // 打卡时成长计划中「最近一条待完成」任务名
+  hw[subject].planStage = (extra && extra.planStage) || '';  // 该任务所属阶段
+  hw[subject].planRef = (extra && extra.planRef) || null;    // 该任务在计划中的下标 { si, ti }，供历史回链定位
+                                                             // 注：仅记录快照，打卡不改变计划的勾选状态
 
-  const sub = CFG.getSubject(subject);
+  const sub = store.getType(subject);
   const gain = { sun: CFG.REWARD.SUN_PER_SUBJECT, seed: CFG.REWARD.SEED_PER_SUBJECT, coin: 0, pesticide: 0, allDone: false, subName: sub.name, seedName: sub.seedName };
 
   // —— 单科奖励：1 颗阳光 + 1 颗对应学科专属种子 ——
   d.farm.suns += gain.sun;
   d.farm.seeds[subject] = (d.farm.seeds[subject] || 0) + gain.seed;
 
-  // —— 三科全部完成的额外奖励 + 连续打卡天数 ——
+  // —— 三科全部完成的额外奖励 + 连续打卡天数（每天只发一次，防止「撤销→重勾」刷奖励）——
   const missing = missingSubjects(d, date);
-  if (missing.length === 0) {
+  if (missing.length === 0 && !hw.allDoneGranted) {
+    hw.allDoneGranted = true;
     gain.allDone = true;
     gain.sun += CFG.REWARD.ALL_DONE_BONUS_SUN;
     gain.coin += CFG.REWARD.ALL_DONE_BONUS_COIN;
@@ -97,6 +115,11 @@ function checkin(d, subject, extra) {
   d.farm.logs.unshift({ date: date, type: 'reward', text: `完成${sub.name}任务，获得阳光 ×${CFG.REWARD.SUN_PER_SUBJECT}、${sub.seedName} ×${CFG.REWARD.SEED_PER_SUBJECT}` });
   trimLogs(d);
   store.save(d);
+
+  // —— 阶段 0 埋点 + 家庭内合种推进（任一孩子打卡都推进共享作物）——
+  analytics.trackCheckin(d.id, subject, sub.name);
+  store.contributeCoop(d.id, sub.name);
+
   return gain;
 }
 
@@ -111,6 +134,33 @@ function uncheckin(d, subject) {
   d.farm.seeds[subject] = Math.max(0, (d.farm.seeds[subject] || 0) - CFG.REWARD.SEED_PER_SUBJECT);
   store.save(d);
   return true;
+}
+
+/* ==========================================================================
+ * 二点五、【闭环 S4】导学奖励：完成一次 AI 导学 → 阳光
+ * ---------------------------------------------------------------------------
+ * 红线：奖励只挂「完成一次导学对话归档」这个【活动】；
+ *       复测达标属于【证据】，绝不发奖（防刷复测，守「活动≠证据≠掌握」契约）。
+ * @returns {Object|null} 奖励明细（null = 今日已到上限，不发）
+ */
+function tutorReward(d) {
+  if (!d || !d.farm) return null;
+  const date = util.today();
+  if (!d.farm.tutorBonus) d.farm.tutorBonus = { date: date, count: 0 };
+  const tb = d.farm.tutorBonus;
+  if (tb.date !== date) { tb.date = date; tb.count = 0; }   // 跨天重置
+  if (tb.count >= CFG.REWARD.TUTOR_DAILY_CAP) return null;  // 每日上限，防刷
+
+  tb.count += 1;
+  d.farm.suns += CFG.REWARD.TUTOR_SUN;
+  d.farm.logs.unshift({
+    date: date,
+    type: 'reward',
+    text: '完成一次导学，获得阳光 ×' + CFG.REWARD.TUTOR_SUN + '（今日第 ' + tb.count + ' 次）'
+  });
+  trimLogs(d);
+  store.save(d);
+  return { sun: CFG.REWARD.TUTOR_SUN, count: tb.count, cap: CFG.REWARD.TUTOR_DAILY_CAP };
 }
 
 /* ==========================================================================
@@ -129,16 +179,17 @@ function nightSettle(d, date) {
   if (d.settledDates.indexOf(day) >= 0) return null;          // 已结算过，不重复扣
 
   const missing = missingSubjects(d, day);
-  const report = { date: day, level: missing.length, missing: missing.map(k => CFG.getSubject(k).name), bears: 0, damaged: 0, withered: 0, stolen: 0, shielded: false, title: '', desc: '' };
+  const report = { date: day, level: missing.length, missing: missing.map(k => store.getType(k).name), bears: 0, damaged: 0, withered: 0, stolen: 0, shielded: false, title: '', desc: '' };
 
   d.settledDates.push(day);
   if (d.settledDates.length > 90) d.settledDates.shift();
 
   // —— 全部完成：农场平安夜 ——
   if (missing.length === 0) {
+    const total = getSubKeys().length;
     report.title = '平安夜！农场安全';
-    report.desc = '今天三科任务全部完成，小狗熊不敢来，植物健康生长～';
-    d.farm.logs.unshift({ date: day, type: 'safe', text: '三科全部完成，农场平安无事，植物健康生长' });
+    report.desc = `今天全部 ${total} 项任务都完成了，小狗熊不敢来，植物健康生长～`;
+    d.farm.logs.unshift({ date: day, type: 'safe', text: `全部 ${total} 项任务完成，农场平安无事，植物健康生长` });
     trimLogs(d);
     store.save(d);
     return report;
@@ -146,7 +197,7 @@ function nightSettle(d, date) {
 
   const conf = CFG.PUNISH.LEVELS[Math.min(missing.length, 3)];
   report.title = conf.title;
-  report.desc = conf.desc;
+  report.desc = `有 ${missing.length} 项任务没做完（${report.missing.join('、')}），小狗熊溜进菜园啃植物，还会被偷走一半金币`;
 
   // —— 护盾抵挡：消耗 1 个护盾，本次攻击全部免疫 ——
   if (d.farm.shields > 0) {
@@ -187,7 +238,7 @@ function nightSettle(d, date) {
         if (p.health <= 0) { p.withered = true; report.withered++; }
       }
     });
-    if (report.damaged === 0) report.desc = conf.desc + '（今天没有新种下的植物，这次侥幸躲过）';
+    if (report.damaged === 0) report.desc = '今天没有新种下的植物，这次侥幸躲过';
   } else if (conf.mode === 'destroyHalfMature') {
     // 等级2：直接毁掉一半（向上取整）的成熟植物，其余植物也掉健康度
     const mature = [];
@@ -276,11 +327,12 @@ function hasHurtPlant(d) {
 function plantSeed(d, plotIndex, subject) {
   if (d.farm.plots[plotIndex]) return { ok: false, msg: '这块地已经种上啦' };
   if ((d.farm.seeds[subject] || 0) <= 0) {
-    return { ok: false, msg: `没有${CFG.getSubject(subject).seedName}了，去完成${CFG.getSubject(subject).name}任务就能解锁` };
+    return { ok: false, msg: `没有${store.getType(subject).seedName}了，去完成${store.getType(subject).name}任务就能解锁` };
   }
   d.farm.seeds[subject] -= 1;
   d.farm.plots[plotIndex] = store.makePlant(subject, 0, CFG.GROWTH.MAX_HEALTH, Date.now(), util.today());
   store.save(d);
+  analytics.trackFarm('plant', { childId: d.id, subject: subject });
   return { ok: true, msg: '种下啦！浇点阳光会长得更快～' };
 }
 
@@ -323,14 +375,15 @@ function harvest(d, plotIndex) {
   if (p.withered) return { ok: false, msg: '枯萎的植物收不了，用杀虫剂救救它' };
   if (p.stage < CFG.GROWTH.MAX_STAGE) return { ok: false, msg: '还没成熟，再等等或者浇阳光' };
   if (d.farm.lockHarvestDate === util.today()) {
-    return { ok: false, msg: '今天三科任务都没做，小狗熊把果实糟蹋了，今天不能收获' };
+    return { ok: false, msg: '今天还有任务没做完，小狗熊把果实糟蹋了，今天不能收获' };
   }
-  const sub = CFG.getSubject(p.subject);
+  const sub = store.getType(p.subject);
   d.farm.coins += sub.coin;
   d.farm.harvestLog.unshift({ id: util.uid('hv'), subject: p.subject, name: sub.cropName, coin: sub.coin, date: util.today(), time: nowHM() });
   if (d.farm.harvestLog.length > 200) d.farm.harvestLog.pop();
   d.farm.plots[plotIndex] = null;
   store.save(d);
+  analytics.trackFarm('harvest', { childId: d.id, subject: p.subject });
   return { ok: true, msg: `收获 ${sub.cropName}，金币 +${sub.coin}`, coin: sub.coin };
 }
 
@@ -470,26 +523,27 @@ function nowHM() {
   return util.pad(t.getHours()) + ':' + util.pad(t.getMinutes());
 }
 
-/** 今晚会发生什么？（用于打卡页 / 农场页的预警文案） */
+/** 今晚会发生什么？（用于打卡页 / 农场页的预警文案，支持任意数量打卡类型） */
 function forecast(d) {
+  const total = getSubKeys().length;
   const missing = missingSubjects(d, util.today());
   if (missing.length === 0) {
-    return { level: 0, names: [], text: '三科全部完成，今晚农场平安，植物健康生长！', danger: false };
+    return { level: 0, names: [], text: `全部 ${total} 项都完成了，今晚农场平安，植物健康生长！`, danger: false };
   }
   const conf = CFG.PUNISH.LEVELS[Math.min(missing.length, 3)];
-  const names = missing.map(k => CFG.getSubject(k).name);
+  const names = missing.map(k => store.getType(k).name);
   return {
     level: missing.length,
     names: names,
-    text: `还有 ${missing.length} 科没完成（${names.join('、')}），今晚会来 ${conf.bears} 只小狗熊，还会被偷走一半金币！`,
+    text: `还有 ${missing.length} 项没完成（${names.join('、')}），今晚会来 ${conf.bears} 只小狗熊，还会被偷走一半金币！`,
     danger: true
   };
 }
 
 module.exports = {
-  SUB_KEYS,
+  getSubKeys,
   ensureDay, missingSubjects, doneCount,
-  checkin, uncheckin,
+  checkin, uncheckin, tutorReward,
   nightSettle, usePesticide,
   plantSeed, useSun, growTick, harvest, clearPlot,
   buyShop, buyMall, equipItem,

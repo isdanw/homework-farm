@@ -1,0 +1,102 @@
+<view class="page-wrap">
+
+  <!-- ===== 顶部标题 ===== -->
+  <view class="tm-header">
+    <view class="tm-back" bindtap="goBack">‹ 返回</view>
+    <view class="tm-title">打卡类型管理</view>
+    <view class="tm-spacer"></view>
+  </view>
+
+  <!-- ===== 内置类型（只读） ===== -->
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#3FA9F5"></view>
+      <text class="section-title">内置类型</text>
+      <text class="section-note">基础三项 · 不可删</text>
+    </view>
+    <view class="builtin-grid">
+      <view class="bi-card" wx:for="{{builtinTypes}}" wx:key="key" style="background:linear-gradient(135deg, {{item.color}} 0%, {{item.colorDeep}} 100%)">
+        <view class="bi-emoji">{{item.emoji}}</view>
+        <view class="bi-name">{{item.name}}</view>
+        <view class="bi-crop">{{item.cropName}} · {{item.seedName}}</view>
+        <view class="bi-profile" catchtap="goSubjectProfile" data-key="{{item.key}}">画像 ›</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 我的打卡类型（可编辑） ===== -->
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#F5B740"></view>
+      <text class="section-title">我的打卡类型</text>
+      <text class="section-note">家长自定义 · 可增删改</text>
+    </view>
+
+    <view wx:if="{{customTypes.length === 0}}" class="empty-tip">
+      还没有自定义类型，点下方「＋ 添加打卡类型」增加阅读、运动、练琴等～
+    </view>
+
+    <view class="ct-row" wx:for="{{customTypes}}" wx:key="id">
+      <view class="ct-tile" style="background:linear-gradient(135deg, {{item.color}} 0%, {{item.colorDeep}} 100%)">{{item.emoji}}</view>
+      <view class="ct-info">
+        <view class="ct-name">{{item.name}}</view>
+        <view class="ct-sub">{{item.cropName}} · {{item.seedName}}</view>
+      </view>
+      <view class="ct-actions">
+        <view class="ct-btn profile" data-id="{{item.id}}" catchtap="goSubjectProfile" data-key="{{item.id}}">画像</view>
+        <view class="ct-btn edit" data-id="{{item.id}}" bindtap="openEdit">编辑</view>
+        <view class="ct-btn del" data-id="{{item.id}}" bindtap="removeType">删除</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn btn-block btn-green add-type-btn" bindtap="openAdd">＋ 添加打卡类型</view>
+
+  <!-- ============ 新增 / 编辑 底部抽屉 ============ -->
+  <view wx:if="{{showForm}}" class="mask" bindtap="closeForm">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-handle"></view>
+      <view class="sheet-head">
+        <text class="sheet-title">{{editingId ? '编辑打卡类型' : '添加打卡类型'}}</text>
+        <view class="sheet-close" bindtap="closeForm">✕</view>
+      </view>
+
+      <scroll-view class="sheet-body" scroll-y>
+        <!-- 所见即所得预览：这就是首页会出现的打卡磁贴 -->
+        <view class="sheet-preview" style="background:{{preview.bg}}">
+          <view class="sp-emoji">{{preview.emoji}}</view>
+          <view class="sp-name">{{preview.name}}</view>
+          <view class="sp-crop">{{preview.cropName}} · {{preview.seedName}}</view>
+        </view>
+
+        <view class="opt-label">名称</view>
+        <input class="opt-input" placeholder="如：阅读 / 运动 / 练琴" placeholder-class="opt-ph"
+               model:value="{{form.name}}" bindinput="onName" maxlength="8" cursor-spacing="30" />
+
+        <view class="opt-label">图标</view>
+        <scroll-view class="opt-scroll" scroll-x>
+          <view wx:for="{{emojis}}" wx:key="*this"
+                class="emoji {{form.emoji === item ? 'on' : ''}}" data-emoji="{{item}}" bindtap="pickEmoji">{{item}}</view>
+        </scroll-view>
+
+        <view class="opt-label">颜色</view>
+        <scroll-view class="opt-scroll" scroll-x>
+          <view wx:for="{{colors}}" wx:key="color"
+                class="color-dot {{form.color === item.color ? 'on' : ''}}" style="background:{{item.color}}" data-i="{{index}}" bindtap="pickColor"></view>
+        </scroll-view>
+
+        <view class="opt-label">作物造型</view>
+        <view class="shape-row">
+          <view wx:for="{{shapes}}" wx:key="key"
+                class="shape-chip {{form.shape === item.key ? 'on' : ''}}" data-shape="{{item.key}}" bindtap="pickShape">{{item.name}}</view>
+        </view>
+      </scroll-view>
+
+      <view class="sheet-foot">
+        <view class="btn btn-gray btn-sm" bindtap="closeForm">取消</view>
+        <view class="btn btn-green btn-sm" bindtap="confirmForm">保存</view>
+      </view>
+    </view>
+  </view>
+
+</view>

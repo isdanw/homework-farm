@@ -1,0 +1,94 @@
+<view class="rt-page">
+
+  <!-- 顶部信息 -->
+  <view class="rt-head">
+    <view class="rt-subject">{{subjectEmoji}} {{subjectName}}</view>
+    <view class="rt-topic">{{topic}}</view>
+    <view class="rt-err" wx:if="{{errorType}}">错因：{{errorTypeLabel}}</view>
+  </view>
+
+  <!-- ===== 加载中 ===== -->
+  <view class="rt-state" wx:if="{{phase === 'loading'}}">
+    <view class="rt-state-emoji">⏳</view>
+    <view class="rt-state-title">正在出复测题…</view>
+    <view class="rt-state-sub">围绕「{{topic}}」生成 5 道变式题</view>
+  </view>
+
+  <!-- ===== 作答中 ===== -->
+  <block wx:elif="{{phase === 'answering'}}">
+    <!-- 进度 -->
+    <view class="rt-progress">
+      <text class="rt-prog-num">{{current + 1}} / {{questions.length}}</text>
+      <view class="rt-prog-bar">
+        <view class="rt-prog-inner" style="width:{{(current + 1) / questions.length * 100}}%"></view>
+      </view>
+    </view>
+
+    <!-- 题目 -->
+    <view class="rt-card">
+      <view class="rt-q">{{questions[current].q}}</view>
+      <view
+        wx:for="{{questions[current].options}}"
+        wx:for-index="oi"
+        wx:key="oi"
+        class="rt-opt {{answers[current] === questions[current].letters[oi] ? 'on' : ''}}"
+        data-letter="{{questions[current].letters[oi]}}"
+        bindtap="pickOption">
+        <view class="rt-opt-letter">{{questions[current].letters[oi]}}</view>
+        <view class="rt-opt-text">{{item}}</view>
+      </view>
+    </view>
+
+    <!-- 上一题 / 下一题 / 提交 -->
+    <view class="rt-nav">
+      <view class="rt-btn rt-btn-line {{current === 0 ? 'disabled' : ''}}" bindtap="goPrev">上一题</view>
+      <view class="rt-btn rt-btn-line {{current === questions.length - 1 ? 'disabled' : ''}}" bindtap="goNext">下一题</view>
+    </view>
+    <view class="rt-submit" bindtap="submit">✓ 交卷（已答 {{answeredCount}} / {{questions.length}}）</view>
+  </block>
+
+  <!-- ===== 结果 ===== -->
+  <block wx:elif="{{phase === 'result'}}">
+    <!-- 错误提示（生成失败等） -->
+    <view class="rt-state" wx:if="{{errorMsg}}">
+      <view class="rt-state-emoji">😥</view>
+      <view class="rt-state-title">暂时无法复测</view>
+      <view class="rt-state-sub">{{errorMsg}}</view>
+      <view class="rt-btn rt-btn-main rt-retry" bindtap="goBack">返回</view>
+    </view>
+
+    <!-- 判定结果 -->
+    <block wx:else>
+      <view class="rt-result {{result.pass ? 'pass' : 'fail'}}">
+        <view class="rt-result-emoji">{{result.pass ? '🎉' : '💪'}}</view>
+        <view class="rt-result-title">{{result.pass ? '达标！' : '未达标'}}</view>
+        <view class="rt-result-rate">答对 {{result.correct}} / {{result.total}} 题 · 通过率 {{result.rate * 100}}%</view>
+        <view class="rt-result-reason" wx:if="{{result.reason}}">{{result.reason}}</view>
+        <view class="rt-result-note">
+          {{result.pass ? '这次表现不错，该知识点已记入导学证据。' : '还差一点，建议先回「导学助手」订正，再来复测一次。'}}
+        </view>
+      </view>
+
+      <!-- 逐题结果 -->
+      <view class="rt-card rt-review">
+        <view wx:for="{{questions}}" wx:key="index" class="rt-review-item">
+          <view class="rt-review-head">
+            <text class="rt-review-idx">第{{index + 1}}题</text>
+            <text class="rt-review-mark {{result.results[index].correct ? 'ok' : 'no'}}">
+              {{result.results[index].correct ? '✓ 对' : '✗ 错'}}
+            </text>
+          </view>
+          <view class="rt-review-q">{{item.q}}</view>
+          <view class="rt-review-ans">你的答案：{{result.results[index].your || '未答'}} · 正确答案：{{item.answer}}</view>
+          <view class="rt-review-analysis" wx:if="{{item.analysis}}">{{item.analysis}}</view>
+        </view>
+      </view>
+
+      <view class="rt-actions">
+        <view class="rt-btn rt-btn-main" bindtap="retry">再复测一次</view>
+        <view class="rt-btn rt-btn-line" bindtap="goBack">返回错题本</view>
+      </view>
+    </block>
+  </block>
+
+</view>

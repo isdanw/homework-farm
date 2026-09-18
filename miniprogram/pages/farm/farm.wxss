@@ -12,6 +12,23 @@
 .top-res { margin-bottom: 18rpx; }
 .res-item.streak { color: #F5B740; }
 
+/* ---- 当前孩子横幅 ---- */
+.child-banner {
+  display: flex; align-items: center; gap: 14rpx;
+  background: rgba(255,255,255,.7); border-radius: 22rpx; padding: 12rpx 20rpx; margin-bottom: 16rpx;
+}
+.cb-avatar {
+  width: 56rpx; height: 56rpx; border-radius: 18rpx; background: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 34rpx;
+  box-shadow: 0 3rpx 10rpx rgba(150,180,210,.2);
+}
+.cb-name { flex: 1; font-size: 30rpx; font-weight: 800; color: #3A4350; }
+.cb-grade {
+  font-size: 20rpx; font-weight: 700; color: #fff; background: #5FBF6B;
+  border-radius: 14rpx; padding: 2rpx 12rpx; margin-left: 10rpx;
+}
+.cb-tip { font-size: 22rpx; color: #9AA5B1; }
+
 /* ---------------- 预警条 ---------------- */
 .warn-bar {
   border-radius: 24rpx; padding: 20rpx 24rpx; margin-bottom: 18rpx;
@@ -415,3 +432,32 @@
 .sd-num { font-size: 27rpx; font-weight: 700; color: #7A8792; }
 
 .close-line { margin-top: 20rpx; font-size: 27rpx; color: #9AA5B1; }
+
+/* ============================================================================
+ *  家庭内合种卡片（阶段 0）
+ * ========================================================================== */
+.coop-card {
+  background: #fff; border-radius: 28rpx; padding: 24rpx;
+  margin-bottom: 18rpx; box-shadow: 0 8rpx 20rpx rgba(150,180,210,.16);
+}
+.coop-head { display: flex; align-items: center; }
+.coop-emoji { font-size: 50rpx; margin-right: 14rpx; }
+.coop-title { flex: 1; font-size: 32rpx; font-weight: 800; color: #2B3340; }
+.coop-pct { font-size: 30rpx; font-weight: 800; color: #3B6D11; }
+.coop-bar {
+  height: 22rpx; border-radius: 22rpx; background: #EEF2F6;
+  margin: 16rpx 0 10rpx; overflow: hidden;
+}
+.coop-fill { height: 100%; border-radius: 22rpx; transition: width .4s ease; }
+.coop-sub { font-size: 24rpx; color: #8A94A6; line-height: 1.5; }
+.coop-members { display: flex; flex-wrap: wrap; gap: 14rpx; margin-top: 16rpx; }
+.coop-member {
+  display: flex; align-items: center; background: #F4F8FB; border-radius: 30rpx;
+  padding: 6rpx 16rpx; font-size: 24rpx; color: #5B6B7E;
+}
+.cm-av { margin-right: 6rpx; font-size: 28rpx; }
+.cm-c { color: #3B6D11; font-weight: 700; margin-left: 4rpx; }
+.coop-empty { font-size: 26rpx; color: #5B6B7E; line-height: 1.6; }
+.coop-done { font-size: 28rpx; color: #3B6D11; font-weight: 700; margin-bottom: 14rpx; }
+.coop-new { margin-top: 6rpx; }
+

@@ -1,0 +1,9 @@
+{
+  "name": "webAdminWrite",
+  "version": "1.0.0",
+  "description": "家长数据看板·写入代理云函数（工作台→云 push，token→openid 鉴权，tutor_* 去重 + 孩子切片合并）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  }
+}

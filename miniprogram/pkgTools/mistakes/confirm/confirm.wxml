@@ -1,0 +1,79 @@
+<view class="cf-page">
+
+  <!-- 原图对照（点击可放大） -->
+  <view class="cf-photo-wrap" wx:if="{{photoPath}}">
+    <image class="cf-photo" src="{{photoPath}}" mode="aspectFill" bindtap="previewPhoto"/>
+    <view class="cf-photo-hint">点图可放大对照 · 识别结果已在下方，请逐题核对</view>
+  </view>
+
+  <!-- 学科选择（整批收录到该学科） -->
+  <scroll-view class="cf-subjects" scroll-x enhanced show-scrollbar="{{false}}">
+    <view wx:for="{{subjects}}" wx:key="key"
+          class="cf-chip {{subjectKey === item.key ? 'on' : ''}}"
+          data-key="{{item.key}}" bindtap="pickSubject">
+      {{item.emoji}} {{item.name}}
+    </view>
+  </scroll-view>
+
+  <!-- 题目卡片列表 -->
+  <view class="cf-card {{item.selected ? 'on' : ''}}" wx:for="{{cards}}" wx:key="idx">
+    <!-- 头部：勾选 + 题号 + 题型 + 删除 -->
+    <view class="cf-head">
+      <view class="cf-check {{item.selected ? 'on' : ''}}" data-idx="{{index}}" bindtap="toggleCard">
+        {{item.selected ? '✓' : ''}}
+      </view>
+      <input class="cf-no" value="{{item.no}}" data-idx="{{index}}" data-field="no" bindinput="onInput" placeholder="题号"/>
+      <picker class="cf-type" mode="selector" range="{{typeNames}}" value="{{item.typeIndex}}"
+              data-idx="{{index}}" bindchange="pickType">
+        <view class="cf-type-btn">{{item.typeName || '其他'}} ▾</view>
+      </picker>
+      <view class="cf-rule-tag" wx:if="{{item.rule}}">规则</view>
+      <view class="cf-del" data-idx="{{index}}" catchtap="delCard">删除</view>
+    </view>
+
+    <!-- 对错三态 -->
+    <view class="cf-mark-row">
+      <text class="cf-mark-label">批改标记</text>
+      <view class="cf-mark {{item.marked === true ? 'ok' : ''}}" data-idx="{{index}}" data-val="1" bindtap="setMark">√</view>
+      <view class="cf-mark {{item.marked === false ? 'bad' : ''}}" data-idx="{{index}}" data-val="0" bindtap="setMark">×</view>
+      <view class="cf-mark {{item.marked === null ? 'none' : ''}}" data-idx="{{index}}" data-val="none" bindtap="setMark">未批</view>
+    </view>
+
+    <!-- 题干 / 作答 / 正确答案 -->
+    <textarea class="cf-q" value="{{item.questionText}}" data-idx="{{index}}" data-field="questionText"
+              bindinput="onInput" auto-height maxlength="500" placeholder="题干（可修改）"/>
+    <input class="cf-a" value="{{item.childAnswer}}" data-idx="{{index}}" data-field="childAnswer"
+           bindinput="onInput" maxlength="300" placeholder="孩子的作答（可修改）"/>
+    <input class="cf-a ans" value="{{item.correctAnswer}}" data-idx="{{index}}" data-field="correctAnswer"
+           bindinput="onInput" maxlength="200" placeholder="正确答案（图上有批改时填写）"/>
+
+    <!-- 诊断结果（可修改） -->
+    <view class="cf-diag" wx:if="{{item.topic || item.errorType || item.errorDesc}}">
+      <view class="cf-diag-row">
+        <text class="cf-diag-label">知识点</text>
+        <input class="cf-diag-input" value="{{item.topic}}" data-idx="{{index}}" data-field="topic"
+               bindinput="onInput" maxlength="60" placeholder="本题考查的知识点"/>
+      </view>
+      <view class="cf-diag-row" wx:if="{{item.errorType}}">
+        <text class="cf-tag" style="color:{{item.errorColor}};background:{{item.errorBg}}">{{item.errorType}} · {{item.errorTypeName}}</text>
+        <text class="cf-marksrc" wx:if="{{item.markSource === 'marked'}}">依据：图上批改</text>
+        <text class="cf-marksrc" wx:elif="{{item.markSource === 'ai'}}">依据：自动判定</text>
+      </view>
+      <textarea class="cf-diag-desc" value="{{item.errorDesc}}" data-idx="{{index}}" data-field="errorDesc"
+                bindinput="onInput" auto-height maxlength="120" placeholder="可观察到的错误表现"/>
+      <input class="cf-diag-input sug" value="{{item.suggestion}}" data-idx="{{index}}" data-field="suggestion"
+             bindinput="onInput" maxlength="120" placeholder="订正建议（可修改）"/>
+    </view>
+  </view>
+
+  <!-- 手动加题 -->
+  <view class="cf-add" bindtap="addCard">＋ 漏了一题？手动加一题</view>
+
+  <!-- 底部操作栏 -->
+  <view class="cf-bottombar">
+    <view class="cf-btn cf-btn-ai" wx:if="{{stage === 'edit' && aiCount > 0}}"
+          bindtap="doDiagnose">{{diagnosing ? '诊断中…' : '自动诊断错因（' + aiCount + ' 题）'}}</view>
+    <view class="cf-btn cf-btn-save {{selectedCount ? '' : 'disabled'}}" bindtap="saveAll">收录 {{selectedCount}} 题</view>
+  </view>
+
+</view>

@@ -1,0 +1,95 @@
+<view class="rp-page">
+
+  <!-- 概览卡 -->
+  <view class="rp-overview">
+    <view class="rp-ov-item">
+      <view class="rp-ov-num">{{overview.sessions}}</view>
+      <view class="rp-ov-name">导学归档</view>
+    </view>
+    <view class="rp-ov-item">
+      <view class="rp-ov-num">{{overview.mistakes}}</view>
+      <view class="rp-ov-name">错题总数</view>
+    </view>
+    <view class="rp-ov-item">
+      <view class="rp-ov-num warn">{{overview.pending}}</view>
+      <view class="rp-ov-name">待订正</view>
+    </view>
+    <view class="rp-ov-item">
+      <view class="rp-ov-num ok">{{overview.evidence}}</view>
+      <view class="rp-ov-name">已验证</view>
+    </view>
+  </view>
+
+  <!-- 空态 -->
+  <view class="empty" wx:if="{{!hasData}}">
+    <view class="empty-emoji">📊</view>
+    <view class="empty-title">还没有导学数据</view>
+    <view class="empty-sub">去「导学助手」提问，结束后会自动归档错因并记入这里</view>
+    <view class="rp-btn rp-btn-main rp-empty-btn" bindtap="goTutor">去提问</view>
+  </view>
+
+  <block wx:else>
+    <!-- 今日回顾（复习窗口到期项，闭环 S2） -->
+    <view class="rp-card" wx:if="{{reviewList.length}}">
+      <view class="rp-card-title">今日回顾</view>
+      <view class="rp-rv-item" wx:for="{{reviewList}}" wx:key="id">
+        <view class="rp-rv-head">
+          <text class="rp-rv-topic">{{item.topic}}</text>
+          <text class="rp-rv-stage">{{item.stageText}} · {{item.dueText}}</text>
+        </view>
+        <view class="rp-rv-meta">{{item.subjectName}}{{item.errorType ? ' · 错因 ' + item.errorTypeLabel : ''}}</view>
+        <view class="rp-rv-actions">
+          <view class="rp-rv-btn rp-rv-btn-line" data-r="{{item}}" bindtap="goReview">去回顾</view>
+          <view class="rp-rv-btn rp-rv-btn-main" data-r="{{item}}" bindtap="goReviewRetest">直接复测</view>
+        </view>
+      </view>
+      <view class="rp-tip">回顾后的复测 ≥5 题且 ≥80% 达标，才会关闭回顾项；未达标自动顺延到下一轮。</view>
+    </view>
+
+    <!-- 错因分布 -->
+    <view class="rp-card" wx:if="{{errorDist.length}}">
+      <view class="rp-card-title">错因分布（E1-E9）</view>
+      <view class="rp-err-row" wx:for="{{errorDist}}" wx:key="type">
+        <view class="rp-err-label">
+          <text class="rp-err-tag">{{item.type}}</text>
+          <text class="rp-err-name">{{item.name}}</text>
+        </view>
+        <view class="rp-err-bar">
+          <view class="rp-err-inner" style="width:{{item.pct}}%"></view>
+        </view>
+        <text class="rp-err-count">{{item.count}}题 · {{item.pct}}%</text>
+      </view>
+      <view class="rp-tip">错因是「诊断假设」，用于定位卡点，不代表对孩子能力的定性判断。</view>
+    </view>
+
+    <!-- 学科分布 -->
+    <view class="rp-card" wx:if="{{subjectDist.length}}">
+      <view class="rp-card-title">学科分布</view>
+      <view class="rp-sub-row" wx:for="{{subjectDist}}" wx:key="key">
+        <text class="rp-sub-emoji">{{item.emoji}}</text>
+        <text class="rp-sub-name">{{item.name}}</text>
+        <text class="rp-sub-count">{{item.count}} 道错题</text>
+      </view>
+    </view>
+
+    <!-- 复测证据 -->
+    <view class="rp-card" wx:if="{{evidenceList.length}}">
+      <view class="rp-card-title">复测记录</view>
+      <view class="rp-ev-item" wx:for="{{evidenceList}}" wx:key="id">
+        <view class="rp-ev-head">
+          <text class="rp-ev-topic">{{item.topic}}</text>
+          <text class="rp-ev-status {{item.passed ? 'ok' : 'fail'}}">{{item.passed ? '✓ 已验证' : '未达标'}}</text>
+        </view>
+        <view class="rp-ev-meta">{{item.subjectName}} · 答对 {{item.correct}}/{{item.total}} · {{item.rate}}% · {{item.timeText}}</view>
+      </view>
+      <view class="rp-tip">只有复测 ≥5 题且通过率 ≥80% 才算「已验证」，未达标不生成掌握结论。</view>
+    </view>
+
+    <!-- 底部入口 -->
+    <view class="rp-actions">
+      <view class="rp-btn rp-btn-main" bindtap="goMistakes">去错题本订正</view>
+      <view class="rp-btn rp-btn-line" bindtap="goTutor">去导学助手</view>
+    </view>
+  </block>
+
+</view>

@@ -20,6 +20,8 @@ const db = cloud.database();
 
 const USER = 'hw_farm_user';
 const SETTLE = 'hw_farm_settle';
+const OCR_DEBUG = 'ocr_debug';
+const OCR_RETAIN_DAYS = 7;   // S4：OCR 观测数据（含课表内容）只保留 7 天
 
 /* —— 与小程序端 config.js 保持一致的惩罚参数（改这里要同步改前端）—— */
 const PUNISH = {
@@ -33,49 +35,80 @@ const PUNISH = {
 const MAX_STAGE = 3;
 const SUBS = ['chinese', 'math', 'english'];
 
+/** 取「当前孩子」切片：_root 里孩子级字段（homework/farm/settledDates/lastActiveDate）都在 users[currentUserId] 上 */
+function currentUser(root) {
+  const us = (root && Array.isArray(root.users)) ? root.users : [];
+  return us.find(x => x && x.id === (root && root.currentUserId)) || us[0] || {};
+}
+
 exports.main = async () => {
   const yest = dateKey(-1);
   const today = dateKey(0);
-  const summary = { date: yest, users: 0, punished: 0 };
+  const summary = { date: yest, users: 0, punished: 0, ocrDebugCleaned: 0 };
 
-  // 分页遍历所有用户（云函数单次最多取 100 条）
+  // R5：先「只读」分页收集全部 _id（读阶段无写入，skip 不会漂移），再逐条取回处理，
+  // 避免旧的「边遍历边写」在极端并发下漏处理/重复处理。
+  const _ = db.command;
   const countRes = await db.collection(USER).count();
   const total = countRes.total;
   const pages = Math.ceil(total / 100);
-
+  const ids = [];
   for (let i = 0; i < pages; i++) {
-    const res = await db.collection(USER).skip(i * 100).limit(100).get();
-    for (const row of res.data) {
-      const d = row.data;
-      if (!d || !d.farm) continue;
-      summary.users++;
-
-      d.settledDates = d.settledDates || [];
-      const already = d.settledDates.indexOf(yest) >= 0;
-      const hw = (d.homework || {})[yest];
-      const missing = hw ? SUBS.filter(k => !(hw[k] && hw[k].done)) : SUBS.slice();
-
-      let report = null;
-      if (!already && missing.length > 0) {
-        report = settle(d, yest, missing);
-        summary.punished++;
-        await db.collection(SETTLE).add({
-          data: { _openid: row._openid, date: yest, level: missing.length, missing, bears: report.bears, stolen: report.stolen, withered: report.withered, createdAt: Date.now() }
-        });
-      }
-      if (!already) d.settledDates.push(yest);
-
-      // 清空当日作业状态：为今天建立空白记录
-      if (!d.homework) d.homework = {};
-      if (!d.homework[today]) {
-        d.homework[today] = {};
-        SUBS.forEach(k => { d.homework[today][k] = { done: false, minutes: 0, note: '', doneAt: 0 }; });
-      }
-      d.lastActiveDate = today;
-
-      await db.collection(USER).doc(row._id).update({ data: { data: d, updatedAt: Date.now() } });
-    }
+    const res = await db.collection(USER).field({ _id: true }).skip(i * 100).limit(100).get();
+    res.data.forEach(r => ids.push(r._id));
   }
+
+  for (const id of ids) {
+    const row = await db.collection(USER).doc(id).get();
+    const doc = row.data;
+    const root = doc && doc.data;   // 载荷就是整份 _root（含 users[]）——孩子级字段在切片里，顶层没有
+    if (!root) continue;
+    const cu = currentUser(root);
+    if (!cu || !cu.farm) continue;
+    summary.users++;
+    const openid = doc._openid;
+
+    cu.settledDates = cu.settledDates || [];
+    const already = cu.settledDates.indexOf(yest) >= 0;
+    const hw = (cu.homework || {})[yest];
+    const missing = hw ? SUBS.filter(k => !(hw[k] && hw[k].done)) : SUBS.slice();
+
+    let report = null;
+    if (!already && missing.length > 0) {
+      report = settle(cu, yest, missing);
+      summary.punished++;
+      await db.collection(SETTLE).add({
+        data: { _openid: openid, date: yest, level: missing.length, missing, bears: report.bears, stolen: report.stolen, withered: report.withered, createdAt: Date.now() }
+      });
+    }
+    if (!already) cu.settledDates.push(yest);
+
+    // 清空当日作业状态：为今天建立空白记录
+    if (!cu.homework) cu.homework = {};
+    if (!cu.homework[today]) {
+      cu.homework[today] = {};
+      SUBS.forEach(k => { cu.homework[today][k] = { done: false, minutes: 0, note: '', doneAt: 0 }; });
+    }
+    cu.lastActiveDate = today;
+
+    await db.collection(USER).doc(id).update({ data: { data: root, updatedAt: Date.now() } });
+  }
+
+  // S4：清理过期的 OCR 调试观测数据（含课表科目内容，避免长期留存儿童学习数据）
+  try {
+    const cutoff = new Date(Date.now() - OCR_RETAIN_DAYS * 86400000);
+    for (let round = 0; round < 50; round++) {   // 每轮最多删 100 条，50 轮封顶防跑飞
+      const old = await db.collection(OCR_DEBUG).where({ ts: _.lt(cutoff) }).limit(100).get();
+      if (!old.data.length) break;
+      for (const od of old.data) await db.collection(OCR_DEBUG).doc(od._id).remove();
+      summary.ocrDebugCleaned += old.data.length;
+      if (old.data.length < 100) break;
+    }
+  } catch (e) {
+    // 集合不存在等情况静默跳过，不影响结算主流程
+    console.warn('[dailyReset] ocr_debug cleanup skipped:', (e && e.message) || e);
+  }
+
   return summary;
 };
 

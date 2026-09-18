@@ -1,0 +1,192 @@
+/* ===== 课程表页 ===== */
+
+/* ---------- 头部 ---------- */
+.sch-head { padding: 8rpx 6rpx 22rpx; }
+.sch-head-top { display: flex; align-items: center; gap: 16rpx; }
+.sch-head .t { font-size: 44rpx; font-weight: 800; letter-spacing: 2rpx; }
+.sch-head .s { font-size: 26rpx; color: var(--c-sub); display: block; margin-top: 6rpx; }
+.sch-badge {
+  font-size: 22rpx; font-weight: 700; color: #3D9BE8;
+  background: #E3F2FF; padding: 6rpx 16rpx; border-radius: 20rpx;
+}
+
+/* ---------- 通用卡片头（标题左、操作右） ---------- */
+.card-head-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18rpx;
+}
+.card-head-row .card-title { margin-bottom: 0; }
+
+/* ---------- 学期卡 ---------- */
+.term-row { display: flex; align-items: center; gap: 12rpx; margin-bottom: 20rpx; }
+.term-ic { font-size: 38rpx; line-height: 1; }
+.term-input {
+  flex: 1; box-sizing: border-box; background: #F6F9FC;
+  border: 3rpx solid #E8EDF2; border-radius: 20rpx;
+  padding: 20rpx 24rpx; font-size: 30rpx; color: #2B3340;
+}
+.term-input:focus { border-color: var(--c-blue-deep); background: #F2FAFF; }
+.btn-cam {
+  background: linear-gradient(135deg, #5FB6F5, #3FA9F5);
+  box-shadow: 0 8rpx 0 rgba(63, 169, 245, .25);
+}
+.btn-cam:active { transform: translateY(3rpx); box-shadow: 0 3rpx 0 rgba(63, 169, 245, .25); }
+.cam-ic { margin-right: 12rpx; font-size: 38rpx; line-height: 1; }
+.term-hint { margin-top: 16rpx; text-align: center; }
+
+/* ---------- 照片卡 ---------- */
+.link { font-size: 26rpx; font-weight: 700; color: var(--c-blue-deep); }
+.link.danger { color: #E05656; }
+.sch-photo { width: 100%; border-radius: 20rpx; background: #F6F9FC; }
+
+/* ---------- 网格 ---------- */
+.sch-wrap { width: 100%; white-space: nowrap; }
+.sch { display: inline-block; min-width: 100%; }
+
+.sch-row { display: grid; gap: 6rpx; margin-bottom: 6rpx; }
+.sch-row.head { margin-bottom: 10rpx; }
+
+.sch-corner {
+  font-size: 20rpx; color: var(--c-sub); font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.sch-th {
+  background: #EAF4FF; color: var(--c-blue-deep);
+  font-size: 24rpx; font-weight: 800; text-align: center;
+  padding: 14rpx 0; border-radius: 12rpx;
+}
+
+.sch-tp {
+  background: #F6F9FC; border-radius: 12rpx;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 8rpx 0;
+}
+.tp-n { font-size: 26rpx; font-weight: 800; color: var(--c-text); line-height: 1.2; }
+.tp-t { font-size: 18rpx; color: var(--c-sub); line-height: 1.2; }
+
+.sch-cell {
+  min-height: 96rpx; border-radius: 14rpx;
+  background: #F7F9FC; border: 2rpx dashed #DFE6EE;
+  display: flex; align-items: center; justify-content: center;
+  padding: 10rpx 6rpx; box-sizing: border-box;
+  transition: transform .1s ease;
+}
+/* 有内容的格子：实线边框（底色/边框色由行内 style 的科目配色控制） */
+.sch-cell.on { border-style: solid; box-shadow: inset 0 -4rpx 0 rgba(0, 0, 0, .05); }
+.sch-cell:active { transform: scale(.94); }
+.sc-tx {
+  font-size: 24rpx; line-height: 1.3; color: inherit; font-weight: 800;
+  text-align: center; word-break: break-all; white-space: normal;
+}
+
+/* 空态引导 */
+.grid-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10rpx;
+  padding: 28rpx 0 4rpx;
+}
+.ge-ic { font-size: 48rpx; line-height: 1; }
+.ge-tx { font-size: 25rpx; color: var(--c-sub); }
+
+/* ---------- 网格底部：说明 + 行列调节 ---------- */
+.grid-foot {
+  margin-top: 20rpx; padding-top: 20rpx;
+  border-top: 1rpx solid #F0F3F7;
+  display: flex; flex-direction: column; gap: 16rpx;
+}
+.size-ctl { display: flex; gap: 44rpx; }
+.sz-item { display: flex; align-items: center; gap: 16rpx; }
+.sz-l { font-size: 25rpx; color: var(--c-sub); font-weight: 700; }
+.sz-box { display: flex; align-items: center; gap: 12rpx; }
+.sz-btn {
+  width: 56rpx; height: 56rpx; border-radius: 50%;
+  background: #F2F7FC; border: 2rpx solid #E2E8EF;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30rpx; font-weight: 800; color: var(--c-blue-deep);
+  transition: transform .1s ease;
+}
+.sz-btn:active { background: #E3EFFB; transform: scale(.92); }
+.sz-n { font-size: 30rpx; font-weight: 800; min-width: 44rpx; text-align: center; }
+
+.clear-btn { margin-top: 20rpx; }
+
+/* ---------- 打卡内容识别 ---------- */
+.rec-count { font-size: 24rpx; font-weight: 700; color: var(--c-sub); }
+.rec-bar {
+  height: 16rpx; border-radius: 8rpx; background: #F0EEF8;
+  overflow: hidden; margin: 12rpx 0 20rpx;
+}
+.rec-fill {
+  height: 100%; border-radius: 8rpx;
+  background: linear-gradient(90deg, #B4A7F0, #9B7BF0);
+  transition: width .5s ease;
+}
+
+.rec-list { display: flex; flex-direction: column; gap: 10rpx; }
+.rec-item {
+  display: flex; align-items: center; gap: 16rpx;
+  padding: 18rpx 20rpx; border-radius: 16rpx;
+  background: #FAFAFC;
+}
+.rec-dot { width: 20rpx; height: 20rpx; border-radius: 6rpx; flex-shrink: 0; }
+.rec-name { font-size: 28rpx; font-weight: 800; color: var(--c-text); }
+.rec-tag { margin-left: auto; font-size: 24rpx; font-weight: 700; }
+.rec-tag.ok { color: #3E9B4F; }
+.rec-tag.warn { color: #E08A1E; }
+
+.rec-list + .btn-block { margin-top: 22rpx; }
+.btn-block + .btn-block { margin-top: 16rpx; }
+
+/* ==========================================================================
+ *  底部抽屉（与 mine / typeManage 完全一致的标准写法）
+ *  注意：竖向滚动必须用 scroll-view + flex:1 + min-height:0，
+ *       底栏必须 flex-shrink:0，否则内容过长会把按钮挤出屏幕。
+ * ========================================================================== */
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 901;
+  background: #fff; border-radius: 36rpx 36rpx 0 0;
+  display: flex; flex-direction: column; height: 95vh;
+  box-shadow: 0 -10rpx 40rpx rgba(60,70,90,.20);
+  animation: sheet-up .3s cubic-bezier(.2,.9,.3,1);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.sheet-handle { width: 72rpx; height: 8rpx; border-radius: 8rpx; background: #E2E8EF; margin: 18rpx auto 6rpx; flex-shrink: 0; }
+.sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8rpx 30rpx 18rpx; border-bottom: 1rpx solid #F0F3F7; flex-shrink: 0;
+}
+.sheet-title { font-size: 36rpx; font-weight: 800; }
+.sheet-x {
+  width: 60rpx; height: 60rpx; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32rpx; color: #9AA5B1; background: #F6F9FC;
+}
+.sheet-x:active { background: #EDF3F8; }
+
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 24rpx 30rpx 10rpx; }
+.sheet-foot {
+  display: flex; gap: 20rpx; padding: 18rpx 30rpx 24rpx;
+  border-top: 1rpx solid #F0F3F7; flex-shrink: 0;
+}
+.sheet-foot .btn { flex: 1; }
+
+/* 抽屉内表单 */
+.opt-label { font-size: 28rpx; font-weight: 700; color: #555; margin: 22rpx 0 14rpx; }
+.opt-input {
+  width: 100%; box-sizing: border-box; background: #F6F9FC;
+  border: 3rpx solid #E8EDF2; border-radius: 22rpx;
+  padding: 36rpx 30rpx; font-size: 46rpx; line-height: 1.4;
+  min-height: 120rpx; color: #2B3340;
+}
+.opt-input:focus { border-color: var(--c-blue-deep); background: #F2FAFF; }
+
+.opt-chips { display: flex; flex-wrap: wrap; gap: 14rpx; }
+.chip-item {
+  padding: 16rpx 26rpx; border-radius: 30rpx;
+  background: #F6F9FC; border: 3rpx solid transparent;
+  font-size: 28rpx; font-weight: 700; color: #555;
+  transition: transform .1s ease;
+}
+.chip-item:active { transform: scale(.94); }
+.chip-item.on { border-color: var(--c-yellow-deep); background: #FFF6DD; color: #8A6A1F; }

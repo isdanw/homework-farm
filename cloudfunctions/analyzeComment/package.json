@@ -1,0 +1,9 @@
+{
+  "name": "analyzeComment",
+  "version": "1.0.0",
+  "description": "老师课后评语分析（分学科），调用 CloudBase 内置 AI（hy3）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

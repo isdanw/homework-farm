@@ -1,0 +1,9 @@
+{
+  "name": "tutorSync",
+  "version": "1.0.0",
+  "description": "导学数据云↔本地同步：pull 按 openid 拉回四集合 / push 按 clientId 查重补写",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

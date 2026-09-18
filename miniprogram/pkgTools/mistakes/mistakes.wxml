@@ -1,0 +1,65 @@
+<view class="mk-page">
+
+  <!-- 学科筛选 chips（九科横向滚动） -->
+  <scroll-view class="mk-filter" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="mk-chip {{filterKey === 'all' ? 'on' : ''}}" data-key="all" bindtap="pickFilter">全部</view>
+    <view wx:for="{{subjects}}" wx:key="key"
+          class="mk-chip {{filterKey === item.key ? 'on' : ''}}"
+          data-key="{{item.key}}" bindtap="pickFilter">
+      {{item.emoji}} {{item.name}}
+    </view>
+  </scroll-view>
+
+  <!-- 拍照收录入口 -->
+  <view class="mk-photo-bar">
+    <view class="mk-photo-btn {{scanning ? 'disabled' : ''}}" bindtap="photoAdd">📷 拍照收录错题</view>
+    <view class="mk-photo-hint">拍下练习页，自动识别题目和批改标记</view>
+  </view>
+
+  <!-- 顶部概览 -->
+  <view class="mk-summary" wx:if="{{pendingCount > 0}}">
+    <text class="mk-sum-num">{{pendingCount}}</text>
+    <text class="mk-sum-text">道错题待订正 · 订正不等于掌握，复测达标才算过关</text>
+  </view>
+
+  <!-- 空态 -->
+  <view class="empty" wx:if="{{!list.length}}">
+    <view class="empty-emoji">🌱</view>
+    <view class="empty-title">{{filterKey === 'all' ? '还没有错题' : '这个学科还没有错题'}}</view>
+    <view class="empty-sub">点上方「拍照收录」拍下错题页，或去「导学助手」提问，结束导学后会自动把卡点记到这里</view>
+  </view>
+
+  <!-- 错题列表 -->
+  <view class="mk-card" wx:for="{{list}}" wx:key="id">
+    <!-- 头部：学科 + 来源 + 状态 + 时间 -->
+    <view class="mk-head">
+      <text class="mk-subject">{{item.subjectName}}</text>
+      <text class="mk-source" wx:if="{{item.source === 'photo'}}">📷 拍照</text>
+      <text class="mk-time">{{item.timeText}}</text>
+      <text class="mk-status {{item.status === 'corrected' ? 'ok' : 'pending'}}">{{item.statusText}}</text>
+    </view>
+
+    <!-- 题干（拍照收录才有） -->
+    <view class="mk-question" wx:if="{{item.questionText}}">题：{{item.questionText}}</view>
+
+    <!-- 知识点 + 错因标签 -->
+    <view class="mk-topic">{{item.topic}}</view>
+    <view class="mk-tag-row" wx:if="{{item.errorType}}">
+      <text class="mk-tag" style="color:{{item.errorColor}};background:{{item.errorBg}}">{{item.errorType}} · {{item.errorTypeName}}</text>
+    </view>
+
+    <!-- 可观察表现 + 建议 -->
+    <view class="mk-desc" wx:if="{{item.errorDesc}}">{{item.errorDesc}}</view>
+    <view class="mk-sug" wx:if="{{item.suggestion}}">建议：{{item.suggestion}}</view>
+
+    <!-- 操作 -->
+    <view class="mk-actions">
+      <view class="mk-btn mk-btn-main" data-m="{{item}}" bindtap="goCorrect">去订正</view>
+      <view class="mk-btn mk-btn-retest" data-m="{{item}}" bindtap="goRetest">复测</view>
+    </view>
+    <view class="mk-status-toggle" data-m="{{item}}" bindtap="toggleStatus">
+      {{item.status === 'corrected' ? '恢复待订正' : '标记已订正'}}
+    </view>
+  </view>
+
+</view>

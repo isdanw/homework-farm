@@ -1,0 +1,53 @@
+/* ============ 网页看板（per-user 口令生成页） ============ */
+
+/* HERO */
+.hero {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx 28rpx 20rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid #E8F0FE;
+}
+.hero-main { display: flex; align-items: center; gap: 20rpx; }
+.hero-emoji { font-size: 56rpx; line-height: 1; }
+.hero-body { flex: 1; min-width: 0; }
+.hero-name-row { display: flex; align-items: center; gap: 12rpx; }
+.hero-name { font-size: 38rpx; font-weight: 800; color: #1a1a2e; }
+.hero-streak { font-size: 26rpx; color: #999; margin-top: 6rpx; display: block; }
+
+/* 区块卡片头 */
+.section-head {
+  display: flex; align-items: center; gap: 10rpx;
+  margin-bottom: 16rpx;
+}
+.dot { width: 14rpx; height: 14rpx; border-radius: 50%; flex-shrink: 0; }
+.section-title { font-size: 30rpx; font-weight: 700; color: #333; flex: 1; }
+.entry-go { margin-left: auto; font-size: 24rpx; color: #3FA9F5; font-weight: 700; }
+
+.tools-desc { font-size: 25rpx; color: #999; margin-bottom: 16rpx; line-height: 1.6; }
+.backup-row { display: flex; gap: 12rpx; flex-wrap: wrap; }
+
+.tip-card { background: #F7FAFD; }
+.tip-card.warn { background: #FFF8E8; border: 1rpx solid #FFE8A0; }
+.tip-card .muted { color: #8a93a0; }
+
+/* 二维码 */
+.qr-wrap {
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border: 1rpx solid #EEF3F7; border-radius: 18rpx;
+  padding: 20rpx; margin-bottom: 16rpx;
+}
+.qr { width: 360rpx; height: 360rpx; }
+
+/* 字段行：标签 + 值 + 复制按钮 */
+.field {
+  display: flex; align-items: center; gap: 14rpx;
+  background: #F6F9FC; border-radius: 16rpx;
+  padding: 16rpx 18rpx; margin-bottom: 12rpx;
+}
+.field-label { font-size: 24rpx; color: #888; flex-shrink: 0; width: 120rpx; }
+.field-val {
+  flex: 1; min-width: 0; font-size: 24rpx; color: #333;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.field-val.mono { font-family: "SF Mono", Menlo, Consolas, monospace; letter-spacing: 1rpx; }

@@ -1,0 +1,166 @@
+/**
+ * plan.wxss —— 成长计划页样式（沿用全局马卡龙规范：奶油底 + 圆角卡片）
+ */
+
+.pl-head {
+  display: flex;
+  align-items: center;
+  height: 88rpx;
+  margin-bottom: 8rpx;
+}
+.pl-back { color: var(--c-sub); font-size: 30rpx; width: 140rpx; }
+.pl-title { flex: 1; text-align: center; font-size: 40rpx; font-weight: 600; }
+.pl-spacer { width: 140rpx; }
+
+/* 科目切换 chips */
+.pl-chips { white-space: nowrap; margin-bottom: 20rpx; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 28rpx;
+  margin-right: 16rpx;
+  border-radius: 999rpx;
+  background: #FFFFFF;
+  border: 3rpx solid #EDF1F5;
+  font-size: 28rpx;
+  color: var(--c-text);
+}
+.chip-on { color: #FFFFFF; font-weight: 600; }
+
+/* 区块标题 */
+.sec-head { display: flex; align-items: center; margin-bottom: 20rpx; }
+.sec-dot { width: 18rpx; height: 18rpx; border-radius: 50%; margin-right: 12rpx; }
+.sec-title { font-size: 32rpx; font-weight: 600; }
+
+/* 表单（已改为画像信息只读展示） */
+.meta-row { display: flex; align-items: flex-start; margin-bottom: 18rpx; }
+.meta-k { width: 130rpx; color: var(--c-sub); font-size: 28rpx; flex-shrink: 0; }
+.meta-v { flex: 1; font-size: 29rpx; }
+.meta-missing { color: #C9A23F; }
+.meta-src { color: var(--c-sub); font-size: 24rpx; margin-left: 8rpx; }
+
+.gen-btn { margin-top: 26rpx; }
+.btn-main { background: var(--c-blue-deep); color: #FFFFFF; }
+.gen-tip { margin-top: 14rpx; text-align: center; }
+
+/* 计划信息卡 */
+.meta-card { padding-bottom: 18rpx; }
+.meta-line { display: flex; align-items: center; flex-wrap: wrap; gap: 10rpx; }
+.meta-emoji { font-size: 40rpx; }
+.meta-name { font-size: 34rpx; font-weight: 600; }
+.meta-book {
+  font-size: 24rpx;
+  color: var(--c-sub);
+  background: #F6F8FA;
+  border-radius: 10rpx;
+  padding: 4rpx 14rpx;
+}
+.meta-sub { margin-top: 6rpx; }
+
+/* 整体状态卡 */
+.status-card {
+  border-radius: var(--radius);
+  padding: 30rpx 30rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+.status-main { display: flex; align-items: baseline; gap: 18rpx; }
+.status-label { font-size: 52rpx; font-weight: 700; }
+.status-dev { font-size: 30rpx; font-weight: 600; }
+.status-stats {
+  display: flex;
+  margin-top: 22rpx;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 20rpx;
+  padding: 16rpx 0;
+}
+.stat { flex: 1; text-align: center; }
+.stat-num { font-size: 38rpx; font-weight: 700; color: var(--c-text); }
+.stat-name { font-size: 24rpx; color: var(--c-sub); }
+.status-next {
+  margin-top: 18rpx;
+  font-size: 26rpx;
+  color: var(--c-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 开始条 */
+.start-banner { margin-bottom: 20rpx; }
+
+/* 阶段卡 */
+.stage-card { margin-bottom: 20rpx; }
+.stage-head { display: flex; align-items: center; justify-content: space-between; }
+.stage-name { font-size: 32rpx; font-weight: 600; }
+.stage-stat { font-size: 26rpx; font-weight: 600; }
+.stage-meta { margin-top: 4rpx; }
+
+.bar {
+  height: 12rpx;
+  background: #F0F2F5;
+  border-radius: 999rpx;
+  overflow: hidden;
+  margin: 16rpx 0 8rpx;
+}
+.bar-inner { height: 100%; border-radius: 999rpx; transition: width .3s; }
+
+/* 任务行 */
+.task {
+  display: flex;
+  align-items: center;
+  padding: 18rpx 8rpx;
+  border-bottom: 1rpx solid #F3F5F7;
+}
+.task:last-child { border-bottom: none; }
+/* 从打卡记录回链定位到该任务时的高亮 */
+.task.hl {
+  background: #EAF4FF;
+  border-radius: 14rpx;
+  box-shadow: inset 0 0 0 3rpx var(--c-blue-deep);
+}
+.task-check {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  border: 3rpx solid #C9D3DC;
+  margin-right: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 26rpx;
+  flex-shrink: 0;
+}
+.task.done .task-check { background: var(--c-green-deep); border-color: var(--c-green-deep); }
+.task.overdue .task-check { border-color: var(--c-danger); }
+.task.due .task-check { border-color: var(--c-yellow-deep); }
+.task-body { flex: 1; min-width: 0; }
+.task-name { font-size: 29rpx; }
+.task.done .task-name { color: var(--c-sub); text-decoration: line-through; }
+.task-tag { font-size: 23rpx; color: var(--c-sub); margin-top: 2rpx; }
+.task.overdue .task-tag { color: var(--c-danger); }
+.task.due .task-tag { color: var(--c-yellow-deep); }
+.task-days {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: var(--c-sub);
+  background: #F6F8FA;
+  border-radius: 10rpx;
+  padding: 4rpx 12rpx;
+  margin-left: 12rpx;
+}
+.task-tutor {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: var(--c-blue-deep);
+  background: #EAF5FF;
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+  margin-left: 12rpx;
+}
+
+/* 底部操作 */
+.action-row { display: flex; gap: 16rpx; margin-top: 6rpx; }
+.action-btn { flex: 1; text-align: center; font-size: 26rpx; padding: 20rpx 0; }
+.action-danger { color: var(--c-danger); }
+.foot-tip { text-align: center; margin-top: 18rpx; }

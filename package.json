@@ -1,0 +1,12 @@
+{
+  "name": "homework-farm",
+  "version": "1.0.0",
+  "description": "小小农场成长记 - 每日打卡 + 卡通农场联动小程序",
+  "scripts": {
+    "upload": "node scripts/upload.js",
+    "preview": "node scripts/preview.js"
+  },
+  "dependencies": {
+    "miniprogram-ci": "^2.0.24"
+  }
+}

@@ -1,5 +1,12 @@
 <view class="page-wrap farm-page {{night ? 'night' : ''}} {{skinClass}}">
 
+  <!-- ===== 当前孩子 ===== -->
+  <view class="child-banner">
+    <view class="cb-avatar">{{child.avatar}}</view>
+    <view class="cb-name">{{child.nickname}}<text wx:if="{{child.grade}}" class="cb-grade">{{child.grade}}</text></view>
+    <view class="cb-tip">当前农场</view>
+  </view>
+
   <!-- ===== 顶部资源条 ===== -->
   <view class="res-bar top-res">
     <view class="res-item"><view class="ic-coin"></view>{{res.coins}}</view>
@@ -13,6 +20,34 @@
   <view class="warn-bar {{forecast.danger ? 'bad' : 'good'}}" bindtap="goCheckin">
     <view class="wb-text">{{forecast.text}}</view>
     <view wx:if="{{forecast.danger}}" class="wb-go">去打卡 ></view>
+  </view>
+
+  <!-- ===== 家庭内合种（2 个孩子以上可用 · 阶段 0 狗粮验证） ===== -->
+  <view wx:if="{{canCoop}}" class="coop-card">
+    <block wx:if="{{coop.has && !coop.done}}">
+      <view class="coop-head">
+        <text class="coop-emoji">{{coop.emoji}}</text>
+        <view class="coop-title">{{coop.name}}</view>
+        <view class="coop-pct">{{coop.percent}}%</view>
+      </view>
+      <view class="coop-bar"><view class="coop-fill" style="width:{{coop.percent}}%;background:{{coop.color}}"></view></view>
+      <view class="coop-sub">进度 {{coop.progress}}/{{coop.goal}} · 每个家庭成员打卡都会一起培育这棵植物</view>
+      <view class="coop-members">
+        <view wx:for="{{coop.contributors}}" wx:key="nickname" class="coop-member">
+          <text class="cm-av">{{item.avatar}}</text>
+          <text class="cm-n">{{item.nickname}}</text>
+          <text class="cm-c">×{{item.count}}</text>
+        </view>
+      </view>
+    </block>
+    <block wx:elif="{{coop.done}}">
+      <view class="coop-done">🌟 {{coop.last.emoji}}「{{coop.last.name}}」合种成功！大家太棒了</view>
+      <view class="btn btn-sm btn-green coop-new" bindtap="createCoop">再发起一株</view>
+    </block>
+    <block wx:else>
+      <view class="coop-empty">🌱 发起一次「家庭合种」吧！两个孩子各自打卡，一起把同一棵植物养大</view>
+      <view class="btn btn-sm btn-green coop-new" bindtap="createCoop">发起家庭合种</view>
+    </block>
   </view>
 
   <!-- ===== 内部四个分区 ===== -->
@@ -122,7 +157,7 @@
     </view>
 
     <!-- 收获被锁提示 -->
-    <view wx:if="{{lockHarvest}}" class="lock-tip">今天三科任务都没做，小狗熊糟蹋了菜园，今天不能收获金币</view>
+    <view wx:if="{{lockHarvest}}" class="lock-tip">今天还有任务没做完，小狗熊糟蹋了菜园，今天不能收获金币</view>
 
     <!-- 工具栏 -->
     <view class="tools">
@@ -131,18 +166,13 @@
         <view class="tool-t">杀虫剂 ×{{res.pesticide}}</view>
         <view class="tool-s">赶走小狗熊 + 治好植物</view>
       </view>
-      <view class="tool" bindtap="goMall">
-        <view class="tool-ic"><view class="ic-coin big"></view></view>
-        <view class="tool-t">金币商城</view>
-        <view class="tool-s">奖状 / 头像框 / 皮肤</view>
-      </view>
     </view>
 
     <view class="card tip-card">
       <view class="card-title"><view class="dot"></view>怎么玩</view>
       <view class="tip-line">1. 完成一科任务 → 领 1 颗阳光 + 1 颗该学科种子</view>
       <view class="tip-line">2. 点空地块种下种子，浇阳光可以立刻长大一阶段</view>
-      <view class="tip-line">3. 长到「成熟」就能收获金币，去商城换奖励</view>
+      <view class="tip-line">3. 长到「成熟」就能收获金币，去仓库看看自己的收成</view>
       <view class="tip-line danger">4. 任务没做完 → 晚上小狗熊来啃植物，还会被偷走一半金币</view>
       <view class="tip-line">5. 补完任务能领杀虫剂，赶走小狗熊、治好植物</view>
     </view>
@@ -227,25 +257,6 @@
         <view class="bag-item"><view class="bg-ic sun-bg"></view><view class="bg-name">阳光</view><view class="bg-num">×{{res.suns}}</view></view>
         <view class="bag-item"><view class="bg-ic spray-bg"></view><view class="bg-name">杀虫剂</view><view class="bg-num">×{{res.pesticide}}</view></view>
         <view class="bag-item"><view class="bg-ic shield-bg"></view><view class="bg-name">护盾</view><view class="bg-num">×{{res.shields}}</view></view>
-      </view>
-    </view>
-
-    <view class="card">
-      <view class="card-title">
-        <view class="dot" style="background:#F5B740"></view>我的奖励
-        <view class="btn btn-sm btn-line" style="margin-left:auto" catchtap="goMall">去商城</view>
-      </view>
-      <view wx:if="{{ownedList.length===0}}" class="empty">还没有兑换奖励，攒够金币去商城看看吧</view>
-      <view wx:for="{{ownedList}}" wx:key="id" class="own-row">
-        <view class="own-ic" style="background:{{item.color}}"></view>
-        <view class="own-main">
-          <view class="own-name">{{item.name}}</view>
-          <view class="own-desc">{{item.desc}}</view>
-        </view>
-        <view wx:if="{{item.kind !== 'cert'}}" class="btn btn-sm {{item.equipped ? 'btn-gray' : 'btn-green'}}" data-id="{{item.id}}" bindtap="equip">
-          {{item.equipped ? '已装备' : '装备'}}
-        </view>
-        <view wx:else class="cert-tag">奖状</view>
       </view>
     </view>
   </block>

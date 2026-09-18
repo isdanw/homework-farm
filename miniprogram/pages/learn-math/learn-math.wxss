@@ -1,8 +1,0 @@
-/* 数学乐园模块样式 */
-.tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin: 16rpx 6rpx; }
-.flip-mt { margin-top: 22rpx; }
-
-.quiz { background: #fff; border-radius: var(--radius); box-shadow: 0 8rpx 24rpx rgba(150,180,210,.16); padding: 30rpx; text-align: center; }
-.quiz .label { font-size: 28rpx; color: var(--c-sub); }
-.quiz .q { font-size: 110rpx; font-weight: 800; margin: 12rpx 0 22rpx; letter-spacing: 4rpx; }
-.quiz .q.seq { font-size: 72rpx; letter-spacing: 8rpx; }

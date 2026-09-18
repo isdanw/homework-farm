@@ -1,0 +1,125 @@
+<view class="page-wrap">
+
+  <!-- 头部 -->
+  <view class="pl-head">
+    <view class="pl-back" bindtap="goBack">‹ 返回</view>
+    <view class="pl-title">成长计划</view>
+    <view class="pl-spacer"></view>
+  </view>
+
+  <!-- 科目切换 -->
+  <scroll-view class="pl-chips" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="chip {{t.key === key ? 'chip-on' : ''}}"
+          wx:for="{{types}}" wx:for-item="t" wx:key="key"
+          data-key="{{t.key}}" bindtap="pickType"
+          style="{{t.key === key ? 'background:' + t.color + ';border-color:' + t.color : ''}}">
+      <text>{{t.emoji}} {{t.name}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- ==================== 无计划：按画像生成 ==================== -->
+  <view wx:if="{{!plan}}" class="card">
+    <view class="sec-head">
+      <view class="sec-dot" style="background:{{typeColor}}"></view>
+      <text class="sec-title">生成 {{typeName}} 阶段计划</text>
+    </view>
+
+    <view class="meta-row">
+      <view class="meta-k">年级</view>
+      <view class="meta-v {{grade ? '' : 'meta-missing'}}">{{grade || '未设置 · 去「我的 → 儿童画像」完善'}}</view>
+    </view>
+    <view class="meta-row">
+      <view class="meta-k">学期</view>
+      <view class="meta-v">{{term}}<text class="meta-src">（取自当前进度）</text></view>
+    </view>
+    <view class="meta-row">
+      <view class="meta-k">教材</view>
+      <view class="meta-v {{textbook ? '' : 'meta-missing'}}">{{textbook || '未设置 · 可在学科画像填写'}}</view>
+    </view>
+    <view class="meta-row">
+      <view class="meta-k">编排要求</view>
+      <view class="meta-v">{{promptLabel}}</view>
+    </view>
+
+    <view class="btn btn-main btn-block gen-btn {{generating || !grade ? 'disabled' : ''}}" bindtap="generate">
+      {{generating ? '正在编排…' : '✨ 生成阶段计划'}}
+    </view>
+    <view class="muted gen-tip">年级 / 学期 / 教材自动取自画像。生成后每日打卡会自动带出当前待完成任务；点「开始计划」才开始按天起算排期。</view>
+  </view>
+
+  <!-- ==================== 有计划：状态 + 阶段任务 ==================== -->
+  <block wx:else>
+    <!-- 计划信息 -->
+    <view class="card meta-card">
+      <view class="meta-line">
+        <text class="meta-emoji">{{typeEmoji}}</text>
+        <text class="meta-name">{{typeName}} · {{plan.grade}}{{plan.term}}</text>
+        <text class="meta-book" wx:if="{{plan.textbook}}">{{plan.textbook}}</text>
+      </view>
+      <view class="meta-sub muted">共 {{prog.plannedDays}} 天 · {{prog.totalTasks}} 项任务
+        <text wx:if="{{prog.started}}"> · 今天第 {{prog.elapsed}} 天</text>
+      </view>
+    </view>
+
+    <!-- 整体状态卡 -->
+    <view class="status-card" style="background:{{statusBg}}">
+      <view class="status-main">
+        <view class="status-label" style="color:{{statusColor}}">{{prog.statusText}}</view>
+        <view class="status-dev" style="color:{{statusColor}}" wx:if="{{prog.started}}">
+          {{prog.devDays > 0 ? '领先 ' + prog.devDays + ' 天' : (prog.devDays < 0 ? '落后 ' + (-prog.devDays) + ' 天' : '进度正常')}}
+        </view>
+      </view>
+      <view class="status-stats">
+        <view class="stat"><view class="stat-num">{{prog.doneCount}}</view><view class="stat-name">已完成</view></view>
+        <view class="stat"><view class="stat-num">{{prog.started ? prog.dueCount : '-'}}</view><view class="stat-name">应完成</view></view>
+        <view class="stat"><view class="stat-num">{{prog.checkinDays}}</view><view class="stat-name">打卡天数</view></view>
+      </view>
+      <view class="status-next" wx:if="{{prog.nextTask}}">
+        下一项：{{prog.nextTask.name}}
+      </view>
+      <view class="status-next" wx:elif="{{!prog.started}}">
+        点下方「开始计划」后开始按天对照进度
+      </view>
+    </view>
+
+    <!-- 未开始提示条 -->
+    <view wx:if="{{!prog.started}}" class="start-banner">
+      <view class="btn btn-green btn-block" bindtap="startPlan">▶ 开始计划（从今天起算）</view>
+    </view>
+
+    <!-- 阶段列表 -->
+    <view class="card stage-card" wx:for="{{stageList}}" wx:for-item="stage" wx:for-index="si" wx:key="si">
+      <view class="stage-head">
+        <view class="stage-name">{{stage.name}}</view>
+        <view class="stage-stat" style="color:{{stage.statColor}}">{{stage.stat.statusText}}</view>
+      </view>
+      <view class="stage-meta muted">
+        {{stage.weeks}}<text wx:if="{{stage.goal}}"> · {{stage.goal}}</text>
+      </view>
+      <view class="bar"><view class="bar-inner" style="{{stage.barStyle}};background:{{stage.statColor}}"></view></view>
+
+      <view class="task {{task.cls}} {{task.hl ? 'hl' : ''}}" id="{{task.id}}"
+            wx:for="{{stage.tasks}}" wx:for-item="task" wx:for-index="ti" wx:key="ti"
+            data-si="{{task.si}}" data-ti="{{task.ti}}" data-done="{{task.done}}" bindtap="toggleTask">
+        <view class="task-check">{{task.done ? '✓' : ''}}</view>
+        <view class="task-body">
+          <view class="task-name">{{task.name}}</view>
+          <view class="task-tag">{{task.tag}}</view>
+        </view>
+        <view class="task-tutor" catchtap="goTutor"
+              data-si="{{task.si}}" data-ti="{{task.ti}}"
+              data-task="{{task.name}}" data-stage="{{stage.name}}" data-goal="{{stage.goal}}">导学</view>
+        <view class="task-days">{{task.days}}天</view>
+      </view>
+    </view>
+
+    <!-- 操作 -->
+    <view class="action-row">
+      <view class="btn btn-line action-btn" bindtap="goProfile">✏️ 编排要求与教材</view>
+      <view class="btn btn-line action-btn" bindtap="generate">🔄 重新生成</view>
+      <view class="btn btn-line action-btn action-danger" bindtap="clearPlan">🗑 清除</view>
+    </view>
+    <view class="muted foot-tip">任务点一下即可勾选完成。每日打卡只「引用」当前待完成任务，不会自动完成任务 —— 进度以这里的勾选为准。</view>
+  </block>
+
+</view>

@@ -2,14 +2,47 @@
   "pages": [
     "pages/index/index",
     "pages/checkin/checkin",
-    "pages/stats/stats",
-    "pages/errors/errors",
     "pages/farm/farm",
-    "pages/mall/mall",
-    "pages/learn-pinyin/learn-pinyin",
-    "pages/learn-math/learn-math",
-    "pages/learn-english/learn-english"
+    "pages/mine/mine"
   ],
+  "subpackages": [
+    {
+      "root": "pkgGuide",
+      "name": "guide",
+      "pages": [
+        "tutor/tutor",
+        "tutorHub/tutorHub",
+        "report/report",
+        "retest/retest",
+        "learnerProfile/learnerProfile",
+        "typeProfile/typeProfile"
+      ]
+    },
+    {
+      "root": "pkgTools",
+      "name": "tools",
+      "pages": [
+        "schedule/schedule",
+        "mistakes/mistakes",
+        "mistakes/confirm/confirm",
+        "plan/plan",
+        "webportal/webportal",
+        "login/login",
+        "typeManage/typeManage",
+        "checkinDetail/checkinDetail"
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/index/index": {
+      "network": "all",
+      "packages": ["pkgTools"]
+    },
+    "pages/mine/mine": {
+      "network": "all",
+      "packages": ["pkgGuide", "pkgTools"]
+    }
+  },
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#BFE6FF",
@@ -23,11 +56,22 @@
     "selectedColor": "#3FA9F5",
     "backgroundColor": "#FFFFFF",
     "list": [
-      { "pagePath": "pages/index/index", "text": "成长乐园" },
-      { "pagePath": "pages/checkin/checkin", "text": "每日打卡" },
-      { "pagePath": "pages/stats/stats", "text": "成长记录" },
-      { "pagePath": "pages/errors/errors", "text": "小本本" },
-      { "pagePath": "pages/farm/farm", "text": "我的农场" }
+      {
+        "pagePath": "pages/index/index",
+        "text": "成长乐园"
+      },
+      {
+        "pagePath": "pages/checkin/checkin",
+        "text": "每日打卡"
+      },
+      {
+        "pagePath": "pages/farm/farm",
+        "text": "我的农场"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的"
+      }
     ]
   },
   "style": "v2",

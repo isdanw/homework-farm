@@ -1,0 +1,9 @@
+{
+  "name": "webVisionConfig",
+  "version": "1.0.0",
+  "description": "视觉识别模型配置·网页端读写代理（Key 仅存云端，小程序不接触）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  }
+}

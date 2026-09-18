@@ -1,0 +1,158 @@
+<view class="page-wrap">
+
+  <!-- ===== 卡通背景氛围层 ===== -->
+  <view class="scene" aria-hidden="true">
+    <text class="sc sc-cloud" style="top:20rpx;left:18rpx">☁️</text>
+    <text class="sc sc-star" style="top:120rpx;right:40rpx">⭐</text>
+    <view class="page-wave"></view>
+  </view>
+
+  <!-- ===== 头部：标题 + 统计 ===== -->
+  <view class="sch-head">
+    <view class="sch-head-top">
+      <text class="t">课程表</text>
+      <view wx:if="{{cellCount}}" class="sch-badge">已录 {{cellCount}} 节课</view>
+    </view>
+    <text class="s">一学期一张表，录好就能自动对应打卡内容</text>
+  </view>
+
+  <!-- ===== 学期 + 拍照（主操作） ===== -->
+  <view class="card term-card">
+    <view class="term-row">
+      <text class="term-ic">📅</text>
+      <input class="term-input" placeholder="学期名称，如「2026 秋季学期」"
+        value="{{termName}}" bindinput="onTermName" bindblur="saveTermName" maxlength="20" />
+    </view>
+    <view class="btn btn-block btn-cam" bindtap="chooseImage">
+      <text class="cam-ic">📷</text>
+      <text>{{photoPath ? '重新拍照 / 选图' : '拍照 / 相册识别课表'}}</text>
+    </view>
+    <view class="muted term-hint">识别不准没关系，照片会留着，对照照片点格子改就行</view>
+  </view>
+
+  <!-- ===== 课表照片（有则显示） ===== -->
+  <view wx:if="{{photoPath}}" class="card photo-card">
+    <view class="card-head-row">
+      <view class="card-title"><view class="dot"></view>课表照片</view>
+      <view class="link danger" bindtap="removePhoto">删除</view>
+    </view>
+    <image class="sch-photo" src="{{photoPath}}" mode="widthFix" bindtap="previewPhoto" />
+  </view>
+
+  <!-- ===== 课程表网格（核心） ===== -->
+  <view class="card grid-card">
+    <view class="card-head-row">
+      <view class="card-title"><view class="dot" style="background:#3FA9F5"></view>课程表</view>
+    </view>
+
+    <scroll-view class="sch-wrap" scroll-x show-scrollbar="{{false}}">
+      <view class="sch">
+        <!-- 表头 -->
+        <view class="sch-row head" style="grid-template-columns:{{gridStyle}};">
+          <view class="sch-corner">节次</view>
+          <view class="sch-th" wx:for="{{cols}}" wx:key="idx">{{item.label}}</view>
+        </view>
+        <!-- 每一行 -->
+        <view class="sch-row" wx:for="{{rows}}" wx:key="idx" style="grid-template-columns:{{gridStyle}};">
+          <view class="sch-tp">
+            <text class="tp-n">{{item.period}}</text>
+            <text class="tp-t">{{item.time}}</text>
+          </view>
+          <view class="sch-cell {{c.has ? 'on' : ''}}" wx:for="{{item.cells}}" wx:for-item="c" wx:key="key"
+                style="{{c.style}}" data-r="{{c.row}}" data-c="{{c.col}}" bindtap="editCell">
+            <text class="sc-tx">{{c.name}}</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 空态引导 -->
+    <view wx:if="{{!cellCount}}" class="grid-empty">
+      <text class="ge-ic">📝</text>
+      <text class="ge-tx">还没录课：先拍照识别，或直接点格子手动填写</text>
+    </view>
+
+    <!-- 底部：说明 + 行列调节 -->
+    <view class="grid-foot">
+      <view class="muted">点格子填科目 · 左右滑动查看更多</view>
+      <view class="size-ctl">
+        <view class="sz-item">
+          <text class="sz-l">每天节数</text>
+          <view class="sz-box">
+            <view class="sz-btn" data-d="-1" bindtap="changeRows">－</view>
+            <text class="sz-n">{{rowCount}}</text>
+            <view class="sz-btn" data-d="1" bindtap="changeRows">＋</view>
+          </view>
+        </view>
+        <view class="sz-item">
+          <text class="sz-l">排课天数</text>
+          <view class="sz-box">
+            <view class="sz-btn" data-d="-1" bindtap="changeCols">－</view>
+            <text class="sz-n">{{colCount}}</text>
+            <view class="sz-btn" data-d="1" bindtap="changeCols">＋</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="btn btn-line btn-sm btn-block clear-btn" bindtap="clearAll">清空课表</view>
+  </view>
+
+  <!-- ===== 打卡内容识别 ===== -->
+  <view class="card rec-card">
+    <view class="card-head-row">
+      <view class="card-title"><view class="dot" style="background:#9B7BF0"></view>打卡内容识别</view>
+      <view wx:if="{{analysis.total}}" class="rec-count">{{analysis.matched.length}}/{{analysis.total}} 已关联</view>
+    </view>
+
+    <!-- 覆盖率 -->
+    <view wx:if="{{analysis.total}}" class="rec-bar">
+      <view class="rec-fill" style="width:{{analysis.coverage}}%"></view>
+    </view>
+
+    <view wx:if="{{analysis.total}}" class="rec-list">
+      <view class="rec-item" wx:for="{{analysis.matched}}" wx:key="name">
+        <view class="rec-dot" style="background:{{item.bg}}"></view>
+        <text class="rec-name">{{item.name}}</text>
+        <text class="rec-tag ok">✓ {{item.typeName}}打卡</text>
+      </view>
+      <view class="rec-item no" wx:for="{{analysis.unmatched}}" wx:key="name">
+        <view class="rec-dot" style="background:{{item.bg}}"></view>
+        <text class="rec-name">{{item.name}}</text>
+        <text class="rec-tag warn">待添加</text>
+      </view>
+    </view>
+    <view wx:else class="empty">还没有科目，先在上面的表格里录入课表吧</view>
+
+    <view wx:if="{{analysis.unmatched.length}}" class="btn btn-yellow btn-block" bindtap="addMissing">
+      ＋ 一键把 {{analysis.unmatched.length}} 个科目加入打卡
+    </view>
+    <view class="btn btn-line btn-block" bindtap="goTypeManage">管理打卡类型</view>
+  </view>
+
+  <!-- ===== 单格编辑：底部抽屉 ===== -->
+  <view wx:if="{{showCell}}" class="mask" bindtap="closeCell">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-handle"></view>
+      <view class="sheet-head">
+        <view class="sheet-title">第 {{editing.period}} 节 · {{editing.dayLabel}}</view>
+        <view class="sheet-x" bindtap="closeCell">✕</view>
+      </view>
+      <scroll-view class="sheet-body" scroll-y>
+        <view class="opt-label">科目名称</view>
+        <input class="opt-input" placeholder="如：语文"
+          model:value="{{cellName}}" bindinput="onCellName" maxlength="10" cursor-spacing="30" />
+        <view class="opt-label">常见科目（点一下直接填）</view>
+        <view class="opt-chips">
+          <view class="chip-item {{cellName === item ? 'on' : ''}}" wx:for="{{common}}" wx:key="*this"
+            data-s="{{item}}" bindtap="pickSubject">{{item}}</view>
+        </view>
+      </scroll-view>
+      <view class="sheet-foot">
+        <view class="btn btn-gray" bindtap="clearCell">清空</view>
+        <view class="btn btn-green" bindtap="confirmCell">保存</view>
+      </view>
+    </view>
+  </view>
+
+</view>

@@ -1,0 +1,49 @@
+.page-wrap { padding: 24rpx 24rpx 60rpx; }
+
+/* 头部 */
+.lp-head { display: flex; align-items: center; height: 80rpx; }
+.lp-back { font-size: 30rpx; color: #3FA9F5; width: 120rpx; }
+.lp-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 800; color: #2A3340; }
+.lp-spacer { width: 120rpx; }
+
+/* 孩子身份卡 */
+.child-card {
+  display: flex; align-items: center; gap: 20rpx;
+  background: #fff; border-radius: 24rpx; padding: 24rpx;
+  margin-bottom: 20rpx; box-shadow: 0 6rpx 18rpx rgba(150,180,210,.16);
+}
+.cc-avatar { font-size: 64rpx; width: 96rpx; height: 96rpx; line-height: 96rpx; text-align: center; background: #F2F7FB; border-radius: 50%; }
+.cc-name { font-size: 32rpx; font-weight: 800; color: #2A3340; }
+.cc-grade { font-size: 22rpx; color: #fff; background: #3FA9F5; border-radius: 16rpx; padding: 2rpx 14rpx; margin-left: 12rpx; }
+.cc-sub { font-size: 22rpx; color: #9AA5B1; margin-top: 6rpx; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 24rpx; padding: 26rpx 24rpx; margin-bottom: 20rpx; box-shadow: 0 6rpx 18rpx rgba(150,180,210,.16); }
+.section-head { display: flex; align-items: center; margin-bottom: 18rpx; }
+.dot { width: 14rpx; height: 14rpx; border-radius: 50%; margin-right: 12rpx; }
+.section-title { font-size: 29rpx; font-weight: 800; color: #2A3340; }
+
+/* 表单行 */
+.opt-row { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 0; border-bottom: 1rpx solid #F0F3F7; }
+.opt-row:last-child { border-bottom: none; }
+.opt-row.col { flex-direction: column; align-items: stretch; }
+.opt-name { font-size: 28rpx; color: #3A4350; }
+.opt-picker { flex: 1; display: flex; justify-content: flex-end; }
+.picker-val { font-size: 28rpx; color: #3FA9F5; }
+.picker-val.ph { color: #B6C0CC; }
+.opt-input-wrap { display: flex; align-items: center; gap: 12rpx; }
+.opt-input-min { width: 160rpx; text-align: right; font-size: 28rpx; color: #2A3340; }
+.opt-unit { font-size: 24rpx; color: #9AA5B1; }
+.opt-input-full { margin-top: 10rpx; background: #F6F9FC; border-radius: 16rpx; padding: 18rpx 20rpx; font-size: 28rpx; color: #2A3340; }
+
+/* 多选 chips */
+.opt-label { font-size: 26rpx; color: #6B7682; margin: 18rpx 0 10rpx; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 14rpx; }
+.chip {
+  font-size: 25rpx; color: #5A6470; background: #F2F5F9; border: 2rpx solid #E6EBF1;
+  border-radius: 28rpx; padding: 12rpx 24rpx;
+}
+.chip.on { color: #fff; background: #3FA9F5; border-color: #3FA9F5; }
+
+/* 保存 */
+.lp-save { margin-top: 10rpx; }
