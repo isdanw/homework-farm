@@ -4,7 +4,12 @@
   "description": "小小农场成长记 - 每日打卡 + 卡通农场联动小程序",
   "scripts": {
     "upload": "node scripts/upload.js",
-    "preview": "node scripts/preview.js"
+    "preview": "node scripts/preview.js",
+    "test:store": "node scripts/test-store-persistence.cjs",
+    "test:tutor-store": "node scripts/test-tutor-store.cjs",
+    "test:tutor-sync": "node scripts/test-tutor-sync-dedupe.cjs",
+    "test": "node scripts/test-store-persistence.cjs && node scripts/test-tutor-store.cjs && node scripts/test-tutor-sync-dedupe.cjs",
+    "test:counterproof": "sh scripts/counterproof.sh"
   },
   "dependencies": {
     "miniprogram-ci": "^2.0.24"

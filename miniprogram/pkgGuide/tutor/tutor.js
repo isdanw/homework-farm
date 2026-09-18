@@ -321,12 +321,8 @@ Page({
           tutorStore.upsertReview(review);
         }
 
-        // 待补写队列（闭环 S1）：云端写入失败 / 离线时，下次由 tutorSync(push) 回补
-        tutorStore.queuePush('sessions', sessionId);
-        if (diagnosis && diagnosis.stuck) {
-          tutorStore.queuePush('mistakes', mkId);
-          tutorStore.queuePush('reviews', rvId);
-        }
+        // 补推上云：sessions / mistakes / reviews 的入队现在由 tutorStore 各写操作内部
+        // 自动完成（见其「写操作出口」），这里只需触发一次合并推送。
         tutorStore.pushQueued();
 
         const hasTask = !!(this.data.taskContext && this.data.taskContext.key);

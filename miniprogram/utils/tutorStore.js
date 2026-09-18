@@ -27,9 +27,16 @@
  *     id, mistakeId, subject, subjectName, topic, errorType,
  *     stage: 1-5, dueAt, done: false, createdAt, updatedAt
  *   }],
+ *   removed: [{ kind, id, at }],// 本地已删条目墓碑：pull 回填时跳过，防「删了又回来」
  *   pushQueue: [{ kind, id }],  // 待补写云端的数据（离线/失败回补，push 成功后清空）
  *   lastSyncAt: 0
  * }
+ *
+ * 【数据契约 · 2026-09-18 与 store.js 同一套（见其文件头 R1–R7）】
+ *   · R4 字段只增不改不删：新增字段必须在 readAll() 的兜底里给默认值。
+ *   · R6 读云端一律「全字段透传」：只剔除云端的库内字段（_id/openid/clientId/cloudId），
+ *       绝不按业务字段白名单裁剪 —— 否则以后给错题加个 imageUrl，换设备拉回来就静默丢了。
+ *   · R7 写操作在数据层内部完成「落盘 + 登记上云队列」两件事，调用方不可能漏推。
  */
 const store = require('./store.js');
 const util = require('./util.js');
@@ -42,27 +49,136 @@ const REVIEW_STAGE_DAYS = [1, 2, 4, 7, 15];
 /* 同步节流：60 秒内不重复 pull */
 const SYNC_THROTTLE_MS = 60000;
 
+/* 有改动登记后的合并推送延迟：连续 3 次写操作只触发 1 次云调用 */
+const FLUSH_DEBOUNCE_MS = 1500;
+
+/* 本地持有的四个集合 */
+const KINDS = ['sessions', 'mistakes', 'evidence', 'reviews'];
+
 function storageKey() {
   const oid = store.getOpenid();
   return oid ? `${BASE_KEY}_${oid}` : `${BASE_KEY}_guest`;
 }
 
+function blank() {
+  return { sessions: [], mistakes: [], evidence: [], reviews: [], removed: [], pushQueue: [], lastSyncAt: 0 };
+}
+
+let _probeOid = '';            // 已探查过 _guest 空间的 openid（按身份各探一次）
+
 function readAll() {
-  try {
-    const raw = wx.getStorageSync(storageKey());
-    if (raw && Array.isArray(raw.sessions)) {
-      if (!Array.isArray(raw.mistakes)) raw.mistakes = [];
-      if (!Array.isArray(raw.evidence)) raw.evidence = [];
-      if (!Array.isArray(raw.reviews)) raw.reviews = [];
-      if (!Array.isArray(raw.pushQueue)) raw.pushQueue = [];
-      return raw;
-    }
-  } catch (e) {}
-  return { sessions: [], mistakes: [], evidence: [], reviews: [], pushQueue: [], lastSyncAt: 0 };
+  let raw = null;
+  try { raw = wx.getStorageSync(storageKey()); } catch (e) {}
+  const all = (raw && Array.isArray(raw.sessions)) ? raw : blank();
+  if (!Array.isArray(all.mistakes)) all.mistakes = [];
+  if (!Array.isArray(all.evidence)) all.evidence = [];
+  if (!Array.isArray(all.reviews)) all.reviews = [];
+  if (!Array.isArray(all.pushQueue)) all.pushQueue = [];
+  if (!Array.isArray(all.removed)) all.removed = [];
+  // 身份已确认且本进程还没为该身份探查过 → 探一次 _guest 空间（F9）。
+  // 未确认身份时绝不动 guest 空间（那是当前唯一的数据落点，动了就是丢数据）。
+  const oid = store.getOpenid() || '';
+  if (oid && _probeOid !== oid) {
+    _probeOid = oid;
+    return adoptGuestData(all);
+  }
+  return all;
+}
+
+/**
+ * F9 —— 把 `_guest` 命名空间的导学数据继承进当前账号命名空间（懒迁移）。
+ *
+ * 【为什么必须做】storageKey() 依赖 store.getOpenid()。身份未确认（whoami 失败降级，
+ * 见 store.js initAccount）时写入落 `_guest`；随后身份恢复或用户点「绑定微信」，
+ * storageKey() 变成 `_<openid>`，`_guest` 里的错题/复习窗口就**永远读不到**了 ——
+ * 用户视角就是「绑定微信之后错题少了一批」。
+ *
+ * 【为什么放在读取路径上】initAccount / bindWechat 都在 store.js 里，而 tutorStore
+ * 单向依赖 store（反向 require 会成环）。懒迁移让任何调用方都无需记得迁移，也不会漏调。
+ * 按 id 合并、只补本地缺的条目，因此重复执行是幂等的。
+ */
+function adoptGuestData(cur) {
+  if (!store.getOpenid()) return cur;              // 自己就是 guest → 无需迁移
+  const guestKey = `${BASE_KEY}_guest`;
+  let guest = null;
+  try { guest = wx.getStorageSync(guestKey); } catch (e) { return cur; }
+  if (!guest || !Array.isArray(guest.sessions)) return cur;
+
+  let changed = false;
+  KINDS.forEach(kind => {
+    (Array.isArray(guest[kind]) ? guest[kind] : []).forEach(g => {
+      if (!g || !g.id) return;
+      if (cur[kind].some(x => x.id === g.id)) return;
+      cur[kind].push(g);
+      changed = true;
+    });
+  });
+  (guest.removed || []).forEach(t => {
+    if (!t || !t.id) return;
+    if (cur.removed.some(x => x.kind === t.kind && x.id === t.id)) return;
+    cur.removed.push(t);
+    changed = true;
+  });
+  (guest.pushQueue || []).forEach(q => {
+    if (!q || !q.id) return;
+    if (cur.pushQueue.some(x => x.kind === q.kind && x.id === q.id)) return;
+    cur.pushQueue.push(q);
+    changed = true;
+  });
+  if (changed) {
+    if (!cur.lastSyncAt) cur.lastSyncAt = Number(guest.lastSyncAt) || 0;
+    try { wx.setStorageSync(storageKey(), cur); } catch (e) {}
+    try { wx.removeStorageSync(guestKey); } catch (e) {}     // 迁移完成即删，避免下次重复并入
+  }
+  return cur;
 }
 
 function writeAll(data) {
   try { wx.setStorageSync(storageKey(), data); } catch (e) {}
+}
+
+/* ======================= 写操作出口（落盘 + 自动登记上云） =======================
+ * 背景（修 P1-2）：此前「写本地」与「登记补推」是两步、由调用方各自负责，于是
+ * mistakes.js 改了错题状态却没 queuePush → 手动标「已订正」永不进云，换设备后状态回退；
+ * confirm.js 建了复习窗口同样漏推。现在把两件事收进数据层，调用方想漏也漏不掉。
+ */
+const MAX_QUEUE = 500;
+const MAX_TOMB = 500;
+
+/** 登记待补推上云的条目（按 kind+id 幂等，超限丢最旧） */
+function enqueue(all, kind, id) {
+  if (!kind || !id) return;
+  if (!Array.isArray(all.pushQueue)) all.pushQueue = [];
+  if (all.pushQueue.some(q => q.kind === kind && q.id === id)) return;
+  all.pushQueue.push({ kind: kind, id: id });
+  if (all.pushQueue.length > MAX_QUEUE) all.pushQueue = all.pushQueue.slice(-MAX_QUEUE);
+}
+
+/** 登记删除墓碑（本地已删 → pull 回填时不得复活） */
+function bury(all, kind, id) {
+  if (!kind || !id) return;
+  if (!Array.isArray(all.removed)) all.removed = [];
+  if (all.removed.some(t => t.kind === kind && t.id === id)) return;
+  all.removed.push({ kind: kind, id: id, at: Date.now() });
+  if (all.removed.length > MAX_TOMB) all.removed = all.removed.slice(-MAX_TOMB);
+}
+
+function isBuried(all, kind, id) {
+  return (all.removed || []).some(t => t.kind === kind && t.id === id);
+}
+
+/**
+ * 写操作的唯一出口。
+ * @param {Object} all     本次变更后的完整本地对象
+ * @param {Array}  queues  需要补推上云的 [{kind,id}]（可选）
+ * @param {Array}  buries  需要登记墓碑的 [{kind,id}]（可选）
+ */
+function commit(all, queues, buries) {
+  (queues || []).forEach(q => enqueue(all, q.kind, q.id));
+  (buries || []).forEach(t => bury(all, t.kind, t.id));
+  writeAll(all);
+  if ((queues || []).length) scheduleFlush();      // 登记了改动 → 合并推一次
+  return all;
 }
 
 /** 全部会话（按创建时间倒序） */
@@ -92,7 +208,7 @@ function newSession(subject, subjectName) {
     closedAt: 0
   };
   all.sessions.push(s);
-  writeAll(all);
+  commit(all);                        // 新建的空会话不推云：云端 tutor_sessions 只存已归档会话
   return s;
 }
 
@@ -106,28 +222,32 @@ function appendMessage(sessionId, msg) {
     content: (msg.content || '').trim(),
     ts: msg.ts || Date.now()
   });
-  writeAll(all);
+  commit(all);
   return s;
 }
 
-/** 关闭会话（标记归档完成） */
+/** 关闭会话（标记归档完成）—— 同时登记上云：归档云函数失败时由 tutorSync(push) 回补
+ *  （push 按 clientId 幂等，归档已成功则只会 skip，不会产生重复） */
 function closeSession(sessionId) {
   const all = readAll();
   const s = all.sessions.find(x => x.id === sessionId);
   if (!s) return null;
   s.closed = true;
   s.closedAt = Date.now();
-  writeAll(all);
+  commit(all, [{ kind: 'sessions', id: s.id }]);
   return s;
 }
 
-/** 删除会话 */
+/** 删除会话。
+ *  ⚠️ 云端 tutor_sessions 是「归档证据」，不做物理删除；本地登记墓碑，pull 时不再回填。
+ *     否则删掉后一进导学页 pull 一次，会话就复活了。 */
 function removeSession(sessionId) {
   const all = readAll();
   const i = all.sessions.findIndex(x => x.id === sessionId);
   if (i < 0) return;
   all.sessions.splice(i, 1);
-  writeAll(all);
+  all.pushQueue = all.pushQueue.filter(q => !(q.kind === 'sessions' && q.id === sessionId));
+  commit(all, null, [{ kind: 'sessions', id: sessionId }]);
 }
 
 /** 已归档（关闭）会话数 */
@@ -164,7 +284,7 @@ function addMistake(m) {
     createdAt: Date.now()
   };
   all.mistakes.unshift(item);
-  writeAll(all);
+  commit(all, [{ kind: 'mistakes', id: item.id }]);
   return item;
 }
 
@@ -174,7 +294,8 @@ function setMistakeStatus(id, status) {
   const m = all.mistakes.find(x => x.id === id);
   if (!m) return false;
   m.status = status;
-  writeAll(all);
+  // 自动登记上云（修 P1-2：此前 mistakes.js 只写本地，标记「已订正」换设备即回退）
+  commit(all, [{ kind: 'mistakes', id: m.id }]);
   return true;
 }
 
@@ -191,11 +312,13 @@ function getEvidence() {
   return (all.evidence || []).slice().sort((a, b) => b.createdAt - a.createdAt);
 }
 
-/** 新增一条复测记录（passed=true 才是「已验证」证据） */
+/** 新增一条复测记录（passed=true 才是「已验证」证据）
+ *  可传 e.id 预生成 uid：必须与 tutorRetest 落库时的 clientId 一致，
+ *  否则云端会存在「一条无 clientId 的直写记录 + 一条 push 回补记录」两份（P0-5 重复写）。 */
 function addEvidence(e) {
   const all = readAll();
   const item = {
-    id: util.uid('ev'),
+    id: e.id || util.uid('ev'),
     subject: e.subject || '',
     subjectName: e.subjectName || '',
     topic: e.topic || '',
@@ -207,7 +330,7 @@ function addEvidence(e) {
     createdAt: Date.now()
   };
   all.evidence.unshift(item);
-  writeAll(all);
+  commit(all, [{ kind: 'evidence', id: item.id }]);
   return item;
 }
 
@@ -255,7 +378,8 @@ function upsertReview(rv) {
   };
   if (i >= 0) all.reviews[i] = item;
   else all.reviews.unshift(item);
-  writeAll(all);
+  // 自动登记上云：此前 confirm.js 建了复习窗口却没入队 → 本机之外看不到该窗口
+  commit(all, [{ kind: 'reviews', id: item.id }]);
   return item;
 }
 
@@ -277,7 +401,9 @@ function advanceReview(mistakeId, passed) {
     r.dueAt = Date.now() + (REVIEW_STAGE_DAYS[r.stage - 1] || 1) * 86400000;
   }
   r.updatedAt = Date.now();
-  writeAll(all);
+  // 自动登记上云，且用的是 r.id ——调用方不必再猜窗口 id 的命名约定
+  // （旧写法在 retest.js 里硬编码 'mistakeId + "_rv"'，命名一变就静默漏推）
+  commit(all, [{ kind: 'reviews', id: r.id }]);
   return r;
 }
 
@@ -303,102 +429,114 @@ function getLearnerContext(subject, maxChars) {
 
 /* ======================= 云端同步（闭环 S1：pull 回填 + push 回补） ======================= */
 
-/** 记录待补写云端的数据（归档/复测成功后调用；push 成功后清空） */
+/** 记录待补写云端的数据（幂等；一般由 commit() 自动调用，保留公开 API 供特殊场景使用） */
 function queuePush(kind, id) {
   if (!kind || !id) return;
   const all = readAll();
-  if (!all.pushQueue.some(q => q.kind === kind && q.id === id)) {
-    all.pushQueue.push({ kind: kind, id: id });
-    if (all.pushQueue.length > 500) all.pushQueue = all.pushQueue.slice(-500);
-    writeAll(all);
+  if (all.pushQueue.some(q => q.kind === kind && q.id === id)) return;
+  commit(all, [{ kind: kind, id: id }]);
+}
+
+/* ---- 合并推送：连续多次写操作只发一次云调用 ---- */
+let _flushTimer = null;
+
+/** 有改动登记后，延迟合并推一次（pushQueued 本身可重入，队列为空时是 no-op） */
+function scheduleFlush() {
+  if (_flushTimer) return;
+  _flushTimer = setTimeout(() => { _flushTimer = null; pushQueued(); }, FLUSH_DEBOUNCE_MS);
+}
+
+/* ======================= 云端文档 → 本地条目（全字段透传） =======================
+ * 【这不是白名单】白名单是「只留这些字段」，这里是「只去掉这些字段」。
+ * 区别决定数据能否随迭代通用：以后给错题加 imageUrl、给证据加 durationSec、
+ * 给会话加 modelName —— 只要写进云端文档，换设备拉回来就自动落进本地，
+ * 无需改动本文件一行代码。旧实现逐字段列白名单，新字段会被静默丢掉（修 P1-1）。
+ *
+ * 只剔除三类「不属于业务数据」的字段：
+ *   _id / _openid  云端库内标识（云端独有，端上无意义）
+ *   clientId       云端用它承载本地 uid，端上统一叫 id
+ *   cloudId        pull 时临时附加的 _id 别名
+ */
+const CLOUD_META = { _id: 1, _openid: 1, openid: 1, cloudId: 1, clientId: 1 };
+
+/** 各集合的必填兜底：只在字段为 undefined 时补，绝不覆盖云端已给出的值 */
+const CLOUD_DEFAULTS = {
+  sessions: {
+    subject: '', subjectName: '', messages: [], createdAt: 0,
+    closed: true,            // 云端 tutor_sessions 存的都是已归档会话
+    closedAt: 0
+  },
+  mistakes: {
+    subject: '', subjectName: '', topic: '', errorType: '', errorDesc: '', suggestion: '',
+    status: 'pending', source: 'tutor', questionText: '', childAnswer: '', markSource: 'none',
+    createdAt: 0
+  },
+  evidence: {
+    subject: '', subjectName: '', topic: '', errorType: '',
+    total: 0, correct: 0, rate: 0, passed: false, createdAt: 0
+  },
+  reviews: {
+    mistakeId: '', subject: '', subjectName: '', topic: '', errorType: '',
+    stage: 1, dueAt: 0, done: false, createdAt: 0, updatedAt: 0
   }
+};
+
+/**
+ * 把一条云端文档转成本地条目：① 云端字段全量拷贝 ② 归一 id ③ 必填兜底
+ * @returns {Object|null} 无可用 id 时返回 null（不产生无主条目）
+ */
+function cloudToLocal(kind, cloud) {
+  if (!cloud || typeof cloud !== 'object') return null;
+  const out = {};
+  Object.keys(cloud).forEach(k => { if (!CLOUD_META[k]) out[k] = cloud[k]; });
+  out.id = String(cloud.clientId || cloud.id || cloud.cloudId || '');
+  if (!out.id) return null;
+  const def = CLOUD_DEFAULTS[kind] || {};
+  Object.keys(def).forEach(k => { if (out[k] === undefined) out[k] = def[k]; });
+  if (kind === 'sessions' && !out.closedAt) out.closedAt = Number(out.createdAt) || 0;
+  // 关系字段兼容：review 的 mistakeId 在云端历史字段名下叫 mistakeClientId
+  if (kind === 'reviews' && !out.mistakeId) out.mistakeId = cloud.mistakeClientId || '';
+  return out;
 }
 
 /**
  * 云 → 本地回填（换设备/清缓存恢复）。
  * remote: tutorSync(pull) 返回 { sessions, mistakes, evidence, reviews }
- * 合并规则：按 id 并集；同 id 本地优先；reviews 比较 updatedAt 取新。
+ * 合并规则：
+ *   · sessions / mistakes / evidence：按 id 并集，同 id 本地优先（本地是本机权威）
+ *   · reviews：同 id 比 updatedAt，云端的更新则把云端字段全量覆盖过来
+ *   · 任何被本地删过（removed 墓碑）的条目一律不回填
  */
 function mergeFromCloud(remote) {
   if (!remote || typeof remote !== 'object') return { added: 0 };
   const all = readAll();
   let added = 0;
 
-  const addIfMissing = (arrName, items, mapFn) => {
-    (Array.isArray(items) ? items : []).forEach(cloud => {
-      if (!cloud || !cloud.id) return;
-      if (!all[arrName].some(x => x.id === cloud.id)) {
-        all[arrName].push(mapFn(cloud));
-        added++;
-      }
-    });
-  };
-
-  addIfMissing('sessions', remote.sessions, c => ({
-    id: c.id,
-    subject: c.subject || '',
-    subjectName: c.subjectName || '',
-    messages: Array.isArray(c.messages) ? c.messages : [],
-    createdAt: c.createdAt || 0,
-    closed: true,               // 云端 tutor_sessions 均为已归档会话
-    closedAt: c.closedAt || c.createdAt || 0
-  }));
-  addIfMissing('mistakes', remote.mistakes, c => ({
-    id: c.id,
-    subject: c.subject || '',
-    subjectName: c.subjectName || '',
-    topic: c.topic || '',
-    errorType: c.errorType || '',
-    errorDesc: c.errorDesc || '',
-    suggestion: c.suggestion || '',
-    status: c.status === 'corrected' ? 'corrected' : 'pending',
-    source: c.source === 'photo' ? 'photo' : 'tutor',
-    questionText: c.questionText || '',
-    childAnswer: c.childAnswer || '',
-    markSource: ['marked', 'ai', 'none'].indexOf(c.markSource) >= 0 ? c.markSource : 'none',
-    createdAt: c.createdAt || 0
-  }));
-  addIfMissing('evidence', remote.evidence, c => ({
-    id: c.id,
-    subject: c.subject || '',
-    subjectName: c.subjectName || '',
-    topic: c.topic || '',
-    errorType: c.errorType || '',
-    total: c.total || 0,
-    correct: c.correct || 0,
-    rate: c.rate || 0,
-    passed: !!c.passed,
-    createdAt: c.createdAt || 0
-  }));
-
-  // reviews：同 id 比 updatedAt，新者胜（复测推进可能发生在另一台设备）
-  (Array.isArray(remote.reviews) ? remote.reviews : []).forEach(c => {
-    if (!c || !c.id) return;
-    const local = all.reviews.find(x => x.id === c.id);
-    if (!local) {
-      all.reviews.unshift({
-        id: c.id,
-        mistakeId: c.mistakeId || c.mistakeClientId || '',
-        subject: c.subject || '',
-        subjectName: c.subjectName || '',
-        topic: c.topic || '',
-        errorType: c.errorType || '',
-        stage: Number(c.stage) || 1,
-        dueAt: Number(c.dueAt) || 0,
-        done: !!c.done,
-        createdAt: c.createdAt || 0,
-        updatedAt: c.updatedAt || c.createdAt || 0
-      });
+  ['sessions', 'mistakes', 'evidence'].forEach(kind => {
+    (Array.isArray(remote[kind]) ? remote[kind] : []).forEach(cloud => {
+      const local = cloudToLocal(kind, cloud);
+      if (!local) return;
+      if (isBuried(all, kind, local.id)) return;
+      if (all[kind].some(x => x.id === local.id)) return;
+      all[kind].push(local);
       added++;
-    } else {
-      const lu = local.updatedAt || 0;
-      const cu = c.updatedAt || c.createdAt || 0;
-      if (cu > lu) {
-        local.stage = Number(c.stage) || local.stage;
-        local.dueAt = Number(c.dueAt) || local.dueAt;
-        local.done = !!c.done;
-        local.updatedAt = cu;
-      }
+    });
+  });
+
+  (Array.isArray(remote.reviews) ? remote.reviews : []).forEach(cloud => {
+    const inc = cloudToLocal('reviews', cloud);
+    if (!inc) return;
+    if (isBuried(all, 'reviews', inc.id)) return;
+    const i = all.reviews.findIndex(x => x.id === inc.id);
+    if (i < 0) { all.reviews.unshift(inc); added++; return; }
+    const cur = all.reviews[i];
+    const lu = Number(cur.updatedAt) || 0;
+    const cu = Number(inc.updatedAt) || Number(inc.createdAt) || 0;
+    if (cu > lu) {
+      // 云端更新（多半是另一台设备推进了复测）→ 云端字段全量覆盖，
+      // 本地独有字段保留（不删除本地知道而云端不知道的东西）
+      Object.keys(inc).forEach(k => { cur[k] = inc[k]; });
+      cur.updatedAt = cu;
     }
   });
 

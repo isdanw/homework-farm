@@ -17,7 +17,9 @@
  *        profile, homework, plans, learn, farm
  *      }, ...
  *    ],
- *    currentUserId: 'u_xxx'
+ *    currentUserId: 'u_xxx',
+ *    coop: { plants: [] },            // 家庭合种（root 级共享，不属于某个孩子）
+ *    wxProfile: { nickname, avatarUrl } // 微信昵称/头像（root 级共享，随整份镜像上云）
  *  }
  *
  *  store.get() 永远返回「当前孩子」的切片；引擎（farmEngine）全部基于这个切片工作，
@@ -29,6 +31,21 @@
  *       同一台手机切换不同微信号也不会串数据
  *    3) 若开通了云开发，则异步写入云数据库集合 hw_farm_user（按 openid 一人一条，
  *       服务端用 cloud.getWXContext().OPENID 隔离，天然「跟微信绑定」）
+ *
+ *  【数据可靠性契约·2026-09-18 定案，改本文件前必读】
+ *    R1 本地落盘与上云必须解耦：save() **永远**先落盘；上云是「尽力而为 + 可补偿」的第二步。
+ *       任何情况下都不得因为「拿不到身份 / 云不可用」而放弃本地落盘。
+ *    R2 上云不可静默放弃：失败写脏标记（wb_hwfarm_sync_tag_<openid>）并按 1s/4s/15s/60s
+ *       退避重试；save() / 启动 / 切前台 / 切后台都会再试。
+ *    R3 下拉（云端→本地）只允许「补缺」，禁止整片替换本地切片、禁止跨副本合并 settledDates。
+ *       本地是本机权威；云端是留档与换机恢复。
+ *    R4 字段只增不改不删：新增字段必须同步写进 defaultData()，由 ensureUserFields 补默认值。
+ *       上云走整份镜像（syncData 不做字段白名单），所以加字段天然向后兼容。
+ *    R5 占位 / 演示数据必须打标记（__placeholder）并隔离，永不落盘、永不上云。
+ *    R6 禁止用日期串、布尔量当「新旧判据」，只用毫秒时间戳或显式脏标记。
+ *    R7 共享数据一律挂 root（users 之外的字段），禁止另开「与 openid 解耦的独立 storage key」。
+ *       独立 key 既不随整份镜像上云（换手机即丢），也不按 openid 隔离（同机多账号串味）。
+ *       root 级内容天然随镜像上云 —— coop 与 wxProfile 都按这条走。
  *
  *  【微信绑定】数据已经跟微信账号绑定：服务端按 openid 一人一条；客户端在启动时
  *  通过 syncData(whoami) 拿到自己的 openid，缓存并用于本地命名空间隔离，同时在
@@ -42,7 +59,9 @@ const BASE_KEY = 'wb_hwfarm_data_v2';      // 未拿到 openid 前的兜底存�
 const OPENID_KEY = 'wb_hwfarm_openid';     // 缓存上一次使用的 openid（无云时瞬时判断账号）
 const OLD_KEY = 'wb_hwfarm_data_v1';       // 旧版单用户数据，首次启动自动迁移
 const STORAGE_KEY = BASE_KEY;              // 兼容导出（实际读写走 storageKey()）
-const WXPROFILE_KEY = 'wb_hwfarm_wxprofile'; // 用户手动同步的微信昵称/头像（与 openid 解耦持久化）
+const WXPROFILE_KEY = 'wb_hwfarm_wxprofile'; // 【遗留·只读】旧版独立的微信昵称头像存储，仅用于一次性迁移
+const SYNCTAG_KEY = 'wb_hwfarm_sync_tag';  // 上云状态：脏标记 + 重试计数（按 openid 隔离）
+const PLACEHOLDER_ID = 'guest';            // 尚未创建孩子时的内存占位切片 id（只活在内存里）
 
 /* --------------------------- 默认（单个孩子）数据 --------------------------- */
 function defaultData() {
@@ -151,6 +170,8 @@ function emit(data) {
 /* --------------------------- 读写 --------------------------- */
 let _root = null;
 let _openid = '';        // 当前绑定的微信 openid（空 = 尚未确认 / 离线兜底）
+let _cloudBlocked = false;   // 云端下载失败保护期：只禁止「上云」，不影响本地落盘
+let _accountDegraded = false; // 身份/网络异常导致降级：本地已存，但暂未上云（需给用户提示）
 
 /** 本地存储 key：已确认 openid 则用命名空间隔离，否则用兜底 base key */
 function storageKey() {
@@ -172,25 +193,46 @@ function getBindInfo() {
 /** 是否处于「游客模式」（尚未绑定微信 = openid 为空）：此模式下操作不落盘、不上云 */
 function isGuest() { return !_openid; }
 
-/** 读取用户手动同步的微信昵称/头像（不依赖 openid，独立持久化） */
+/**
+ * 读取用户手动同步的微信昵称/头像。
+ *
+ * 【2026-09-18 迁入 root，修 P1-3/R7】旧实现存在独立的 `wb_hwfarm_wxprofile` key 里，
+ * 两个后果：① 它不属于 syncData 的整份镜像 → 换手机就丢；② key 不带 openid →
+ * 同机切换不同微信号会读到上一个人的昵称头像。
+ * 现在主存 `root.wxProfile`（随整份镜像上云、按 openid 命名空间隔离）；
+ * 旧 key 只作一次性迁移来源，读到时搬进 root 并删除。
+ */
 function getWxProfile() {
-  try {
-    const p = wx.getStorageSync(WXPROFILE_KEY);
-    if (p && typeof p === 'object') {
-      return { nickname: p.nickname || '', avatarUrl: p.avatarUrl || '' };
-    }
-  } catch (e) {}
+  const root = getRoot();
+  const p = root.wxProfile;
+  if (p && (p.nickname || p.avatarUrl)) {
+    return { nickname: p.nickname || '', avatarUrl: p.avatarUrl || '' };
+  }
+  // 旧 key 一次性迁移
+  let legacy = null;
+  try { legacy = wx.getStorageSync(WXPROFILE_KEY); } catch (e) {}
+  if (legacy && typeof legacy === 'object' && (legacy.nickname || legacy.avatarUrl)) {
+    root.wxProfile = { nickname: legacy.nickname || '', avatarUrl: legacy.avatarUrl || '' };
+    try { wx.setStorageSync(storageKey(), root); } catch (e) {}
+    try { wx.removeStorageSync(WXPROFILE_KEY); } catch (e) {}
+    markDirty();          // 让紧接着的那次上云把它一起带走（此时不主动发请求）
+    return { nickname: root.wxProfile.nickname, avatarUrl: root.wxProfile.avatarUrl };
+  }
   return { nickname: '', avatarUrl: '' };
 }
 
-/** 写入微信 nickname / avatarUrl（二者可单独更新，未传则沿用旧值） */
+/** 写入微信 nickname / avatarUrl（二者可单独更新，未传则沿用旧值）
+ *  走 save()：本地必然落盘，并随整份镜像上云。
+ *  注：用户尚未创建任何孩子时（root 只有 __placeholder 切片），按 R5 不产生云端档案，
+ *      微信资料会等第一个孩子建档后一起上云 —— 这是有意的，避免幽灵档案污染结算与看板。 */
 function setWxProfile(patch) {
   const cur = getWxProfile();
   const next = {
     nickname: patch.nickname !== undefined ? patch.nickname : cur.nickname,
     avatarUrl: patch.avatarUrl !== undefined ? patch.avatarUrl : cur.avatarUrl
   };
-  try { wx.setStorageSync(WXPROFILE_KEY, next); } catch (e) {}
+  getRoot().wxProfile = next;
+  save();
   return next;
 }
 
@@ -203,6 +245,56 @@ function ensureUserFields(u) {
   if (u.profile && u.profile.nickname && !u.nickname) u.nickname = u.profile.nickname;
   if (!u.avatar) u.avatar = '🐯';
   return u;
+}
+
+/**
+ * 该孩子切片是否已产生「真实用户数据」。
+ * 用途：判断内存占位切片（未创建孩子前的体验用切片）是否还处于「未启用」状态，
+ *       从而决定要不要把它上云 —— 装了但从没用过的用户不该在云端留下一条幽灵档案
+ *       （会污染 dailyReset 结算遍历与家长看板统计）。
+ *
+ * ⚠️ 判定必须刻意宽松：宁可误判为 true（多传一次，无害），
+ *    也绝不能误判为 false（漏传用户真实数据）。
+ */
+function hasRealActivity(u) {
+  if (!u) return false;
+  const hw = u.homework || {};
+  const hwDone = Object.keys(hw).some(day => {
+    const d = hw[day] || {};
+    return Object.keys(d).some(k => d[k] && d[k].done);
+  });
+  const farm = u.farm || {};
+  const farmTouched = (farm.plots || []).some(Boolean) ||
+    (farm.harvestLog || []).length > 0 || (farm.logs || []).length > 0 ||
+    (farm.bears || []).length > 0 || (farm.pesticide || 0) > 0 || (farm.shields || 0) > 0 ||
+    (farm.coins || 0) !== 20 || (farm.suns || 0) !== 1;
+  const ln = u.learner || {};
+  return hwDone || farmTouched ||
+    (u.checkinTypes || []).length > 0 ||
+    (u.comments || []).length > 0 ||
+    Object.keys(u.plans || {}).length > 0 ||
+    Object.keys(u.subjectProfiles || {}).length > 0 ||
+    !!u.schedule || !!u.grade || !!u.studyPlans ||
+    (u.nickname && u.nickname !== '小小农场主') ||
+    ((u.learn || {}).stars || 0) > 0 ||
+    ((u.profile || {}).streak || 0) > 0 ||
+    !!(ln.stage || ln.weeklyMinutes || (ln.timeSlots || []).length || ln.teachStyle ||
+       (ln.expectations || []).length || ln.selfFeeling || ln.schoolProgress);
+}
+
+/**
+ * 整份数据是否「只有一个从未启用的占位切片」。
+ * 真实用户在第一轮循环就 `return false`（占位标记不存在），成本为零；
+ * 只有占位根才会付出 hasRealActivity 的开销。
+ */
+function isBarePlaceholderOnly(root) {
+  const us = (root && Array.isArray(root.users)) ? root.users : [];
+  if (!us.length) return true;
+  for (let i = 0; i < us.length; i++) {
+    const u = us[i];
+    if (!u || !u.__placeholder) return false;
+  }
+  return us.every(u => !hasRealActivity(u));
 }
 
 /** 规范化根结构，保证可用（允许「空根」：全新用户尚未创建孩子） */
@@ -220,6 +312,10 @@ function normalizeRoot(root) {
   }
   // 家庭内合种（阶段 0）：root 级共享作物，与「孩子切片」隔离
   if (!root.coop || !Array.isArray(root.coop.plants)) root.coop = { plants: [] };
+  // 微信昵称/头像（R7）：root 级共享，随整份镜像上云；云端有值则原样保留
+  if (!root.wxProfile || typeof root.wxProfile !== 'object') {
+    root.wxProfile = { nickname: '', avatarUrl: '' };
+  }
   return root;
 }
 
@@ -249,11 +345,14 @@ function getRoot() {
     root = migrateFromV1();                        // 尝试迁移旧数据（老用户直接带入一个孩子）
   }
   if (!root) {
-    // 全新用户：返回「临时默认孩子」用于游客浏览 / 体验（不落盘）。
-    // 用户绑定微信后，该临时数据会通过 bindWechat 迁移到 openid 命名空间并正式保存。
+    // 全新用户：返回「内存占位切片」用于浏览 / 体验。
+    // ⚠️ 该切片只活在内存里：打 __placeholder 标记，不参与 isOnboarded() 判定、
+    //    不产生云端档案（见 isBarePlaceholderOnly）。用户一旦建档或产生真实数据，
+    //    标记即失去意义（hasRealActivity 放行上云），数据照常落盘 + 上云。
     const u = defaultData();
-    u.id = 'guest';
-    root = { version: 2, users: [u], currentUserId: 'guest' };
+    u.id = PLACEHOLDER_ID;
+    u.__placeholder = true;
+    root = { version: 2, users: [u], currentUserId: PLACEHOLDER_ID };
   }
   _root = normalizeRoot(root);
   return _root;
@@ -283,7 +382,10 @@ function getType(key) {
 
 /** 是否已完成「微信登录 + 创建首个孩子」——决定启动登录门是否展示 */
 function isOnboarded() {
-  return getRoot().users.length > 0;
+  // 只认真实孩子：内存占位切片（__placeholder）不算「已创建孩子」。
+  // 旧实现用 users.length > 0 判定，而 getRoot() 的空数据兜底一定会造一个占位切片，
+  // 于是 isOnboarded() 恒为 true → pkgTools/login 的建档入口永远走不到（死代码）。
+  return getRoot().users.some(u => u && !u.__placeholder);
 }
 
 function getById(id) {
@@ -302,6 +404,12 @@ function setCurrentUser(id) {
 /** 新增一个孩子（默认全新数据，不带示例） */
 function addUser(info) {
   const root = getRoot();
+  // 顺手清掉「从未启用」的内存占位切片：它不该出现在孩子列表里，也不该被上云。
+  // ⚠️ 只清带 __placeholder 标记的（新逻辑产生）。老版本遗留的 id='guest' 用户
+  //    没有该标记，里面可能存着真实数据 → 一律保留（数据优先于整洁）。
+  root.users = (root.users || []).filter(x => !(x && x.__placeholder && !hasRealActivity(x)));
+  if (!root.users.find(x => x.id === root.currentUserId)) root.currentUserId = '';
+
   const u = defaultData();
   u.id = util.uid('u');
   u.nickname = (info && info.nickname) ? info.nickname : '新朋友';
@@ -520,26 +628,33 @@ function defaultSubjectProfile(key) {
 /**
  * 保存并广播（页面之间实时同步就靠它）
  * @param {Object} slice 当前孩子切片（不传也行，内部会写整份根结构）
- * @param {Boolean} sync 是否同时写云数据库
+ * @param {Boolean} sync 是否同时写云数据库（false = 只落盘不触发上云，如自然生长）
  *
- * 【游客模式】未绑定微信（_openid 为空）时：仅更新内存 + 广播，不落盘、不上云。
- *   —— 打开小程序即可浏览，点击操作也不会保存数据，刷新 / 重开即还原。
- * 【绑定模式】已绑定微信时：本地落盘 + 异步上云，任何操作都会保存。
+ * 【铁律·2026-09-18 修订】「能否本地落盘」与「能否上云」是两件事，必须解耦。
+ *   · 本地落盘：**永远执行**。身份（openid）没拿到时落到兜底 key，等 openid 恢复后
+ *     由 initAccount 第 4 步迁移进账号命名空间。
+ *   · 上云：需要 云就绪 + 已确认 openid + 未被阻断 + 不是未启用的占位切片。
+ *
+ * 旧实现把「_openid 为空」当作游客模式，既不落盘也不上云、只打一行 console.log，
+ * 于是 whoami 调用失败（网络抖动 / 云函数未部署 / 超时）这一条路径会让用户
+ * 整套操作静默丢失且毫无提示。已废弃该语义。
  */
 function save(slice, sync) {
   if (!_root) _root = getRoot();
-  const guest = !_openid;                          // 未绑定微信 = 游客模式
-  if (!guest) {
-    try {
-      wx.setStorageSync(storageKey(), _root);
-    } catch (e) {
-      console.error('[store] save fail', e);
-    }
-    if (sync !== false) cloudUpload();             // 异步上云，不阻塞 UI
-  } else {
-    // 游客模式：仅内存 + 广播（页面间实时同步），不落盘、不上云
-    console.log('[store] 游客模式：本次操作不保存（尚未绑定微信）');
+
+  // 1) 本地落盘：始终执行，失败只报错不中断（内存态仍然可用并已广播）
+  try {
+    wx.setStorageSync(storageKey(), _root);
+  } catch (e) {
+    console.error('[store] save fail（本地落盘失败）', e);
   }
+
+  // 2) 上云：异步、不阻塞 UI；占位切片不产生云端档案
+  if (sync !== false && !isBarePlaceholderOnly(_root)) {
+    markDirty();
+    cloudUpload();
+  }
+
   emit(get());                                     // ← 广播：所有页面立即拿到「当前孩子」最新数据
   return get();
 }
@@ -559,8 +674,129 @@ function reset(keepProfile) {
 let cloudReady = false;
 function setCloudReady(v) { cloudReady = v; }
 
-/** 上行：本地 → 云（防抖 2 秒，避免频繁写库） */
+/* ---- 上云状态：脏标记 + 重试计数（按 openid 隔离，避免同设备多账号串味） ---- */
+function syncTagKey() { return _openid ? `${SYNCTAG_KEY}_${_openid}` : SYNCTAG_KEY; }
+function readSyncTag() {
+  try {
+    const v = wx.getStorageSync(syncTagKey());
+    return (v && typeof v === 'object') ? v : {};
+  } catch (e) { return {}; }
+}
+function writeSyncTag(t) { try { wx.setStorageSync(syncTagKey(), t); } catch (e) {} }
+
+/** 本地有改动尚未成功上云 */
+function isDirty() { return !!readSyncTag().dirty; }
+
+/** 标记「有改动待上云」；已有待推改动时不重置 pendingSince（保留首次积压时间）
+ *  _rev 是「本地改动代数」：上传在途期间若又有新改动，成功后不能误清脏标记。 */
+let _rev = 0;
+function markDirty() {
+  _rev++;
+  const t = readSyncTag();
+  if (!t.dirty) { t.dirty = true; t.pendingSince = Date.now(); t.attempts = 0; }
+  writeSyncTag(t);
+}
+
+/** 上云成功 → 清脏 */
+function clearDirty() {
+  writeSyncTag({ dirty: false, pendingSince: 0, attempts: 0, lastOkAt: Date.now() });
+}
+
+/** 对外暴露同步状态：「我的」页 / 排查「云端是否落后」时读它 */
+function getSyncState() {
+  const t = readSyncTag();
+  return {
+    ready: cloudReady,
+    openid: _openid,
+    blocked: _cloudBlocked,
+    // 只有「环境已接入云、但身份或网络出问题」才算降级。
+    // 环境本身没接云（cloudReady=false，如纯离线开发）不算降级，不必骚扰用户。
+    degraded: !!(cloudReady && (_accountDegraded || _cloudBlocked || !_openid)),
+    dirty: !!t.dirty,
+    pendingSince: t.pendingSince || 0,
+    attempts: t.attempts || 0,
+    lastOkAt: t.lastOkAt || 0,
+    lastError: t.lastError || ''
+  };
+}
+function isAccountDegraded() { return getSyncState().degraded; }
+
+/** 上行：本地 → 云
+ *  · 默认防抖 2 秒（合并连续操作，避免频繁写库）
+ *  · immediate=true 立刻发（app.onHide / onShow / 启动补偿用）
+ *  · 成功清脏；失败保留脏标记并按退避重试 1s→4s→15s→60s，
+ *    下次 save() / 启动 / 切前台还会再试 —— 不再「一次失败即永久放弃」
+ *  · 未确认 openid、云端被阻断（下载失败保护期）、或整份数据只是未启用的占位切片时不上云
+ */
+const RETRY_DELAYS = [1000, 4000, 15000, 60000];
 let uploadTimer = null;
+let inflight = false;
+
+function canSync() {
+  return !!(cloudReady && _openid && !_cloudBlocked);
+}
+
+function cloudUpload(immediate) {
+  if (!canSync()) return;
+  if (isBarePlaceholderOnly(_root)) return;      // 未启用的占位切片不产生云端档案
+  clearTimeout(uploadTimer);
+  if (immediate) { doUpload(); return; }
+  uploadTimer = setTimeout(doUpload, 2000);
+}
+
+function doUpload() {
+  if (!canSync()) return;
+  // 已有请求在途：不丢弃，重新排一次防抖（否则这次改动会被在途请求的
+  // 成功回调误判为「已同步」而永远推不上去）
+  if (inflight) { cloudUpload(); return; }
+
+  const rev = _rev;                              // 记下本次上传对应的改动代数
+  inflight = true;
+  wx.cloud.callFunction({
+    name: 'syncData',
+    data: { action: 'upload', payload: sanitizeForCloud(_root) }
+  }).then(res => {
+    inflight = false;
+    const r = res && res.result;
+    if (r && r.ok) {
+      // 只有「发出后本地再无新改动」才算真正同步完成
+      if (_rev === rev) clearDirty();
+      else cloudUpload();                        // 期间又有改动 → 再补推一次
+      return;
+    }
+    scheduleRetry((r && r.msg) || '云端拒绝写入');
+  }).catch(err => {
+    inflight = false;
+    scheduleRetry((err && err.errMsg) || String(err));
+    console.warn('[store] 云同步失败，已排队重试', err);
+  });
+}
+
+/** 失败退避重试；退避用尽后停手，等下次 save / 启动 / 切前台再试 */
+function scheduleRetry(msg) {
+  const t = readSyncTag();
+  t.dirty = true;
+  if (!t.pendingSince) t.pendingSince = Date.now();
+  t.attempts = (t.attempts || 0) + 1;
+  t.lastError = String(msg || '').slice(0, 200);
+  writeSyncTag(t);
+  if (t.attempts > RETRY_DELAYS.length) return;
+  clearTimeout(uploadTimer);
+  uploadTimer = setTimeout(doUpload, RETRY_DELAYS[t.attempts - 1]);
+}
+
+/**
+ * 立刻把本地改动推上云。用于：
+ *   · app.onHide —— 堵住「2 秒防抖窗口内被杀进程 → 该次操作永不上云」
+ *   · app.onShow / initAccount —— 补推上次失败积压的改动
+ * @param {Boolean} force true = 无视脏标记强制推一次（切后台用）
+ */
+function flushSync(force) {
+  if (!canSync()) return;
+  if (!force && !isDirty()) return;
+  clearTimeout(uploadTimer);
+  doUpload();
+}
 /**
  * 上云 / 导出前的脱敏（S1 红线：API Key 只允许留在设备本地）
  *  · 现版本已无小程序端 AI 配置页，正常数据里不含 Key；
@@ -580,16 +816,6 @@ function sanitizeForCloud(root) {
     });
   }
   return clone;
-}
-function cloudUpload() {
-  if (!cloudReady) return;
-  clearTimeout(uploadTimer);
-  uploadTimer = setTimeout(() => {
-    wx.cloud.callFunction({
-      name: 'syncData',
-      data: { action: 'upload', payload: sanitizeForCloud(_root) }
-    }).catch(err => console.warn('[store] 云同步失败（不影响本地使用）', err));
-  }, 2000);
 }
 
 /** 下行：云 → 本地（换手机 / 重装后，按本账号 openid 恢复数据）
@@ -618,13 +844,26 @@ function cloudDownload() {
 }
 
 /**
- * 拉取云端数据并与本地合并（B2 修复）：
- *  背景：云端 dailyReset（00:05）结算后只写云端，本地此前「仅本地为空才下载」，
- *        孩子几天不开小程序时本地会重复结算一遍（双重惩罚），且下次 save 覆盖云端。
- *  规则：
- *  · settledDates 取并集——云端已结算的天，本地 rollover 不再重复结算；
- *  · 云端 lastActiveDate 更新（如换设备 / 云端结算已推进）→ 整片采用云端该用户数据
- *    （homework 仍保留本地，防离线打卡丢失）；
+ * 拉取云端数据做「补缺式」合并（2026-09-18 重写，修 P0-4）
+ *
+ * 【为什么删掉旧的整片覆盖 + settledDates 并集】
+ * 旧实现用 lastActiveDate 日期串比大小，云端更新时把整个孩子切片 Object.assign 覆盖掉，
+ * 只保留 homework。两个致命后果：
+ *   ① 本地尚未上云的改动（farm 金币/植物/仓库、plans、comments、learner、subjectProfiles、
+ *      schedule、checkinTypes、studyPlans、profile.streak）被云端旧快照静默抹掉；
+ *   ② 并集写回 settledDates 会命中 nightSettle 的「已结算」守卫（farmEngine.js:179），
+ *      惩罚不再落到本地 farm，而下次 save() 又把本地 farm 推上云 →
+ *      云端的惩罚被反向覆盖，惩罚凭空消失。
+ * 更关键的是「云端更新」这个条件每天必然成立：云端 dailyReset 在 00:05 无条件把
+ * lastActiveDate 写成当天，本地只在用户打开小程序时才推进，而 app.js 里
+ * initAccount 先于 runDailyRollover 执行 —— 于是每天首次打开都会触发一次整片覆盖。
+ *
+ * 【现在的规则】
+ * 只做一件事：云端有、本地没有的孩子 → 追加进来（换设备 / 多孩子场景的兜底）。
+ * 已存在的孩子一律以本地为准 —— 本地是本机权威，上云统一由 save() → cloudUpload() 负责。
+ * 漏结算的惩罚由 app.js 的 runDailyRollover 在本地按同一份 homework 记录重算一遍，
+ * 结果同样只惩罚一次（settledDates 是「本副本已结算」的标记，不可跨副本混用）。
+ *
  * @returns {Promise<Boolean>} 是否发生了合并
  */
 function mergeRemote() {
@@ -635,30 +874,25 @@ function mergeRemote() {
         const remote = res && res.result && res.result.data;
         if (!remote || !Array.isArray(remote.users) || !remote.users.length) return resolve(false);
         const local = getRoot();
-        const byId = {};
-        remote.users.forEach(u => { if (u && u.id) byId[u.id] = u; });
+        const localIds = {};
+        (local.users || []).forEach(u => { if (u && u.id) localIds[u.id] = true; });
+
         let changed = false;
-        (local.users || []).forEach(u => {
-          const r = byId[u.id];
-          if (!r) return;
-          const lu = u.lastActiveDate || '';
-          const lr = r.lastActiveDate || '';
-          const union = Array.from(new Set([].concat(u.settledDates || [], r.settledDates || []))).sort();
-          if (lr > lu) {
-            // 云端更新：整片采用云端该用户数据，settledDates 并集、homework 保留本地
-            const keepHomework = u.homework;
-            const merged = Object.assign({}, r, { settledDates: union, homework: keepHomework });
-            Object.keys(u).forEach(k => { delete u[k]; });
-            Object.assign(u, merged);
-            changed = true;
-          } else if (JSON.stringify(union) !== JSON.stringify(u.settledDates || [])) {
-            u.settledDates = union;
-            changed = true;
-          }
+        remote.users.forEach(r => {
+          if (!r || !r.id || localIds[r.id]) return;        // 本地已有 → 保留本地，绝不覆盖
+          const adopted = ensureUserFields(Object.assign({}, r));
+          delete adopted.__placeholder;
+          local.users.push(adopted);
+          localIds[r.id] = true;
+          changed = true;
         });
+
         if (changed) {
+          if (!local.currentUserId || !local.users.find(u => u.id === local.currentUserId)) {
+            local.currentUserId = local.users[0].id;
+          }
           try { wx.setStorageSync(storageKey(), local); } catch (e) {}
-          cloudUpload();                       // 合并结果回写云端，保持两侧一致
+          markDirty();                                      // 新并入的孩子需要上云留档
           emit(get());
         }
         resolve(changed);
@@ -673,11 +907,18 @@ function mergeRemote() {
  *   2) 云可用则向 syncData(whoami) 确认真正的 openid（防同设备多微信串号）
  *   3) 清空内存根，强制从本账号命名空间重新加载
  *   4) 首次把旧 base key 数据搬进当前账号命名空间（仅一次）
- *   5) 加载本账号数据：本地有则用本地；本地空且云可用则下载；都没有则首次示例
- *   6) 缓存 openid，返回
- * 无云环境会优雅降级：_openid 为空，全部落到 base key，行为与改造前一致。
+ *   5) 加载本账号数据：本地有则用本地；本地空且云可用则下载；都没有则占位切片
+ *   6) 缓存 openid；补推积压的未上云改动
+ *
+ * 【身份解耦·2026-09-18】拿不到 openid（whoami 失败且无缓存）**不再等于「游客模式」**，
+ * 只表示「暂不能上云」：本地落盘照常走兜底 key，等 openid 恢复后由第 4 步迁移进
+ * 账号命名空间。云端下载失败时只置 _cloudBlocked 阻断上云（保护云端真数据），
+ * 同样不阻断本地保存。两种降级都会置 _accountDegraded，由 app.js 弹提示。
  */
 async function initAccount() {
+  _cloudBlocked = false;
+  _accountDegraded = false;
+
   // 1) 读缓存
   try { _openid = wx.getStorageSync(OPENID_KEY) || ''; } catch (e) {}
 
@@ -687,13 +928,19 @@ async function initAccount() {
       const res = await wx.cloud.callFunction({ name: 'syncData', data: { action: 'whoami' } });
       const oid = res && res.result && res.result.openid;
       if (oid) _openid = oid;
-    } catch (e) { console.warn('[store] 获取 openid 失败，沿用本地缓存', e); }
+      else _accountDegraded = true;
+    } catch (e) {
+      _accountDegraded = true;
+      console.warn('[store] 获取 openid 失败：本地照常保存，暂不上云', e);
+    }
   }
+  if (!_openid) _accountDegraded = true;
 
   // 3) 切换账号：清空内存根，强制从本账号命名空间重新加载
   _root = null;
 
   // 4) 首启迁移：把旧 base key 数据搬进当前账号命名空间（仅一次）
+  //    同时兜住「上次启动 whoami 失败 → 数据落在 base key」的情况
   if (_openid) {
     try {
       const legacy = wx.getStorageSync(BASE_KEY);
@@ -702,6 +949,16 @@ async function initAccount() {
           (!ns || !ns.users || !ns.users.length)) {
         wx.setStorageSync(storageKey(), legacy);
         try { wx.removeStorageSync(BASE_KEY); } catch (e2) {}
+      }
+    } catch (e) {}
+    // 4b) 脏标记必须跟着一起迁移：脏标记是按 openid 隔离的（syncTagKey），
+    //     「whoami 失败期间落在兜底 key 的改动」若不迁移，openid 恢复后 flushSync
+    //     读的是另一个 key，积压的改动就永远推不上去（首次上云静默丢失）。
+    try {
+      const legacyTag = wx.getStorageSync(SYNCTAG_KEY);
+      if (legacyTag && legacyTag.dirty) {
+        if (!readSyncTag().dirty) writeSyncTag(legacyTag);
+        wx.removeStorageSync(SYNCTAG_KEY);
       }
     } catch (e) {}
   }
@@ -713,29 +970,35 @@ async function initAccount() {
     if (cloudReady) {
       const dl = await cloudDownload();   // { ok, empty, failed }
       if (dl.failed) {
-        // 云端下载失败（网络 / 云异常）：云端「可能」有真实数据但没拉下来。
-        // 绝不能让「已绑定但本地空」的状态去 save() 覆盖云端 —— 退化游客模式阻断上云，
-        // 等网络恢复、用户重开小程序时重新 whoami + 下载恢复。
-        _openid = '';
-        try {
-          const app = (typeof getApp === 'function') ? getApp() : null;
-          if (app && app.globalData) app.globalData.cloudRestoreFailed = true;
-        } catch (e2) {}
-        return _openid;
+        // 云端「可能」有真实数据但没拉下来 → 只阻断「上云」避免本地空态覆盖云端，
+        // 本地保存照常（旧实现直接清空 _openid 退化成「不落盘」，用户操作全丢）
+        _cloudBlocked = true;
+        _accountDegraded = true;
       }
-      // dl.ok 已写入 _root / 命名空间；dl.empty 走下面兜底示例（首次用户正常上云）
+      // dl.ok 已写入 _root / 命名空间；dl.empty 走下面兜底占位切片
     }
-    // 云未就绪 / 下载为空时，getRoot() 兜底成默认 / 示例
   } else if (cloudReady) {
-    await mergeRemote();       // 本地已有数据：与云端合并（防双重惩罚 / 防覆盖丢失）
+    await mergeRemote();       // 本地已有数据：只补云端独有孩子，绝不覆盖本地
   }
 
-  // 6) 确保 _root 就绪；仅「已绑定微信」才落盘 + 缓存 openid（游客模式不落盘）
+  // 6) 确保 _root 就绪 + 缓存 openid
   const finalRoot = getRoot();
   if (_openid) {
     try { wx.setStorageSync(storageKey(), finalRoot); } catch (e) {}
     try { wx.setStorageSync(OPENID_KEY, _openid); } catch (e) {}
   }
+
+  // 7) 补推上次失败 / 被杀进程积压的改动
+  if (canSync()) flushSync();
+
+  try {
+    const app = (typeof getApp === 'function') ? getApp() : null;
+    if (app && app.globalData) {
+      app.globalData.cloudRestoreFailed = _accountDegraded;
+      app.globalData.syncDegraded = _accountDegraded;
+    }
+  } catch (e2) {}
+
   return _openid;
 }
 
@@ -766,6 +1029,10 @@ async function bindWechat() {
     // 调用成功但没返回 openid：云端代码不含 whoami 分支（需重新上传部署）
     return { ok: false, reason: 'openid', result: res && res.result };
   }
+
+  // 云函数可达且身份已确认 → 解除降级保护（此前 whoami / 下载失败留下的状态）
+  _cloudBlocked = false;
+  _accountDegraded = false;
 
   if (oid === _openid) return { ok: true, changed: false };
 
@@ -831,6 +1098,7 @@ module.exports = {
   on, off, emit,
   makePlant, defaultData,
   setCloudReady, cloudUpload, cloudDownload, initAccount, bindWechat,
+  flushSync, isDirty, getSyncState, isAccountDegraded,
   getOpenid, getBindInfo, getWxProfile, setWxProfile, isOnboarded, isGuest,
   getComments, addComment,
   getLearner, saveLearner, getSubjectProfile, saveSubjectProfile,

@@ -128,6 +128,9 @@ Page({
     }
     this.setData({ sending: true });
     wx.showLoading({ title: '正在判定…', mask: true });
+    // 预生成证据 id：本地记录与云端文档共用同一个 clientId，
+    // 否则云端会同时留下「tutorRetest 直写（无 clientId）+ push 回补（有 clientId）」两份重复证据
+    const evId = util.uid('ev');
     wx.cloud.callFunction({
       name: 'tutorRetest',
       data: {
@@ -136,6 +139,7 @@ Page({
         topic: this.data.topic,
         errorType: this.data.errorType,
         mistakeId: this.data.mistakeId,
+        evidenceClientId: evId,
         questions: this.data.questions,
         answers: this.data.answers
       }
@@ -146,8 +150,9 @@ Page({
         this.setData({ sending: false });
         return util.toast((r && r.msg) || '判定失败，请重试', 'none');
       }
-      // 本地缓存证据记录（passed 区分达标/未达标）
-      const ev = tutorStore.addEvidence({
+      // 本地缓存证据记录（passed 区分达标/未达标）；id 用预生成的 evId，与云端 clientId 对齐
+      tutorStore.addEvidence({
+        id: evId,
         subject: this.data.subject,
         subjectName: this.data.subjectName,
         topic: this.data.topic,
@@ -159,9 +164,9 @@ Page({
       });
 
       // 复习窗口推进（闭环 S2）：只由复测证据驱动，未关联错题的复测不推进
+      // 入队由 advanceReview 内部自动完成（不再硬编码 '<mistakeId>_rv' 这种命名约定）
       if (this.data.mistakeId) {
         tutorStore.advanceReview(this.data.mistakeId, !!r.pass);
-        tutorStore.queuePush('reviews', this.data.mistakeId + '_rv');
       }
 
       // 达标 → 标记对应错题为「已订正」（优先按 id 精确匹配，兜底按学科+知识点）
@@ -173,14 +178,10 @@ Page({
           mk = tutorStore.getMistakes().find(m =>
             m.subject === this.data.subject && m.topic === this.data.topic);
         }
-        if (mk) {
-          tutorStore.setMistakeStatus(mk.id, 'corrected');
-          tutorStore.queuePush('mistakes', mk.id);
-        }
+        if (mk) tutorStore.setMistakeStatus(mk.id, 'corrected');   // 入队由内部完成
       }
 
-      // 待补写队列（闭环 S1）：云端证据写入失败时下次回补
-      if (ev && ev.id) tutorStore.queuePush('evidence', ev.id);
+      // 触发一次合并推送（evidence / mistakes / reviews 的入队都已由 tutorStore 内部登记）
       tutorStore.pushQueued();
 
       this.setData({ sending: false, result: r, phase: 'result' });

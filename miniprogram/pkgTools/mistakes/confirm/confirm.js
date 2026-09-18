@@ -6,7 +6,7 @@
  *  · 勾选收录哪些题（默认只勾「老师批改 ×」的题）
  *  · 「AI 诊断错因」：规则路由（calc/dictation 有批改）本地归因；
  *    其余走 tutorChat action='diagnoseQuestions'（E1-E9，诊断失败不阻塞收录）
- *  · 「收录」：tutorStore.addMistake（source='photo'）→ queuePush 上云 → 派生复习窗口
+ *  · 「收录」：tutorStore.addMistake（source='photo'）→ 内部自动入队上云 → 派生复习窗口
  */
 const tutorStore = require('../../../utils/tutorStore.js');
 const util = require('../../../utils/util.js');
@@ -310,7 +310,6 @@ Page({
         childAnswer: c.childAnswer,
         markSource: c.marked !== null ? 'marked' : (c.errorType ? 'ai' : 'none')
       });
-      tutorStore.queuePush('mistakes', mid);
       // 派生复习窗口（与导学归档闭环一致：stage1 → 1 天后到期）
       tutorStore.upsertReview({
         id: mid + '_rv',

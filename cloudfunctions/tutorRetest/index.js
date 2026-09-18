@@ -12,6 +12,7 @@
  * 【judge】
  *   subject, topic, errorType, questions(含 answer), answers(用户作答)
  *   mistakeId: 本地错题 uid（可空；提供时联动推进 tutor_reviews 复习窗口）
+ *   evidenceClientId: 前端预生成的本地证据 uid，写入 clientId 供跨设备去重
  *   出参：{ ok:true, results:[{correct, your, answer}], total, correct, rate, pass, reason }
  *
  * 核心红线（硬编码，不依赖 prompt）：
@@ -179,8 +180,11 @@ async function judge(app, input, openid) {
   const verdict = judgeEvidence(questions.length, correct);
 
   // 落库：一条记录（passed 区分证据 vs 尝试），openid 隔离
+  // ⚠️ 必须带 clientId（= 前端本地证据 uid）：tutorSync(push) 按 openid+clientId 去重，
+  //    缺此字段会导致同一份证据被 push 再补写一条 → 云端与本地双双翻倍（P0-5）。
   const doc = {
     openid: openid,
+    clientId: str(input.evidenceClientId, 60),
     subject: str(input.subject, 20),
     topic: str(input.topic, 100),
     errorType: /^E[1-9]$/.test(input.errorType || '') ? input.errorType : '',
