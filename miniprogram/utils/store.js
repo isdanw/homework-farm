@@ -46,6 +46,11 @@
  *    R7 共享数据一律挂 root（users 之外的字段），禁止另开「与 openid 解耦的独立 storage key」。
  *       独立 key 既不随整份镜像上云（换手机即丢），也不按 openid 隔离（同机多账号串味）。
  *       root 级内容天然随镜像上云 —— coop 与 wxProfile 都按这条走。
+ *    R8 多设备写必须走乐观锁，禁止无条件覆盖（F10）：每次 upload 都带 `base`
+ *       = 本设备最后一次见到的云端 updatedAt；服务端 base 不匹配就回 conflict 且**不写库**。
+ *       收到 conflict 只允许「加法式调和 + 采纳新基线 + 有上限重推」——绝不整片覆盖本地，
+ *       也绝不通用深合并（farm/settledDates 非单调，合并有害）。base 存在 sync tag 里，
+ *       清脏时**必须保留**，清零 = 静默退回无保护 LWW。
  *
  *  【微信绑定】数据已经跟微信账号绑定：服务端按 openid 一人一条；客户端在启动时
  *  通过 syncData(whoami) 拿到自己的 openid，缓存并用于本地命名空间隔离，同时在
@@ -687,6 +692,22 @@ function writeSyncTag(t) { try { wx.setStorageSync(syncTagKey(), t); } catch (e)
 /** 本地有改动尚未成功上云 */
 function isDirty() { return !!readSyncTag().dirty; }
 
+/* ---- F10：云端版本基线（乐观锁用） ----
+ * cloudUpdatedAt = 本设备「最后一次见到的云端 updatedAt」。
+ * 它必须跨多次同步存活：不能因为一次上传成功就被抹掉，否则每轮上传都会退化成无基线的 LWW。
+ * 0 表示还没有基线（首装 / 从未下载过 / 老版本升级上来），此时服务端走兼容路径并回传版本，
+ * 存下后从下一刻起自动进入 CAS 模式 —— 自举，不需要任何一次性迁移。 */
+function getCloudBase() {
+  const v = readSyncTag().cloudUpdatedAt;
+  return (typeof v === 'number' && v > 0) ? v : 0;
+}
+function setCloudBase(v) {
+  if (!(typeof v === 'number' && v > 0)) return;
+  const t = readSyncTag();
+  t.cloudUpdatedAt = v;
+  writeSyncTag(t);
+}
+
 /** 标记「有改动待上云」；已有待推改动时不重置 pendingSince（保留首次积压时间）
  *  _rev 是「本地改动代数」：上传在途期间若又有新改动，成功后不能误清脏标记。 */
 let _rev = 0;
@@ -697,9 +718,24 @@ function markDirty() {
   writeSyncTag(t);
 }
 
-/** 上云成功 → 清脏 */
-function clearDirty() {
-  writeSyncTag({ dirty: false, pendingSince: 0, attempts: 0, lastOkAt: Date.now() });
+/** 上云成功 → 清脏。
+ *  ⚠️ 只重置「本次同步的进度」字段，cloudUpdatedAt / conflicts 必须原样带过去 ——
+ *     早期写法直接 writeSyncTag({dirty:false,...}) 会把基线一起清零，
+ *     下一轮上传就变成无基线 LWW，多设备保护静默失效。
+ *  @param {Number} serverUpdatedAt 服务端本次落库后返回的云端版本 */
+function clearDirty(serverUpdatedAt) {
+  const t = readSyncTag();
+  writeSyncTag({
+    dirty: false,
+    pendingSince: 0,
+    attempts: 0,
+    lastOkAt: Date.now(),
+    lastError: '',
+    cloudUpdatedAt: (typeof serverUpdatedAt === 'number' && serverUpdatedAt > 0)
+      ? serverUpdatedAt : (t.cloudUpdatedAt || 0),
+    conflicts: t.conflicts || 0,
+    lastConflictAt: t.lastConflictAt || 0
+  });
 }
 
 /** 对外暴露同步状态：「我的」页 / 排查「云端是否落后」时读它 */
@@ -716,7 +752,11 @@ function getSyncState() {
     pendingSince: t.pendingSince || 0,
     attempts: t.attempts || 0,
     lastOkAt: t.lastOkAt || 0,
-    lastError: t.lastError || ''
+    lastError: t.lastError || '',
+    // F10 观测项：本设备认知的云端版本 + 累计遇到的并发冲突次数（>0 说明确实有多设备同时用）
+    cloudUpdatedAt: t.cloudUpdatedAt || 0,
+    conflicts: t.conflicts || 0,
+    lastConflictAt: t.lastConflictAt || 0
   };
 }
 function isAccountDegraded() { return getSyncState().degraded; }
@@ -729,6 +769,7 @@ function isAccountDegraded() { return getSyncState().degraded; }
  *  · 未确认 openid、云端被阻断（下载失败保护期）、或整份数据只是未启用的占位切片时不上云
  */
 const RETRY_DELAYS = [1000, 4000, 15000, 60000];
+const CONFLICT_RETRY = 1;     // F10：一次上传动作最多因「云端被别人改过」而调和重推几轮
 let uploadTimer = null;
 let inflight = false;
 
@@ -744,32 +785,150 @@ function cloudUpload(immediate) {
   uploadTimer = setTimeout(doUpload, 2000);
 }
 
-function doUpload() {
+function doUpload(retryLeft) {
   if (!canSync()) return;
   // 已有请求在途：不丢弃，重新排一次防抖（否则这次改动会被在途请求的
   // 成功回调误判为「已同步」而永远推不上去）
   if (inflight) { cloudUpload(); return; }
 
+  if (retryLeft === undefined) retryLeft = CONFLICT_RETRY;   // 每次新的上传动作重置冲突重试额度
   const rev = _rev;                              // 记下本次上传对应的改动代数
+  const base = getCloudBase();                   // F10：CAS 基线（0 = 云端还没版本认知）
   inflight = true;
   wx.cloud.callFunction({
     name: 'syncData',
-    data: { action: 'upload', payload: sanitizeForCloud(_root) }
+    data: { action: 'upload', payload: sanitizeForCloud(_root), base }
   }).then(res => {
     inflight = false;
     const r = res && res.result;
     if (r && r.ok) {
       // 只有「发出后本地再无新改动」才算真正同步完成
-      if (_rev === rev) clearDirty();
-      else cloudUpload();                        // 期间又有改动 → 再补推一次
+      if (_rev === rev) clearDirty(r.cloudUpdatedAt);
+      else { setCloudBase(r.cloudUpdatedAt); cloudUpload(); }   // 期间又有改动 → 再补推一次
       return;
     }
+    if (r && r.code === 'conflict') { handleConflict(r, retryLeft); return; }
     scheduleRetry((r && r.msg) || '云端拒绝写入');
   }).catch(err => {
     inflight = false;
     scheduleRetry((err && err.errMsg) || String(err));
     console.warn('[store] 云同步失败，已排队重试', err);
   });
+}
+
+/**
+ * F10：处理云端乐观锁冲突（同一微信号的**另一台设备**在我们上次同步之后写过云端）。
+ *
+ * 为什么不能「直接重试」：重试仍是拿本地快照覆盖云端 → 别人的改动照样丢，只是丢得更晚。
+ * 为什么不能「通用深合并」：farm.coins 可涨可跌、farm.plots 有位置语义、settledDates 是
+ *   「本副本已结算」标记 —— 通用合并会产出「两边都不存在」的第三态，比 LWW 更糟，且会让
+ *   惩罚凭空消失（见 mergeRemote 注释里的同类教训）。
+ * 所以这里的动作是**加法式调和 + 采纳新基线 + 有上限地重推一次**：
+ *   ① 把冲突记进同步状态（不再静默，getSyncState() 可查）；
+ *   ② 采纳服务端回传的 cloudUpdatedAt 作为新基线（不采就会无限冲突）；
+ *   ③ reconcileWithCloud() 只并入「云端有、本地无」的东西，绝不整片覆盖本地；
+ *   ④ 重推一次；再冲突就收手，保留脏标记等下次 save / 启动 / 切前台 —— 云端数据完好无损。
+ *
+ * ⚠️ 边界（已知且刻意不在此批解决）：两端**都有**的那个孩子，除 homework 完成标记外
+ *    其余字段仍以本机为准，所以「A 机收菜、B 机随后上传」这类同字段并发编辑仍可能丢一次。
+ *    彻底解决需要逐字段/逐实体时间戳（或以实体为单位做 CRDT），属于独立设计，见审计报告 F14。
+ */
+function handleConflict(r, retryLeft) {
+  const t = readSyncTag();
+  t.dirty = true;
+  if (!t.pendingSince) t.pendingSince = Date.now();
+  t.conflicts = (t.conflicts || 0) + 1;
+  t.lastConflictAt = Date.now();
+  t.lastError = '云端已被其它设备更新（conflict，本次未覆盖）';
+  writeSyncTag(t);
+
+  setCloudBase(r && r.cloudUpdatedAt);           // ② 采纳云端版本为新基线
+
+  let changed = false;
+  if (r && r.data && typeof r.data === 'object') changed = reconcileWithCloud(r.data);  // ③ 加法式调和
+  else console.warn('[store] 冲突未带回云端数据（体积超出保护或为空），本轮只更新基线');
+
+  if (changed) {
+    try { wx.setStorageSync(storageKey(), _root); } catch (e) {}
+    emit(get());
+  }
+
+  if (retryLeft > 0) {
+    console.warn('[store] 检测到多设备并发写，已调和并重推（剩余次数 ' + retryLeft + '）');
+    clearTimeout(uploadTimer);
+    uploadTimer = setTimeout(() => doUpload(retryLeft - 1), 1200);
+  } else {
+    console.warn('[store] 冲突重推已达上限，保留脏标记等下次 save/启动再推（云端数据未被破坏）');
+  }
+}
+
+/**
+ * F10：与云端快照的**加法式**调和。只并入「云端有、本地无」，逐项说明为什么安全：
+ *   · 云端独有的孩子（users[i].id 本地没有）→ 追加。换设备 / 多孩子场景的兜底，无争议。
+ *   · 两端都有的孩子 → 以本地为准，仅 homework 的**单调量**做并集：
+ *       - done：false→true 是单调的（做完就是做完）。不并集 → 「孩子确实做了、云端却按
+ *         未完成结算」＝ 这个 App 的核心承诺被打破；并集的代价只是极小概率把用户手动
+ *         取消的勾恢复，明显轻于误罚。
+ *       - minutes / doneAt 取较大值，note 本地为空时取云端。
+ *   · 其它孩子级字段（farm / plans / comments / learner / subjectProfiles / checkinTypes /
+ *     studyPlans / schedule / profile）一律保持本地 —— 取值空间非单调，通用深合并有害。
+ *   · settledDates **刻意不并集**：它是「本副本已结算」的标记，并集会让 farmEngine 的
+ *     结算守卫提前命中，本地那笔惩罚就永远不落地（mergeRemote 注释里已记录同类事故）。
+ * @param {Object} cloudRoot 云端整份 _root
+ * @returns {Boolean} 本地是否被改动（改动过则需要落盘 + 重推）
+ */
+function reconcileWithCloud(cloudRoot) {
+  if (!cloudRoot || !Array.isArray(cloudRoot.users) || !cloudRoot.users.length) return false;
+  const local = getRoot();
+  if (!local || !Array.isArray(local.users)) return false;
+
+  let changed = false;
+
+  cloudRoot.users.forEach(cu => {
+    if (!cu || !cu.id) return;
+    const lu = local.users.find(x => x && x.id === cu.id);
+
+    // ① 云端独有的孩子 → 整体追加
+    if (!lu) {
+      const adopted = ensureUserFields(Object.assign({}, cu));
+      delete adopted.__placeholder;                 // 占位切片永不进入真源（R5）
+      local.users.push(adopted);
+      changed = true;
+      return;
+    }
+
+    // ② 两端都有 → 只对 homework 的单调量做并集
+    const chw = cu.homework, lhw = lu.homework;
+    if (!chw || typeof chw !== 'object') return;
+    if (!lhw || typeof lhw !== 'object') { lu.homework = JSON.parse(JSON.stringify(chw)); changed = true; return; }
+
+    Object.keys(chw).forEach(date => {
+      const cDay = chw[date], lDay = lhw[date];
+      if (!cDay || typeof cDay !== 'object') return;
+      if (!lDay || typeof lDay !== 'object') {          // 本地没有这一天的记录 → 整日并入
+        lhw[date] = JSON.parse(JSON.stringify(cDay));
+        changed = true;
+        return;
+      }
+      Object.keys(cDay).forEach(sub => {
+        const c = cDay[sub], l = lDay[sub];
+        if (!c || typeof c !== 'object') return;
+        if (!l || typeof l !== 'object') { lDay[sub] = JSON.parse(JSON.stringify(c)); changed = true; return; }
+        if (c.done && !l.done) { l.done = true; changed = true; }
+        const cDoneAt = Number(c.doneAt) || 0, lDoneAt = Number(l.doneAt) || 0;
+        if (cDoneAt > lDoneAt) { l.doneAt = cDoneAt; changed = true; }
+        const cMin = Number(c.minutes) || 0, lMin = Number(l.minutes) || 0;
+        if (cMin > lMin) { l.minutes = cMin; changed = true; }
+        if (!l.note && c.note) { l.note = c.note; changed = true; }
+      });
+    });
+  });
+
+  // 云端独有孩子并入后，currentUserId 可能指向已不存在的孩子 → 收敛到第一个
+  if (changed && (!local.currentUserId || !local.users.find(u => u.id === local.currentUserId))) {
+    local.currentUserId = local.users[0] && local.users[0].id;
+  }
+  return changed;
 }
 
 /** 失败退避重试；退避用尽后停手，等下次 save / 启动 / 切前台再试 */
@@ -830,7 +989,10 @@ function cloudDownload() {
     if (!cloudReady) return resolve({ ok: false, empty: true });
     wx.cloud.callFunction({ name: 'syncData', data: { action: 'download' } })
       .then(res => {
-        const remote = res && res.result && res.result.data;
+        const result = (res && res.result) || {};
+        const remote = result.data;
+        // F10：下载即建立起 CAS 基线 —— 接下来第一次上传就是以这一版为基准
+        if (typeof result.cloudUpdatedAt === 'number') setCloudBase(result.cloudUpdatedAt);
         if (remote && remote.users && remote.users.length) {
           remote.lastSyncAt = Date.now();
           _root = normalizeRoot(remote);
@@ -871,7 +1033,11 @@ function mergeRemote() {
     if (!cloudReady || !_openid) return resolve(false);
     wx.cloud.callFunction({ name: 'syncData', data: { action: 'download' } })
       .then(res => {
-        const remote = res && res.result && res.result.data;
+        const result = (res && res.result) || {};
+        const remote = result.data;
+        // F10：无论是否发生合并，都把这次读到的云端版本记为基线。
+        // 合并过则本地会 markDirty → 下一次上传正是以「我刚读的这一版」为基准，天然不冲突。
+        if (typeof result.cloudUpdatedAt === 'number') setCloudBase(result.cloudUpdatedAt);
         if (!remote || !Array.isArray(remote.users) || !remote.users.length) return resolve(false);
         const local = getRoot();
         const localIds = {};
@@ -1099,6 +1265,7 @@ module.exports = {
   makePlant, defaultData,
   setCloudReady, cloudUpload, cloudDownload, initAccount, bindWechat,
   flushSync, isDirty, getSyncState, isAccountDegraded,
+  reconcileWithCloud, getCloudBase,
   getOpenid, getBindInfo, getWxProfile, setWxProfile, isOnboarded, isGuest,
   getComments, addComment,
   getLearner, saveLearner, getSubjectProfile, saveSubjectProfile,

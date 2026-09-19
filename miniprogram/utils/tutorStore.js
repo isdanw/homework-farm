@@ -257,6 +257,27 @@ function archiveCount() {
 
 /* ======================= 错题本（P2） ======================= */
 
+/**
+ * 错题来源枚举 —— 三端（小程序 / 云函数 / 工作台）唯一口径，改这里要同步改
+ * `cloudfunctions/webAdminWrite` 与工作台的 md-to-cloud 映射。
+ *
+ * 【两个正交的轴，别混】
+ *   · `source`     = **录入路径**：photo 拍照/OCR收录 | tutor 导学对话(tutorChat)收录 | manual 手工录入
+ *   · `markSource` = **对错判定来源**：marked 图上已有批改 | ai AI 判定 | none 未知
+ *
+ * 【为什么保留 manual 而不是并进 tutor】（2026-09-18 定案，推翻审计报告当时的建议）
+ *   审计时提的是「收敛为 photo|tutor，验证等级另设字段」。复核后否定该方案：
+ *   manual 是真实存在且语义独立的第三条录入路径，把它并进 tutor 会**永久丢失信息**，
+ *   违反项目最基本的「只增字段、不改语义」——而这种丢失是不可逆的，改回去也回不来。
+ *   「验证等级」诉求本就由 markSource 这条独立的轴承载，不需要靠合并 source 来腾位置。
+ *
+ * 【历史事故】`tutorChat` 写 `'manual'`、本地默认 `'tutor'`，而 addMistake 又把非 photo
+ *   一律归一成 `'tutor'` → 同一条错题在两端拿到不同的 source，云端值被端上改写。
+ *   现在两端都不再归一化，只做「非法值兜底」，合法值原样保留。
+ */
+const MISTAKE_SOURCES = ['photo', 'tutor', 'manual'];
+const MISTAKE_MARK_SOURCES = ['marked', 'ai', 'none'];
+
 /** 全部错题（按创建时间倒序） */
 function getMistakes() {
   const all = readAll();
@@ -264,8 +285,8 @@ function getMistakes() {
 }
 
 /** 新增一条错题（E1-E9 归因；可传 m.id 预生成 uid，保证与云端 clientId 一致）
- *  拍照收录增量字段：source('photo'|'tutor') / questionText 题干 / childAnswer 孩子作答 /
- *  markSource 对错判定来源('marked' 图上批改 | 'ai' AI 判定 | 'none') —— 旧数据缺省兼容 */
+ *  拍照收录增量字段：source(见 MISTAKE_SOURCES) / questionText 题干 / childAnswer 孩子作答 /
+ *  markSource 对错判定来源(见 MISTAKE_MARK_SOURCES) —— 旧数据缺省兼容 */
 function addMistake(m) {
   const all = readAll();
   const item = {
@@ -277,10 +298,11 @@ function addMistake(m) {
     errorDesc: m.errorDesc || '',
     suggestion: m.suggestion || '',
     status: m.status || 'pending',   // pending 待重测 / corrected 已订正
-    source: m.source === 'photo' ? 'photo' : 'tutor',
+    // 只对「非法/缺失」兜底，**不改写合法值**（manual 必须原样留下）
+    source: MISTAKE_SOURCES.indexOf(m.source) >= 0 ? m.source : 'tutor',
     questionText: m.questionText || '',
     childAnswer: m.childAnswer || '',
-    markSource: ['marked', 'ai', 'none'].indexOf(m.markSource) >= 0 ? m.markSource : 'none',
+    markSource: MISTAKE_MARK_SOURCES.indexOf(m.markSource) >= 0 ? m.markSource : 'none',
     createdAt: Date.now()
   };
   all.mistakes.unshift(item);

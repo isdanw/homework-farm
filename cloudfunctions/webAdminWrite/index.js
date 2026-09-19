@@ -41,6 +41,16 @@ function app() {
 }
 function db() { return app().database(); }
 
+/* ---------- F13：错题来源枚举（三端唯一口径）----------
+ *   source     = 录入路径：photo 拍照/OCR | tutor 导学对话(tutorChat) | manual 手工录入
+ *   markSource = 对错判定来源：marked 图上已批改 | ai AI 判定 | none 未知
+ * 这是**两个正交的轴**。历史上 tutorChat 写 'manual'、本地默认 'tutor'，端上又把非 photo
+ * 一律归一成 'tutor'，导致同一条错题两端拿到不同 source。现在三端都不再归一化：
+ *   · 本函数：原样搬运，只做白名单过滤，绝不改写取值；
+ *   · 小程序 tutorStore.addMistake：只对「非法/缺失」兜底，合法值（含 manual）原样保留；
+ *   · tutorChat：保留 'manual'（对话诊断归档，语义真实且不可用 tutor 替代）。
+ * 对应地，小程序 utils/tutorStore.js 的 MISTAKE_SOURCES 是同一份口径，改这里要同步改那里。 */
+
 /* ---------- 工具：取「当前孩子」切片 ---------- */
 function currentUser(data) {
   const us = (data && Array.isArray(data.users)) ? data.users : [];
@@ -79,7 +89,14 @@ const PUBLISH_FIELDS = {
   sessions: ['messages'],
   // 注：source 必须进白名单 —— 拍照 OCR 收录的错题由 md-to-cloud 按「验证等级: V2」映射为 source:'photo'，
   // 若缺此字段，update 路径会将其剥离，导致「V2 → 云端 source:photo」回路断掉（§9.2 R4）。
-  mistakes: ['topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'source'],
+  //
+  // F13（2026-09-18）：补齐 questionText / childAnswer / markSource。
+  //   webAdminQuery 的下拉白名单里一直有这三个字段，上行白名单却没有 → 下拉能读到、
+  //   改完推不上去，工作台改这几个字段**永远不生效且没有任何报错**（update 是部分更新，
+  //   不会破坏数据，所以表现为「静默无效」——比报错更难发现）。
+  //   两端白名单必须镜像，本文件头已声明：改一边必须同步另一边。
+  mistakes: ['topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'source',
+    'questionText', 'childAnswer', 'markSource'],
   evidence: ['total', 'correct', 'rate', 'passed'],
   reviews: ['stage', 'dueAt', 'done'],
   // F-B 试卷库：试卷是**资源库条目**（不是学情数据，不产生 evidence）。
@@ -264,12 +281,26 @@ async function writeExams(openid, items) {
   return { added, skipped, updated, conflicts };
 }
 
-/* ---------- profile 写入（合并进孩子切片，不污染其它字段）----------
+/* ---------- profile 写入（字段级更新，绝不整份替换 data）----------
  * T5：同样走「基线」判定。hw_farm_user 的孩子切片没有逐字段时间戳，
  * 唯一可靠的判据是文档级 updatedAt（syncData 每次全量写 _root 时刷新）。
  *   · base 缺失（本地 md 从未下拉过）→ 拒绝覆盖，返回 conflict 并提示先下拉
  *   · theirs > base（下拉后小程序又写过）→ 拒绝覆盖，返回 conflict
- *   · 否则 → 合并写入
+ *   · 否则 → 写入
+ *
+ * 【F12 修复·2026-09-18】原来这里是「读整份 data → 内存改 → command.set(data) 整份替换」。
+ *   文件头与本节注释都声明「绝不触碰 homework/checkin/schedule/农场」，但实现是**整份替换**——
+ *   声明与实现不一致，就是隐患：基线的毫秒级时间戳给不了原子性，同一毫秒内的并发
+ *   （小程序刚写完 homework 的瞬间）仍会被这份旧快照连带抹掉。
+ *   现在改为**点号路径字段级 update**，只写本函数真正拥有的字段：
+ *     data.users.<ci>.nickname / grade / learner / subjectProfiles.<key>
+ *   由此产生三个直接好处：
+ *     ① 结构上不可能碰到 homework / farm / schedule / coop —— 不再是「靠约定」，而是「靠不写」；
+ *     ② 不再需要「读整份」，也就没有读-改-写窗口，连毫秒级竞态都没有；
+ *     ③ 不再刷新未经改动字段的值，幂等更彻底。
+ *   ⚠️ 保持 node-sdk 语义：update(obj) 的键就是字段名，**没有 { data:{} } 包壳**。
+ *   ⚠️ subjectProfiles 逐 key 写，而不是整个对象替换 —— 只写工作台本次要改的学科，
+ *      不会把小程序侧刚更新的其它学科画像一起压回去（原来的浅合并做不到这一点）。
  */
 async function writeProfile(openid, profile) {
   if (!profile) return 'noop';
@@ -291,30 +322,48 @@ async function writeProfile(openid, profile) {
     return { result: 'conflict', reason: 'no_baseline', theirs,
       hint: '本地 md 缺少「云端版本」基线（从未下拉过），拒绝覆盖云端；请先 sync-pull。' };
   }
-  const data = (u.data && typeof u.data === 'object') ? JSON.parse(JSON.stringify(u.data)) : { version: 1, users: [] };
-  // 自愈：历史误写（update({data:{data}}) 造成）会在 data 内留下嵌套 data 键并逐次膨胀；读到即清除，回落干净结构。
-  if (data.data && typeof data.data === 'object') delete data.data;
-  if (!Array.isArray(data.users)) data.users = [];
-  if (!data.users.length) data.users.push({ id: data.currentUserId || 'u1' });
-  const idx = data.users.findIndex(x => x && x.id === data.currentUserId);
-  const ci = idx >= 0 ? idx : 0;
-  const cu = data.users[ci] || (data.users[ci] = {});
 
-  if (profile.nickname) cu.nickname = profile.nickname;
-  if (profile.grade) cu.grade = profile.grade;
-  if (profile.learner && typeof profile.learner === 'object') cu.learner = profile.learner;
-  if (profile.subjectProfiles && typeof profile.subjectProfiles === 'object') {
-    cu.subjectProfiles = Object.assign({}, cu.subjectProfiles || {}, profile.subjectProfiles);
+  // 定位当前孩子在 users[] 中的下标（点号路径要写死下标，不能猜 0）
+  const rootData = (u.data && typeof u.data === 'object') ? u.data : {};
+  const arr = Array.isArray(rootData.users) ? rootData.users : [];
+  if (!arr.length) {
+    return { result: 'no_slot', hint: '云端的 users[] 为空，没有可写的孩子切片；等小程序上传一次全量镜像后再推。' };
   }
+  let ci = arr.findIndex(x => x && x.id === rootData.currentUserId);
+  if (ci < 0) ci = 0;
+
+  const P = `data.users.${ci}`;
+  const patch = {};
+  if (profile.nickname) patch[`${P}.nickname`] = profile.nickname;
+  if (profile.grade) patch[`${P}.grade`] = profile.grade;
+  // learner 由工作台独占（小程序侧只读展示），整对象写不会与端上打架
+  if (profile.learner && typeof profile.learner === 'object') patch[`${P}.learner`] = profile.learner;
+  // subjectProfiles 逐学科写：只覆盖本次送来的学科，未送到的学科保持云端现值
+  if (profile.subjectProfiles && typeof profile.subjectProfiles === 'object') {
+    for (const k of Object.keys(profile.subjectProfiles)) {
+      if (profile.subjectProfiles[k] === undefined) continue;
+      patch[`${P}.subjectProfiles.${k}`] = profile.subjectProfiles[k];
+    }
+  }
+  if (!Object.keys(patch).length) return 'noop';
+
   try {
-    // 用 command.set 整体替换「data」字段（node-sdk 无 { data:{} } 包壳，直接写字段名）。
-    // 若写成 update({ data:{ data: X } }) 会把 X 塞进 data.data，永不生效 —— 历史踩坑。
-    await dbh.collection(COLLS.user).doc(u._id).update({ data: dbh.command.set(data) });
+    await dbh.collection(COLLS.user).doc(u._id).update(patch);
   } catch (e) {
     return 'err:' + ((e && e.message) || e);
   }
+
+  // 历史误写自愈：早期版本 update({data:{data}}) 会在 data 内留下嵌套 data 键并逐次膨胀。
+  // 单独一次尽力而为的删除（失败不影响本次写入结果），不再需要整份重写 data。
+  if (rootData.data && typeof rootData.data === 'object') {
+    try { await dbh.collection(COLLS.user).doc(u._id).update({ 'data.data': dbh.command.remove() }); }
+    catch (e) { /* 字段级删除不可用时忽略：不影响主数据正确性，只是留着冗余 */ }
+  }
+
   // 回读校验：把「实际落库」的昵称/科目数/数学错因一并返回，让调用方一眼确认是否写成功。
   // （历史上出现过「返回 merged 但读取不变」的假成功，必须自证。）
+  // F12 起额外回传 verified/mismatch —— 字段级点号路径一旦在某环境不被支持，
+  // 这里会明确报出来，而不是静默无效（这正是 F13 那个 bug 的教训）。
   let stored = null;
   try {
     const back = await dbh.collection(COLLS.user).doc(u._id).get();
@@ -323,11 +372,19 @@ async function writeProfile(openid, profile) {
     const rus = Array.isArray(rd.users) ? rd.users : [];
     const rcu = rus.find(x => x && x.id === rd.currentUserId) || rus[0] || {};
     const rsp = rcu.subjectProfiles || {};
+    const mismatch = [];
+    if (patch[`${P}.nickname`] !== undefined && rcu.nickname !== patch[`${P}.nickname`]) mismatch.push('nickname');
+    if (patch[`${P}.grade`] !== undefined && rcu.grade !== patch[`${P}.grade`]) mismatch.push('grade');
+    Object.keys(profile.subjectProfiles || {}).forEach(k => {
+      if (profile.subjectProfiles[k] !== undefined && !rsp[k]) mismatch.push('subjectProfiles.' + k);
+    });
     stored = {
       nickname: rcu.nickname || '',
       grade: rcu.grade || '',
       subjects: Object.keys(rsp),
-      mathErrors: (rsp.math && rsp.math.errors) || null
+      mathErrors: (rsp.math && rsp.math.errors) || null,
+      verified: mismatch.length === 0,
+      mismatch
     };
   } catch (e) { stored = { readbackError: (e && e.message) || String(e) }; }
   return { result: 'merged', stored };

@@ -27,8 +27,10 @@ const NS_KEY = BASE_KEY + '_' + OPENID;
 /* ------------------------------ 测试挂具 ------------------------------ */
 let storage;
 let uploaded;
+let uploadBases;      // 每次 upload 携带的 base（F10：断言 CAS 基线是否被正确记住 / 推进）
 let calls;
 let behavior;
+let serverVersion;    // 假服务端的「云端 updatedAt」版本
 
 /* 定时器登记表：每个用例结束时清掉前一个用例遗留的防抖 / 重试定时器。
    不这么做时，前面用例 set 的 2 秒防抖会在后面的用例里触发，
@@ -51,12 +53,17 @@ function resetEnv() {
   drainTimers();
   storage = new Map();
   uploaded = [];
+  uploadBases = [];
   calls = [];
+  serverVersion = 1000;
   behavior = {
     whoami: 'ok',          // ok | fail
     download: 'empty',     // empty | ok | fail
     downloadData: null,
-    upload: 'ok'           // ok | fail
+    downloadUpdatedAt: 0,
+    upload: 'ok',          // ok | fail
+    conflictTimes: 0,      // 连续返回几次 conflict（模拟另一台设备先写过云端）
+    conflictData: null     // conflict 响应带回的云端最新 _root（null = 体积超限被截断）
   };
   behavior.uploadDelay = 0;
 
@@ -76,13 +83,29 @@ function resetEnv() {
         }
         if (action === 'download') {
           if (behavior.download === 'fail') return Promise.reject(new Error('download failed'));
-          return Promise.resolve({ result: { ok: true, data: behavior.downloadData } });
+          return Promise.resolve({
+            result: { ok: true, data: behavior.downloadData, cloudUpdatedAt: behavior.downloadUpdatedAt }
+          });
         }
         if (action === 'upload') {
+          uploadBases.push(data.base);
           const finish = () => {
             if (behavior.upload === 'fail') return { result: { ok: false, msg: '云端拒绝' } };
+            if (behavior.conflictTimes > 0) {
+              // F10：模拟「另一台设备在上次同步之后写过云端」→ 服务端拒绝并在库里推出新版本
+              behavior.conflictTimes--;
+              serverVersion += 500;
+              return { result: {
+                ok: false, code: 'conflict',
+                msg: '云端数据已被其它设备更新',
+                cloudUpdatedAt: serverVersion,
+                data: behavior.conflictData,
+                truncated: !behavior.conflictData
+              } };
+            }
+            serverVersion += 1000;
             uploaded.push(JSON.parse(JSON.stringify(data.payload)));
-            return { result: { ok: true } };
+            return { result: { ok: true, cloudUpdatedAt: serverVersion } };
           };
           return behavior.uploadDelay
             ? new Promise(r => setTimeout(() => r(finish()), behavior.uploadDelay))
@@ -394,6 +417,128 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await sleep(2100);
     const last = uploaded[uploaded.length - 1] || {};
     ok(!!last.wxProfile && last.wxProfile.nickname === '还没建娃', '建档后微信资料一并上云', JSON.stringify(last.wxProfile));
+  }
+
+  /* ---- T15: F10 CAS 基线自举并跨次保留 ---- */
+  group('T15 F10 上传携带 base，且清脏不清基线');
+  resetEnv();
+  {
+    const s = freshStore();
+    await s.initAccount();
+    s.addUser({ nickname: '加一' });
+    s.flushSync(true);
+    await sleep(40);
+    ok(uploadBases[0] === 0, '首次上传 base=0（还没有云端版本认知）', 'base=' + uploadBases[0]);
+    ok(s.getSyncState().cloudUpdatedAt === 2000, '成功后记住服务端回传的云端版本', 'v=' + s.getSyncState().cloudUpdatedAt);
+
+    s.save(s.get());
+    s.flushSync(true);
+    await sleep(40);
+    ok(uploadBases[1] === 2000, '第二次上传带上刚记下的基线（清脏不得把基线一起抹掉）', 'bases=' + JSON.stringify(uploadBases));
+    ok(s.getSyncState().cloudUpdatedAt === 3000, '基线继续推进（自举完成，从此进入 CAS 模式）');
+    ok(s.isDirty() === false, '同步完成后不脏');
+  }
+
+  /* ---- T16: F10 冲突 → 加法式调和 + 采纳新基线 + 有上限重推 ---- */
+  group('T16 F10 云端被别的设备改过 → 调和后重推，本地不被覆盖');
+  resetEnv();
+  {
+    const local = realChild('u_a');
+    local.homework = { '2026-09-18': { chinese: { done: true, minutes: 10, doneAt: 5 }, math: { done: false, minutes: 0, doneAt: 0 } } };
+    local.learn = { stars: 5 };
+    storage.set(NS_KEY, { version: 2, users: [local], currentUserId: 'u_a' });
+    storage.set(OPENID_KEY, OPENID);
+
+    // 另一台设备：把数学勾上了、金币改了、还多了一个孩子
+    const cloudA = realChild('u_a', {
+      farm: { coins: 20, suns: 1, seeds: {}, pesticide: 0, shields: 0, plots: [], bears: [], lockHarvestDate: '', shieldExchangeDate: '', harvestLog: [], owned: [], logs: [] },
+      settledDates: ['2026-09-15', '2026-09-17'],
+      learn: { stars: 99 }
+    });
+    cloudA.homework = { '2026-09-18': { chinese: { done: false, minutes: 30, doneAt: 0 }, math: { done: true, minutes: 20, doneAt: 9 } } };
+    const cloudB = realChild('u_b', { nickname: '弟弟' });
+    behavior.conflictTimes = 1;
+    behavior.conflictData = { version: 2, users: [cloudA, cloudB], currentUserId: 'u_a' };
+
+    const s = freshStore();
+    await s.initAccount();
+    await sleep(10);
+    s.save(s.get());
+    s.flushSync(true);
+    await sleep(60);
+
+    ok(s.getSyncState().conflicts === 1, '冲突被记进同步状态（不再静默）', 'conflicts=' + s.getSyncState().conflicts);
+    const ua = s.getRoot().users.find(u => u.id === 'u_a');
+    const ub = s.getRoot().users.find(u => u.id === 'u_b');
+    ok(!!ub, '云端独有的孩子已并入');
+    ok(ua.homework['2026-09-18'].chinese.done === true, '本地已做的语文保留');
+    ok(ua.homework['2026-09-18'].math.done === true, '云端已做的数学并集进来（否则会白罚一次）');
+    ok(ua.homework['2026-09-18'].math.minutes === 20, 'minutes 取较大值');
+    ok(ua.homework['2026-09-18'].chinese.minutes === 30, 'minutes 取较大值（云端更大）');
+    ok(ua.farm.coins === 999, '本地农场金币不被云端快照覆盖（非单调量不做合并）', 'coins=' + ua.farm.coins);
+    ok(ua.learn.stars === 5, '本地其它字段同样以本地为准');
+    ok(JSON.stringify(ua.settledDates) === JSON.stringify(['2026-09-15']), 'settledDates 刻意不并集', JSON.stringify(ua.settledDates));
+
+    await sleep(1400);            // 等自动重推（handleConflict 内的 1.2s 退避）
+    ok(uploaded.length === 1, '调和后自动重推成功 1 次', 'uploaded=' + uploaded.length);
+    ok(uploadBases[1] === 1500, '重推带的是**采纳后的新基线**（不采纳就会无限冲突）', 'bases=' + JSON.stringify(uploadBases));
+    ok(s.isDirty() === false, '冲突最终收敛为已同步');
+  }
+
+  /* ---- T17: F10 冲突未带回数据（体积超限）→ 仍收敛 ---- */
+  group('T17 F10 冲突响应被截断时不卡死（只采纳基线并重推）');
+  resetEnv();
+  {
+    const local = realChild('u_a');
+    storage.set(NS_KEY, { version: 2, users: [local], currentUserId: 'u_a' });
+    storage.set(OPENID_KEY, OPENID);
+    behavior.conflictTimes = 1;
+    behavior.conflictData = null;         // truncated
+
+    const s = freshStore();
+    await s.initAccount();
+    s.save(s.get());
+    s.flushSync(true);
+    await sleep(60);
+    ok(s.getSyncState().conflicts === 1, '冲突被记录');
+    ok(s.getSyncState().cloudUpdatedAt === 1500, '即使没带回数据也采纳了云端版本');
+    await sleep(1400);
+    ok(uploaded.length === 1, '仍然完成重推', 'uploaded=' + uploaded.length);
+    ok(s.getSyncState().conflicts === 1, '重推成功没有产生新的冲突记录');
+  }
+
+  /* ---- T18: F10 reconcileWithCloud 的逐字段取舍语义 ---- */
+  group('T18 F10 reconcileWithCloud 只做加法，非单调量一律保持本地');
+  resetEnv();
+  {
+    const local = realChild('u_a');
+    local.homework = { '2026-09-18': { chinese: { done: true, minutes: 10, doneAt: 5 }, math: { done: false } } };
+    storage.set(NS_KEY, { version: 2, users: [local], currentUserId: 'u_a' });
+    const s = freshStore();
+    await s.initAccount();                              // 必须先确认 openid，否则读的是兜底 key 不是账号命名空间
+    ok(s.getRoot().users[0].id === 'u_a', '前置条件：本地读到的确实是种下的那个孩子');
+
+    const cloud = {
+      users: [
+        { id: 'u_a',
+          homework: { '2026-09-18': { chinese: { done: false, minutes: 3, doneAt: 0 }, math: { done: true, minutes: 8, doneAt: 9 } },
+                      '2026-09-17': { chinese: { done: true, minutes: 1, doneAt: 1 } } },
+          farm: { coins: 1 }, settledDates: ['2026-09-17'] },
+        { id: 'u_c', nickname: '新娃' }
+      ]
+    };
+    const changed = s.reconcileWithCloud(cloud);
+    const ua = s.getRoot().users.find(u => u.id === 'u_a');
+    ok(changed === true, '返回「有改动」');
+    ok(ua.homework['2026-09-18'].chinese.done === true, '已做的不会被云端 false 反写');
+    ok(ua.homework['2026-09-18'].chinese.minutes === 10, '本地 minutes 更大 → 保持 10');
+    ok(ua.homework['2026-09-18'].math.done === true, '云端已做的并集进来');
+    ok(ua.homework['2026-09-18'].math.minutes === 8, '本地缺失的 minutes 补上云端值');
+    ok(!!ua.homework['2026-09-17'], '本地缺失的那一天整日并入');
+    ok(ua.farm.coins === 999, 'farm 保持本地（金币可涨可跌，不做合并）');
+    ok(JSON.stringify(ua.settledDates) === JSON.stringify(['2026-09-15']), 'settledDates 保持本地');
+    ok(!!s.getRoot().users.find(u => u.id === 'u_c'), '云端独有的孩子已追加');
+    ok(s.reconcileWithCloud({ users: [cloud.users[0]] }) === false, '无新增时返回 false（不无谓落盘/重推）');
   }
 
   /* ------------------------------ 汇总 ------------------------------ */
