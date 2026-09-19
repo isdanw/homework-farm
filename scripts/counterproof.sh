@@ -6,46 +6,65 @@
 #   用法：sh scripts/counterproof.sh     （或 npm run test:counterproof）
 #
 # 【基线怎么取·2026-09-18 改成自动】
-# 早期写法是固定 `BASE=HEAD`，一旦把修复提交进去，基线就跟着往前跑，
-# 于是「旧实现」其实是修好的版本 → 反证必然全绿 → 反证失效而且看不出失效。
-# 现在逐文件自动判定：**取「最后一次改这个文件的提交」的父版本**。
-#   理由：修复一旦提交，该文件在父提交里就是干净的「改动前」版本；
-#   而工作区里还没提交的改动天然不在任何提交里，所以不会被误当成基线。
-#   同一文件被分多批修过时（如 store.js 先 F1–F9 再 F10），这样取到的是**最早那批之前**的版本，
-#   也就是「这套用例覆盖的所有修复都还没做」的状态 —— 正是反证需要的。
+# 反证要的是「这套被测文件**所有修复都还没做**」的那个版本。历史上踩过两次坑：
+#   ① 早期写死 `BASE=HEAD`：修复一旦提交，基线就跟着往前跑，「旧实现」其实是修好的版本
+#      → 反证必然全绿 → 反证失效，而且从输出上看不出来。**反证失效比测试失效更危险。**
+#   ② 改成「逐文件取最后一次改它的提交的父版本」：仍然是错的。同一个文件会被**分多批**修
+#      （store.js 先 F1–F9 再 F10），逐文件取到的是「最近一批之前」，而用例覆盖的是所有批次，
+#      于是老批次的用例对着已修好的代码跑 → 不红。
+# 正确做法：先在所有被测文件里找出**最早的那次修复提交**，取它的父提交作为统一基线。
+# 这样后面无论再修几批，只要还有文件停在早期修复上，基线就不会漂；而且自动计算、无需记 SHA。
 # 需要手工指定时仍可用 BASE=<commit> 覆盖。
 # ---------------------------------------------------------------------------
 set -u
 cd "$(dirname "$0")/.." || exit 2
 
+# 只对**被断言的源码**求最早修复提交。util/config 只是被测文件 require 的依赖、本身不被断言，
+# 它们长期不变，若纳入计算会把基线拉到远古版本（然后一跑就崩，失去定位价值）。
+ASSERTED="miniprogram/utils/store.js
+miniprogram/utils/tutorStore.js
+cloudfunctions/tutorSync/index.js
+cloudfunctions/syncData/index.js
+cloudfunctions/dailyReset/index.js"
+
+oldest=""
+for src in $ASSERTED; do
+  h=$(git log -1 --format=%H -- "$src")
+  [ -n "$h" ] || continue
+  if [ -z "$oldest" ]; then
+    oldest=$h
+  elif git merge-base --is-ancestor "$h" "$oldest" 2>/dev/null; then
+    oldest=$h        # h 比 oldest 更早 → 以 h 为准
+  fi
+done
+
+if [ -z "${BASE:-}" ]; then
+  if [ -z "$oldest" ]; then
+    echo "无法确定反证基线（这些文件都没有提交历史）"; exit 2
+  fi
+  if git rev-parse --verify -q "$oldest~1" >/dev/null; then
+    BASE="$oldest~1"
+  else
+    echo "最早修复提交 $oldest 没有父提交，无法取改动前版本"; exit 2
+  fi
+fi
+
 OLD=/tmp/hw-farm-old
 rm -rf "$OLD"
 mkdir -p "$OLD/utils" "$OLD/cf"
 
-# pick_old <仓库路径> <输出文件>
-pick_old() {
-  src=$1; dst=$2
-  if [ -n "${BASE:-}" ]; then
-    git show "$BASE:$src" > "$dst" 2>/dev/null || return 1
-    return 0
-  fi
-  last=$(git log -1 --format=%H -- "$src")
-  if [ -n "$last" ]; then
-    git show "$last~1:$src" > "$dst" 2>/dev/null && return 0
-  fi
-  git show "HEAD:$src" > "$dst" 2>/dev/null || return 1
-}
-
 for f in store tutorStore util config; do
-  pick_old "miniprogram/utils/$f.js" "$OLD/utils/$f.js" || {
-    echo "无法取出 miniprogram/utils/$f.js 的改动前版本"; exit 2; }
+  git show "$BASE:miniprogram/utils/$f.js" > "$OLD/utils/$f.js" 2>/dev/null || {
+    echo "无法从 $BASE 取出 miniprogram/utils/$f.js"; exit 2; }
 done
 for f in tutorSync syncData dailyReset; do
-  pick_old "cloudfunctions/$f/index.js" "$OLD/cf/$f.js" || {
-    echo "无法取出 cloudfunctions/$f/index.js 的改动前版本"; exit 2; }
+  git show "$BASE:cloudfunctions/$f/index.js" > "$OLD/cf/$f.js" 2>/dev/null || {
+    echo "无法从 $BASE 取出 cloudfunctions/$f/index.js"; exit 2; }
 done
 
-echo "反证基线：${BASE:-逐文件自动取「改动前」版本}"
+echo "反证基线：$BASE（最早一批修复的父提交 $(git log -1 --format=%h\ %s "$oldest")）"
+echo "         注：若将来所有被测文件都被重新修过一轮，基线会随之前移，老用例可能不再变红 ——"
+echo "             那种情况本脚本会**明确报红并退出非 0**（不会静默通过），届时用 BASE=<commit> 手工指定即可。"
 echo
 
 fail=0
