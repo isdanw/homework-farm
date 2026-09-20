@@ -28,7 +28,6 @@
         "mistakes/confirm/confirm",
         "plan/plan",
         "webportal/webportal",
-        "login/login",
         "typeManage/typeManage",
         "checkinDetail/checkinDetail"
       ]

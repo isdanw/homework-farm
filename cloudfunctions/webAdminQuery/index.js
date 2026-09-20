@@ -332,6 +332,28 @@ async function sync(openid) {
   };
 }
 
+/**
+ * exams 模块 —— 家长看板「试卷库」只读目录（F-B 展示端）
+ * 与 sync 不同：只返回轻量目录字段（不含 markdown/rawText/answers 正文三段，避免大体积拖慢看板），
+ * 供家长浏览「孩子有哪些试卷 / 卷子类型 / 对应单元 / 是否有链接」；正文查看仍走小程序 / 工作台。
+ * 出参：{ exams:[{ id, name, subjectName, examType, retestType, grade, stage, correspondingUnit, suggestedDuration, maxEvidenceLevel, officialUrl, answerUrl, staleLink, updatedAt, ... }] }
+ */
+async function exams(openid) {
+  const rows = await getAll(COLLS.exams, ofilter(COLLS.exams, openid));
+  const KEEP = ['openid', 'clientId', 'resourceId', 'fileName', 'name', 'level', 'examType', 'retestType',
+    'subject', 'subjectName', 'stage', 'grade', 'textbookEdition', 'correspondingUnit',
+    'knowledgePoints', 'suggestedDuration', 'maxEvidenceLevel', 'passingCriteria',
+    'officialUrl', 'answerUrl', 'publisher', 'lastVerified', 'staleLink', 'createdAt', 'updatedAt'];
+  const clean = r => {
+    const o = {};
+    KEEP.forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+    o.id = r.clientId || r._id;   // 与 sync 保持一致：clientId 优先，旧数据兜底 _id
+    return o;
+  };
+  const list = rows.map(clean).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  return { exams: list };
+}
+
 /* ---------- 主入口 ---------- */
 exports.main = async (event) => {
   const token = (event && event.token) || '';
@@ -357,6 +379,7 @@ exports.main = async (event) => {
     else if (module === 'tutor') data = await tutor(boundOpenid);
     else if (module === 'profile') data = await profile(boundOpenid);
     else if (module === 'sync') data = await sync(boundOpenid);
+    else if (module === 'exams') data = await exams(boundOpenid);
     else return { ok: false, code: 'bad_module', msg: '未知 module: ' + module };
     return { ok: true, module, scope: isAdmin ? 'admin' : 'user', data };
   } catch (e) {

@@ -25,7 +25,8 @@ ASSERTED="miniprogram/utils/store.js
 miniprogram/utils/tutorStore.js
 cloudfunctions/tutorSync/index.js
 cloudfunctions/syncData/index.js
-cloudfunctions/dailyReset/index.js"
+cloudfunctions/dailyReset/index.js
+cloudfunctions/webAdminQuery/index.js"
 
 oldest=""
 for src in $ASSERTED; do
@@ -57,7 +58,7 @@ for f in store tutorStore util config; do
   git show "$BASE:miniprogram/utils/$f.js" > "$OLD/utils/$f.js" 2>/dev/null || {
     echo "无法从 $BASE 取出 miniprogram/utils/$f.js"; exit 2; }
 done
-for f in tutorSync syncData dailyReset; do
+for f in tutorSync syncData dailyReset webAdminQuery; do
   git show "$BASE:cloudfunctions/$f/index.js" > "$OLD/cf/$f.js" 2>/dev/null || {
     echo "无法从 $BASE 取出 cloudfunctions/$f/index.js"; exit 2; }
 done
@@ -97,6 +98,9 @@ red "tutorSync 云函数" "$OUT"
 
 OUT=$(SYNC_PATH="$OLD/cf/syncData.js" RESET_PATH="$OLD/cf/dailyReset.js" node scripts/test-cloud-cas.cjs 2>&1)
 red "syncData/dailyReset CAS" "$OUT"
+
+OUT=$(WAQ_PATH="$OLD/cf/webAdminQuery.js" node scripts/test-webadminquery-exams.cjs 2>&1)
+red "webAdminQuery exams 模块" "$OUT"
 
 echo
 PROBE=$(SRC_DIR="$OLD/utils" node scripts/probe-f8-wxprofile.cjs 2>&1)

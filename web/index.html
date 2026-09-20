@@ -192,6 +192,10 @@
     <nav class="nav" data-page-node-id="yUJ4Mss5X7x7tDfdfTyRs0">
       <a data-v="tutor" data-page-node-id="M6EL1EhBCBHHwqjc5n08C7"><svg viewBox="0 0 24 24" data-page-node-id="IgUhu8A0F5KlwOYrx9TAEW"><path d="M4 5h16v11H7l-3 3Z" data-page-node-id="JoM1MVyZryEKeBJ9dlOS9d"/><path d="M8 9h8M8 12h5" data-page-node-id="kKy7AyL6TqMFet9xgNV949"/></svg>全科导学</a>
     </nav>
+    <div class="navgrp" data-page-node-id="examsNavGrp">资源库</div>
+    <nav class="nav" data-page-node-id="examsNav">
+      <a data-v="exams" data-page-node-id="examsNavItem"><svg viewBox="0 0 24 24" data-page-node-id="examsNavSvg"><path d="M4 4h11l5 5v11H4Z" data-page-node-id="examsNavP1"/><path d="M14 4v5h5M8 13h8M8 17h6" data-page-node-id="examsNavP2"/></svg>试卷库</a>
+    </nav>
     <div class="navgrp" data-page-node-id="C8zr7gZm2TGs4r5MFjeD9a">档案</div>
     <nav class="nav" data-page-node-id="dEAvmCs8Hms3KI7TJNy6Np">
       <a data-v="archive" data-page-node-id="kp73SgeXbEz7sdedLD4KBY"><svg viewBox="0 0 24 24" data-page-node-id="Rrw7ANjA3xjLQ3KwP1cvfT"><circle cx="12" cy="8" r="4" data-page-node-id="GNOBAWp8trHGNkLNBiBV5g"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" data-page-node-id="YDoHfrwU8NDPjLZccMn3yA"/></svg>学习者档案</a>
@@ -296,6 +300,12 @@
             <div class="mut" style="margin-top:8px" data-page-node-id="uAJMDrFRN6iIVEOtsFVd0m">仅 <code data-page-node-id="vP7wNXmwy6ogAxIyHogWbn">passed=true</code> 计入掌握；订正/会话不在此列。</div>
           </div>
         </div>
+      </section>
+
+      <!-- 试卷库（对应小程序「试卷库 / 资源库」+ 工作台「试卷」） -->
+      <section class="view" id="exams" data-page-node-id="examsView">
+        <div class="note" data-page-node-id="examsNote">「试卷库」对应小程序试卷库与工作台资源库（exam_resources）：家长可浏览孩子有哪些试卷、卷子类型（单元测 / 阶段测 / 真题）、对应单元与是否带链接。正文（markdown / 答案）查看走小程序 / 工作台，看板仅展示目录元数据。数据只读，与云端一致。</div>
+        <div id="examList" data-page-node-id="examList"></div>
       </section>
 
       <!-- 学习者档案（对应小程序「学习者画像 / 错因画像」+ 工作台「档案」） -->
@@ -28303,7 +28313,7 @@ function fmtMD(v){ const s = fmtDate(v); return s.length>=10 ? s.slice(5) : s; }
 function todayKey(){ const d=new Date(); const p=n=>n<10?'0'+n:''+n; return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
 function maskOpenid(o){ if(!o) return '未知账号'; return '••' + String(o).slice(-6); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-const APP_VER = '2026-09-10b';
+const APP_VER = '2026-09-20a';
 function errText(e){
   if(!e) return '无错误信息（错误对象为空）';
   if(typeof e === 'string') return e;
@@ -28322,7 +28332,7 @@ function acc(){
 /* ============ 运行时状态 ============ */
 let app = null;
 let TOKEN = localStorage.getItem(TOKEN_KEY) || '';
-let DATA = { overview:null, profile:null, tutor:null, farm:null };
+let DATA = { overview:null, profile:null, tutor:null, farm:null, exams:null };
 let currentRange = '7d';
 let selectedAccount = 0;
 let studyPlanTab = '';   // 学习计划当前标签（学科 key 或 'daily'），切换账号时自动校正
@@ -28359,23 +28369,26 @@ async function refreshAll(){
     overview: query('overview', { range: currentRange }),
     profile:  query('profile'),
     tutor:    query('tutor'),
-    farm:     query('farm')
+    farm:     query('farm'),
+    exams:    query('exams')
   };
-  const [o,p,t,f] = await Promise.all([
+  const [o,p,t,f,x] = await Promise.all([
     tasks.overview.catch(e=>({__err:e.message})),
     tasks.profile.catch(e=>({__err:e.message})),
     tasks.tutor.catch(e=>({__err:e.message})),
-    tasks.farm.catch(e=>({__err:e.message}))
+    tasks.farm.catch(e=>({__err:e.message})),
+    tasks.exams.catch(e=>({__err:e.message}))
   ]);
   DATA.overview = o.__err ? null : o;
   DATA.profile  = p.__err ? null : p;
   DATA.tutor    = t.__err ? null : t;
   DATA.farm     = f.__err ? null : f;
+  DATA.exams    = x.__err ? null : x;
 
   renderOverview(); renderToday(); renderFarm(); renderTutor();
-  renderArchive(); renderTasks(); renderTimeline(); renderReport();
+  renderArchive(); renderTasks(); renderTimeline(); renderReport(); renderExams();
 
-  const errs = [o,p,t,f].filter(x=>x.__err).map(x=>x.__err);
+  const errs = [o,p,t,f,x].filter(v=>v.__err).map(v=>v.__err);
   if(errs.length){
     const authFail = errs.some(m=>/口令|token|auth|no_token/i.test(m));
     if(authFail){ setStatus('访问被拒绝：口令错误或未配置，请在「设置」重新输入。', 'err'); showGate(); }
@@ -28610,6 +28623,58 @@ function renderTutor(){
   ]);
 }
 
+/* ============ 试卷库 ============ */
+// 与小程序 pkgGuide/examGallery 的 EXAM_TYPE_LABEL 完全一致，保证两端口径统一
+const EXAM_TYPE_LABEL = { unit_test:'单元测', phase_test:'阶段测', real_exam:'真题', diagnostic_test:'诊断', special_test:'专项', advanced_test:'拔高' };
+function exTypeLabel(t){ return EXAM_TYPE_LABEL[t] || t || ''; }
+function kpText(v){ return Array.isArray(v) ? v.join(' / ') : (v || ''); }
+function renderExams(){
+  const box = document.getElementById('examList');
+  if(!box) return;
+  const ex = (DATA.exams && DATA.exams.exams) || null;
+  if(!ex){ box.innerHTML = '<div class="empty">试卷库数据不可用（云函数 exams 模块未返回或当前口令无该范围权限）</div>'; return; }
+  if(!ex.length){ box.innerHTML = '<div class="empty">暂无试卷。试卷由「全科导学工作台」推送至 exam_resources，同步后在此展示。</div>'; return; }
+
+  // 学科汇总
+  const bySubj = {};
+  ex.forEach(e=>{ const k = (e.subjectName || subjName(e.subject)) || '未知'; bySubj[k] = (bySubj[k]||0)+1; });
+  const subjChips = Object.keys(bySubj).map(k=>`<span class="tag t-b">${esc(k)} ${bySubj[k]}</span>`).join(' ');
+
+  const rows = ex.map(e=>{
+    const links = [];
+    if(e.officialUrl) links.push(`<a href="${esc(e.officialUrl)}" target="_blank" rel="noopener">原卷</a>`);
+    if(e.answerUrl) links.push(`<a href="${esc(e.answerUrl)}" target="_blank" rel="noopener">答案</a>`);
+    const kp = kpText(e.knowledgePoints);
+    return `<tr>
+      <td data-l="名称">${esc(e.name || e.fileName || e.resourceId || '未命名试卷')}${e.staleLink?' <span class="tag t-a">链接待核</span>':''}${kp?`<div class="mut" style="margin-top:2px">${esc(kp)}</div>`:''}</td>
+      <td data-l="学科">${esc(e.subjectName || subjName(e.subject))}</td>
+      <td data-l="类型">${e.examType||e.retestType?`<span class="tag t-b">${esc(exTypeLabel(e.examType || e.retestType))}</span>`:'—'}</td>
+      <td data-l="级别">${e.level?('L'+e.level):'—'}</td>
+      <td data-l="年级">${esc(e.grade || e.stage || '—')}</td>
+      <td data-l="单元">${esc(e.correspondingUnit || '—')}</td>
+      <td data-l="时长">${e.suggestedDuration? (e.suggestedDuration+' 分钟') : '—'}</td>
+      <td data-l="链接">${links.length? links.join(' / ') : '<span class="mut">—</span>'}</td>
+      <td data-l="更新">${fmtMD(e.updatedAt || e.createdAt)}</td>
+    </tr>`;
+  }).join('');
+
+  box.innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <h3>试卷概览</h3>
+      <div class="sumrow" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <span class="m">共 <b>${ex.length}</b> 份</span>${subjChips}
+      </div>
+    </div>
+    <div class="card">
+      <h3>试卷目录（exam_resources）</h3>
+      <table class="tbl-card">
+        <thead><tr><th>名称 / 知识点</th><th>学科</th><th>类型</th><th>级别</th><th>年级</th><th>单元</th><th>时长</th><th>链接</th><th>更新</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="note" style="margin-top:8px">看板仅展示试卷目录元数据（名称 / 类型 / 单元 / 外链）；试卷正文与答案请在「小程序 · 试卷库」或「全科导学工作台」查看。此页只读，不写库。</div>`;
+}
+
 /* ============ 学习者档案 ============ */
 function renderArchive(){
   const box = document.getElementById('childChipsArc');
@@ -28798,7 +28863,7 @@ function renderReport(){
 function switchView(v){
   document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
   const el=document.getElementById(v); if(el) el.classList.add('on');
-  const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',archive:'学习者档案',tasks:'计划与课表',timeline:'时间轴记录',report:'学习报告',set:'环境与口令'};
+  const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',exams:'试卷库',archive:'学习者档案',tasks:'计划与课表',timeline:'时间轴记录',report:'学习报告',set:'环境与口令'};
   document.getElementById('title').textContent=map[v]||v;
   document.getElementById('sub').textContent=(map[v]||'')+' · 只读';
   document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));

@@ -389,7 +389,8 @@ function getType(key) {
 function isOnboarded() {
   // 只认真实孩子：内存占位切片（__placeholder）不算「已创建孩子」。
   // 旧实现用 users.length > 0 判定，而 getRoot() 的空数据兜底一定会造一个占位切片，
-  // 于是 isOnboarded() 恒为 true → pkgTools/login 的建档入口永远走不到（死代码）。
+  // 于是 isOnboarded() 恒为 true → 历史上独立的「登录/建档」页（pkgTools/login）已被删除，
+  // 建档入口统一走「我的」页 addUser（mine.js:198），此处恒为真，不再驱动任何启动门。
   return getRoot().users.some(u => u && !u.__placeholder);
 }
 
