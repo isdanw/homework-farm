@@ -41,5 +41,6 @@ Page({
   /* 三个入口（复测不单列：复测需从具体错题发起，收敛到错题本内） */
   goTutor() { wx.navigateTo({ url: '/pkgGuide/tutor/tutor' }); },
   goMistakes() { wx.navigateTo({ url: '/pkgTools/mistakes/mistakes' }); },
-  goReport() { wx.navigateTo({ url: '/pkgGuide/report/report' }); }
+  goReport() { wx.navigateTo({ url: '/pkgGuide/report/report' }); },
+  goExam() { wx.navigateTo({ url: '/pkgGuide/examGallery/examGallery' }); }
 });

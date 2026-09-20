@@ -1,0 +1,125 @@
+/**
+ * examGallery.wxss —— 试卷库（F-B 小程序入口 · 只读）
+ * 沿用全局马卡龙规范（见 app.wxss 的 --c-* 变量）
+ */
+
+page { background: var(--c-cream); }
+
+.page {
+  padding: 24rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.header { padding: 12rpx 4rpx 20rpx; }
+.title { font-size: 42rpx; font-weight: 800; color: var(--c-text); }
+.subtitle { font-size: 24rpx; color: var(--c-sub); margin-top: 8rpx; line-height: 1.5; }
+
+/* ---------------- 科目筛选 ---------------- */
+.filter {
+  white-space: nowrap;
+  margin-bottom: 20rpx;
+}
+.chip {
+  display: inline-block;
+  font-size: 26rpx;
+  color: var(--c-sub);
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 12rpx 28rpx;
+  margin-right: 16rpx;
+  box-shadow: 0 4rpx 14rpx rgba(150, 180, 210, 0.12);
+}
+.chip.active {
+  color: #FFFFFF;
+  background: var(--c-blue-deep);
+  font-weight: 700;
+}
+
+/* ---------------- 状态 ---------------- */
+.state {
+  text-align: center;
+  color: var(--c-sub);
+  font-size: 28rpx;
+  padding: 80rpx 40rpx;
+  line-height: 1.6;
+}
+.state.err { color: var(--c-danger); }
+
+/* ---------------- 试卷卡片 ---------------- */
+.list { display: flex; flex-direction: column; gap: 18rpx; }
+.card {
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 26rpx 24rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+}
+.card:active { background: #F7FAFD; }
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.card-name {
+  font-size: 30rpx; font-weight: 800; color: var(--c-text);
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.badge {
+  flex-shrink: 0; font-size: 22rpx; font-weight: 700; color: #3B6D11;
+  background: #EAF3DE; border-radius: 20rpx; padding: 4rpx 14rpx;
+}
+.card-meta { font-size: 24rpx; color: var(--c-sub); margin-top: 10rpx; }
+.card-kp {
+  font-size: 24rpx; color: var(--c-blue-deep); margin-top: 8rpx;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.card-foot { margin-top: 14rpx; display: flex; gap: 14rpx; }
+.flag {
+  font-size: 22rpx; color: var(--c-sub); background: #F3F6FA;
+  border-radius: 18rpx; padding: 4rpx 12rpx;
+}
+.flag.ok { color: #3B6D11; background: #EAF3DE; }
+
+/* ---------------- 详情弹层 ---------------- */
+.mask {
+  position: fixed; inset: 0;
+  background: rgba(40, 50, 60, 0.45);
+  display: flex; align-items: flex-end;
+  z-index: 50;
+}
+.sheet {
+  width: 100%;
+  max-height: 86vh;
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 28rpx 32rpx 18rpx;
+  border-bottom: 2rpx solid #F0F0F0;
+}
+.sheet-name {
+  font-size: 32rpx; font-weight: 800; color: var(--c-text);
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sheet-close { font-size: 40rpx; color: var(--c-sub); padding-left: 24rpx; }
+.sheet-body { padding: 24rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); flex: 1; }
+
+.d-meta { font-size: 24rpx; color: var(--c-sub); }
+.d-kp { font-size: 24rpx; color: var(--c-blue-deep); margin-top: 8rpx; }
+.d-section {
+  font-size: 28rpx; font-weight: 800; color: var(--c-text);
+  margin: 28rpx 0 12rpx;
+}
+.md {
+  font-size: 27rpx; color: var(--c-text); line-height: 1.7;
+  white-space: pre-wrap; word-break: break-word;
+  background: var(--c-cream); border-radius: 16rpx; padding: 18rpx 20rpx;
+}
+.d-links { display: flex; gap: 18rpx; margin-top: 28rpx; }
+.link-btn {
+  flex: 1; text-align: center; font-size: 26rpx; font-weight: 700;
+  color: var(--c-blue-deep); background: #F2FAFF;
+  border: 2rpx solid var(--c-blue);
+  border-radius: 24rpx; padding: 18rpx 0;
+}
+.link-btn:active { background: #E2F3FF; }

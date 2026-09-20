@@ -52,4 +52,14 @@
     <view class="hub-go">›</view>
   </view>
 
+  <!-- ===== 试卷库（F-B：工作台推送的真题 / 测验卷，只读） ===== -->
+  <view class="hub-card" bindtap="goExam">
+    <view class="hub-ic">📚</view>
+    <view class="hub-body">
+      <view class="hub-title">试卷库</view>
+      <view class="hub-desc">由「全科导学工作台」推送的真题 / 测验卷，按学科浏览卷面与解析</view>
+    </view>
+    <view class="hub-go">›</view>
+  </view>
+
 </view>

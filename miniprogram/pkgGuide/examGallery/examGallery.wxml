@@ -1,0 +1,74 @@
+<view class="page">
+  <view class="header">
+    <view class="title">试卷库</view>
+    <view class="subtitle">由「全科导学工作台」推送的真题 / 测验卷，仅供查看</view>
+  </view>
+
+  <scroll-view scroll-x="true" class="filter">
+    <view wx:for="{{subjects}}" wx:key="key"
+          class="chip {{item.key === activeSubject ? 'active' : ''}}"
+          data-subject="{{item.key}}" bindtap="onSubjectTap">{{item.label}}</view>
+  </scroll-view>
+
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+  <view wx:elif="{{error}}" class="state err">{{error}}</view>
+  <view wx:elif="{{exams.length === 0}}" class="state">暂无试卷。请先在「全科导学工作台」经同步桥推送试卷库。</view>
+
+  <view wx:else class="list">
+    <view wx:for="{{exams}}" wx:key="id" class="card"
+          data-rid="{{item.resourceId}}" bindtap="onExamTap">
+      <view class="card-top">
+        <text class="card-name">{{item.name || item.resourceId}}</text>
+        <text class="badge" wx:if="{{item.examTypeLabel}}">{{item.examTypeLabel}}</text>
+      </view>
+      <view class="card-meta">
+        <text wx:if="{{item.subjectName}}">{{item.subjectName}}</text>
+        <text wx:if="{{item.level}}">· L{{item.level}}</text>
+        <text wx:if="{{item.suggestedDuration}}">· {{item.suggestedDuration}} 分钟</text>
+      </view>
+      <view class="card-kp" wx:if="{{item.knowledgePointsText}}">{{item.knowledgePointsText}}</view>
+      <view class="card-foot">
+        <text wx:if="{{item.hasAnswers}}" class="flag ok">含解析</text>
+        <text wx:if="{{item.markdownLength > 0}}" class="flag">卷面 {{item.markdownLength}} 字</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 试卷详情 -->
+  <view wx:if="{{showDetail}}" class="mask" bindtap="closeDetail">
+    <view class="sheet" catchtap="noop">
+      <view wx:if="{{detail.loading}}" class="state">加载卷面…</view>
+      <block wx:elif="{{detail.error}}">
+        <view class="state err">{{detail.error}}</view>
+      </block>
+      <block wx:else>
+        <view class="sheet-head">
+          <text class="sheet-name">{{detail.name || detail.resourceId}}</text>
+          <text class="sheet-close" bindtap="closeDetail">✕</text>
+        </view>
+        <scroll-view scroll-y="true" class="sheet-body">
+          <view class="d-meta">
+            <text wx:if="{{detail.subjectName}}">{{detail.subjectName}}</text>
+            <text wx:if="{{detail.examTypeLabel}}">· {{detail.examTypeLabel}}</text>
+            <text wx:if="{{detail.level}}">· L{{detail.level}}</text>
+            <text wx:if="{{detail.suggestedDuration}}">· {{detail.suggestedDuration}} 分钟</text>
+          </view>
+          <view class="d-kp" wx:if="{{detail.knowledgePointsText}}">知识点：{{detail.knowledgePointsText}}</view>
+
+          <view class="d-section">卷面</view>
+          <view class="md">{{detail.markdown}}</view>
+
+          <view class="d-section" wx:if="{{detail.answers}}">参考答案 / 解析</view>
+          <view class="md" wx:if="{{detail.answers}}">{{detail.answers}}</view>
+
+          <view class="d-links" wx:if="{{detail.officialUrl || detail.answerUrl}}">
+            <view class="link-btn" wx:if="{{detail.officialUrl}}"
+                  data-url="{{detail.officialUrl}}" bindtap="copyUrl">复制卷面链接</view>
+            <view class="link-btn" wx:if="{{detail.answerUrl}}"
+                  data-url="{{detail.answerUrl}}" bindtap="copyUrl">复制答案链接</view>
+          </view>
+        </scroll-view>
+      </block>
+    </view>
+  </view>
+</view>
