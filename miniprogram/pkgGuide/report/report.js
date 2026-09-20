@@ -11,6 +11,8 @@ const store = require('../../utils/store.js');
 const tutorStore = require('../../utils/tutorStore.js');
 const tutorSubjects = require('../../utils/tutorSubjects.js');
 const mistakeRules = require('../../utils/mistakeRules.js');
+const studyPlan = require('../../utils/studyPlan.js');
+const planFeedback = require('../../utils/planFeedback.js');
 
 /** E1-E9 错因元数据（共享一份，见 utils/mistakeRules.js） */
 const ERROR_NAMES = {};
@@ -30,9 +32,11 @@ Page({
     errorDist: [],      // [{type, name, count, pct}]
     subjectDist: [],    // [{key, name, emoji, count}]
     evidenceList: [],   // 复测记录（含达标/未达标）
+    feedbackList: [],   // 补漏建议（报告 → 计划反哺，按学科分组）
     hasData: false
   },
 
+  onLoad() { this._added = {}; },   // 已加入计划的「学科:错因」标记（实例态，不进 setData）
   onShow() { this.render(); },
 
   render() {
@@ -92,12 +96,25 @@ Page({
       timeText: fmtDate(e.createdAt)
     }));
 
+    // 报告 → 计划反哺：把错因分布按学科聚合成「专项补漏建议」
+    const added = this._added || {};
+    const feedbackList = planFeedback.buildFeedback(mistakes).map(fb => {
+      const sub = tutorSubjects.getTutorSubject(fb.subject) || {};
+      return {
+        subject: fb.subject,
+        subjectName: sub.name || fb.subject,
+        emoji: sub.emoji || '📘',
+        items: fb.items.map(it => Object.assign({}, it, { added: !!added[fb.subject + ':' + it.errorType] }))
+      };
+    });
+
     this.setData({
       overview: { sessions: sessions, mistakes: mistakes.length, pending: pending, evidence: passed },
       reviewList: reviewList,
       errorDist: errorDist,
       subjectDist: subjectDist,
       evidenceList: evidenceList,
+      feedbackList: feedbackList,
       hasData: !!(mistakes.length || evidence.length || sessions || reviewList.length)
     });
   },
@@ -127,5 +144,26 @@ Page({
 
   goTutor() { wx.navigateTo({ url: '/pkgGuide/tutor/tutor' }); },
   goMistakes() { wx.navigateTo({ url: '/pkgTools/mistakes/mistakes' }); },
+
+  /* 报告 → 计划反哺：把一条补漏建议加入对应学科成长计划 */
+  addToPlan(e) {
+    const d = e.currentTarget.dataset || {};
+    const subject = d.subject, errorType = d.errorType, task = d.task;
+    if (!subject || !task) return;
+    const r = studyPlan.appendRemediationStage(subject, [task]);
+    if (!r) { wx.showToast({ title: '加入失败', icon: 'none' }); return; }
+    this._added = this._added || {};
+    this._added[subject + ':' + errorType] = true;
+    this.render();
+    const sub = tutorSubjects.getTutorSubject(subject);
+    wx.showToast({ title: '已加入' + (sub ? sub.name : '成长') + '计划', icon: 'success' });
+  },
+
+  /* 去成长计划页查看（可定位到具体学科） */
+  goPlan(e) {
+    const subject = (e.currentTarget.dataset || {}).subject || '';
+    wx.navigateTo({ url: '/pkgTools/plan/plan' + (subject ? '?key=' + encodeURIComponent(subject) : '') });
+  },
+
   goBack() { wx.navigateBack({ delta: 1 }); }
 });

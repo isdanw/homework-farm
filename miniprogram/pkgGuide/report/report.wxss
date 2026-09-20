@@ -85,6 +85,25 @@ page { background: var(--c-cream); }
 /* 提示 */
 .rp-tip { font-size: 22rpx; color: var(--c-sub); margin-top: 14rpx; line-height: 1.6; }
 
+/* 补漏建议（报告 → 计划反哺） */
+.rp-fb-sub { margin-bottom: 20rpx; }
+.rp-fb-sub:last-child { margin-bottom: 0; }
+.rp-fb-subhead { display: flex; align-items: center; gap: 10rpx; margin-bottom: 14rpx; }
+.rp-fb-emoji { font-size: 30rpx; }
+.rp-fb-subname { font-size: 28rpx; font-weight: 700; color: var(--c-text); }
+.rp-fb-item { background: #F7F9FB; border-radius: 16rpx; padding: 16rpx 18rpx; margin-bottom: 12rpx; }
+.rp-fb-item:last-child { margin-bottom: 0; }
+.rp-fb-err { display: flex; align-items: center; gap: 8rpx; }
+.rp-fb-count { font-size: 22rpx; color: var(--c-sub); }
+.rp-fb-task { font-size: 24rpx; color: var(--c-text); margin: 8rpx 0 14rpx; line-height: 1.5; }
+.rp-fb-add {
+  text-align: center; font-size: 24rpx; font-weight: 700;
+  padding: 12rpx 0; border-radius: 28rpx;
+  background: var(--c-green-deep); color: #FFFFFF;
+}
+.rp-fb-add.done { background: #E7F6E8; color: var(--c-green-deep); }
+.rp-fb-go { text-align: center; font-size: 26rpx; font-weight: 700; color: var(--c-blue-deep); padding: 14rpx 0 4rpx; }
+
 /* ---------------- 空态 / 按钮 ---------------- */
 .empty { text-align: center; padding: 100rpx 40rpx; }
 .empty-emoji { font-size: 96rpx; }

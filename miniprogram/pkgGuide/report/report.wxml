@@ -62,6 +62,30 @@
       <view class="rp-tip">错因是「诊断假设」，用于定位卡点，不代表对孩子能力的定性判断。</view>
     </view>
 
+    <!-- 补漏建议（报告 → 计划反哺） -->
+    <view class="rp-card" wx:if="{{feedbackList.length}}">
+      <view class="rp-card-title">补漏建议（来自错因分布）</view>
+      <view class="rp-fb-sub" wx:for="{{feedbackList}}" wx:key="subject">
+        <view class="rp-fb-subhead">
+          <text class="rp-fb-emoji">{{item.emoji}}</text>
+          <text class="rp-fb-subname">{{item.subjectName}}</text>
+        </view>
+        <view class="rp-fb-item" wx:for="{{item.items}}" wx:for-item="fb" wx:key="errorType">
+          <view class="rp-fb-err">
+            <text class="rp-err-tag">{{fb.errorType}}</text>
+            <text class="rp-err-name">{{fb.errorName}}</text>
+            <text class="rp-fb-count">· {{fb.count}} 题</text>
+          </view>
+          <view class="rp-fb-task">{{fb.task}}</view>
+          <view class="rp-fb-add {{fb.added ? 'done' : ''}}"
+                data-subject="{{item.subject}}" data-error-type="{{fb.errorType}}" data-task="{{fb.task}}"
+                bindtap="addToPlan">{{fb.added ? '已加入计划' : '加入计划'}}</view>
+        </view>
+      </view>
+      <view class="rp-tip">建议按错因分布补强弱点；点「加入计划」会把任务写进对应学科「成长计划」，可在计划页查看与调整排期。</view>
+      <view class="rp-fb-go" bindtap="goPlan" data-subject="{{feedbackList[0].subject}}">去成长计划查看 ›</view>
+    </view>
+
     <!-- 学科分布 -->
     <view class="rp-card" wx:if="{{subjectDist.length}}">
       <view class="rp-card-title">学科分布</view>

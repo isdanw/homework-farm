@@ -296,10 +296,60 @@ function startPlan(key) {
   return true;
 }
 
+/**
+ * 报告 → 计划反哺：把一组「专项补漏」任务追加到某学科成长计划。
+ *  · 已有计划 → 追加一个「专项补漏 <日期>」阶段（不改动既有阶段 / 任务勾选状态）；
+ *  · 无计划 → 新建一份仅含该阶段的计划（年级 / 学期 / 教材取自画像，缺则留空由用户在计划页补全）。
+ * 任务形状与 normalizePlan 完全一致（{ name, days, done, doneAt }），
+ * 故不破坏 getProgress / flatten 的进度对照逻辑。
+ * @param {string} key 学科 key（如 'math'）
+ * @param {string[]} taskNames 补漏任务名（取自 planFeedback.buildFeedback 的 task 字段）
+ * @returns {{created:boolean, plan:object}|null} 失败返回 null
+ */
+function appendRemediationStage(key, taskNames) {
+  if (!key || !Array.isArray(taskNames) || !taskNames.length) return null;
+  const names = taskNames
+    .map(function (n) { return String(n == null ? '' : n).trim(); })
+    .filter(Boolean)
+    .slice(0, 6)
+    .map(function (n) { return { name: n.slice(0, 40), days: 1, done: false, doneAt: '' }; });
+  if (!names.length) return null;
+
+  const existing = getPlan(key);
+  const stage = {
+    name: '专项补漏 ' + util.today(),
+    weeks: '',
+    goal: '针对错因分布补强弱点',
+    tasks: names
+  };
+
+  if (existing) {
+    existing.stages = Array.isArray(existing.stages) ? existing.stages : [];
+    existing.stages.push(stage);
+    savePlan(key, existing);
+    return { created: false, plan: existing };
+  }
+
+  const type = store.getType(key) || {};
+  const profile = store.getSubjectProfile(key) || {};
+  const plan = {
+    grade: profile.grade || '',
+    term: getTerm(key),
+    textbook: profile.textbook || '',
+    subjectName: type.name || key,
+    startDate: '',
+    createdAt: Date.now(),
+    updatedAt: 0,
+    stages: [stage]
+  };
+  savePlan(key, plan);
+  return { created: true, plan: plan };
+}
+
 module.exports = {
   PLANS_KEY, AHEAD_DAYS, LAG_DAYS,
   defaultPrompt, getBuiltinRole, getPlan, savePlan, removePlan,
   getPrompt, getPromptLabel, getTerm, savePrompt,
   normalizePlan, totalDays, flatten, countCheckinDays,
-  getProgress, setTaskDone, startPlan, getCurrentTask
+  getProgress, setTaskDone, startPlan, getCurrentTask, appendRemediationStage
 };
