@@ -40,10 +40,13 @@
       </block>
     </view>
 
-    <!-- 游客体验模式提示（未绑定微信时） -->
+    <!-- 本地模式提示（未绑定微信时） -->
     <view wx:if="{{!bind.bound}}" class="guest-tip">
-      👀 体验模式：操作后数据不会保存，绑定微信后自动存档
+      👀 本地模式：数据已存本机，绑定微信后可跨设备同步
     </view>
+
+    <!-- 退出微信登录（仅已绑定微信时显示） -->
+    <view wx:if="{{bind.bound}}" class="logout-row" bindtap="logout">退出微信登录</view>
 
     <!-- 微信资料编辑（点击上方展开） -->
     <view class="wx-detail" wx:if="{{showWxDetail && bind.bound}}">
@@ -105,12 +108,12 @@
   </view>
 
   <!-- ===== 导学中心（学习主线聚合：AI 导学 / 错题本 / 导学报告） ===== -->
-  <view class="card tools-card" bindtap="goTutorHub">
+  <view class="card tools-card {{tutorLocked ? 'locked' : ''}}" bindtap="goTutorHub">
     <view class="section-head">
       <view class="dot" style="background:#9B7BF0"></view><text class="section-title">导学中心</text>
-      <view class="entry-go">去学习 ›</view>
+      <view class="entry-go">{{tutorLocked ? '未启用' : '去学习 ›'}}</view>
     </view>
-    <view class="muted tools-desc">{{hubInfo}}</view>
+    <view class="muted tools-desc">{{tutorLocked ? (tutorLockReason === 'no-child' ? '🔒 请先在上方添加孩子，再开启导学功能' : '🔒 请先为孩子建立「成长计划」，再开启导学功能') : hubInfo}}</view>
   </view>
 
   <!-- ===== 成长计划（阶段计划生成 + 打卡进度对照） ===== -->

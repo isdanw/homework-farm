@@ -271,6 +271,15 @@
   padding: 14rpx 18rpx;
 }
 
+/* 退出微信登录入口 */
+.logout-row {
+  margin-top: 18rpx; display: flex; align-items: center; justify-content: center;
+  font-size: 26rpx; color: #FF7A7A; font-weight: 700; line-height: 1.5;
+  background: #FFF1F1; border: 1rpx solid #FFD6D6; border-radius: 16rpx;
+  padding: 18rpx 0; letter-spacing: 1rpx;
+}
+.logout-row:active { background: #FFE3E3; }
+
 /* 体验数据基线弹窗 */
 .bl-row {
   display: flex; align-items: center; justify-content: space-between;

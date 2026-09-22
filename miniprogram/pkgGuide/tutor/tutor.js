@@ -13,6 +13,7 @@ const util = require('../../utils/util.js');
 const tutorSubjects = require('../../utils/tutorSubjects.js');
 const mistakeRules = require('../../utils/mistakeRules.js');
 const engine = require('../../utils/farmEngine.js');
+const tutorGate = require('../../utils/tutorGate.js');
 
 /** 导学支持的九科（与云函数 SUBJECT_PROMPTS 对齐） */
 const TUTOR_SUBJECTS = tutorSubjects.TUTOR_SUBJECTS;
@@ -35,10 +36,21 @@ Page({
     archivedCount: 0,
     scrollTo: '',
     taskContext: null,     // 成长计划任务上下文 { key, si, ti, task, stage, goal }
-    mistakeContext: null   // 错题订正上下文 { key, topic, errorType }
+    mistakeContext: null,  // 错题订正上下文 { key, topic, errorType }
+    locked: false,         // 门禁（2026-09-22）：未添加孩子或未建计划时禁用导学
+    lockReason: ''
   },
 
   onLoad(options) {
+    // 门禁（2026-09-22）：未添加孩子或未建成长计划时，导学功能禁用。
+    // 深链直达（计划/打卡/错题/报告）也会在此被拦截，不初始化任何导学会话。
+    const gate = tutorGate.getGate();
+    if (!gate.ok) {
+      this._locked = true;
+      this.setData({ locked: true, lockReason: gate.reason });
+      return;
+    }
+
     let initSubject = 'math';
     let taskContext = null;
     let mistakeContext = null;
@@ -74,6 +86,7 @@ Page({
   },
 
   onShow() {
+    if (this._locked) return;
     this.setData({ archivedCount: tutorStore.archiveCount() });
   },
 
@@ -90,6 +103,7 @@ Page({
   },
 
   switchSubject(key) {
+    if (this._locked) return;
     const sub = TUTOR_SUBJECTS.find(s => s.key === key);
     const active = tutorStore.getActive(key);
     this.setData({
@@ -144,6 +158,7 @@ Page({
 
   /** 内部：推送 user 消息 + 调云函数 + 追加 ai 回复；text 为要发送的文本 */
   _sendContent(text) {
+    if (this._locked) return;
     const content = String(text == null ? '' : text).trim();
     if (!content) return util.toast('先说说你遇到了什么题吧');
     if (this.data.sending) return;
@@ -259,6 +274,7 @@ Page({
 
   /* ---------------- 结束本次导学并归档 ---------------- */
   endSession() {
+    if (this._locked) return;
     const messages = this.data.messages;
     if (!messages.length) return util.toast('还没有对话内容哦');
     if (!this.data.sessionId) return;
@@ -389,5 +405,17 @@ Page({
     });
   },
 
-  goBack() { wx.navigateBack({ delta: 1 }); }
+  goBack() { wx.navigateBack({ delta: 1 }); },
+
+  /* 锁定态引导（2026-09-22）：按缺哪一步分流 */
+  goMine() { wx.switchTab({ url: '/pages/mine/mine' }); },
+  goPlanFromTutor() {
+    const first = store.getTypeList()[0];
+    wx.navigateTo({ url: '/pkgTools/plan/plan' + (first ? '?key=' + first.key : '') });
+  },
+  lockBack() {
+    const pages = getCurrentPages();
+    if (pages && pages.length > 1) wx.navigateBack();
+    else wx.switchTab({ url: '/pages/mine/mine' });
+  }
 });

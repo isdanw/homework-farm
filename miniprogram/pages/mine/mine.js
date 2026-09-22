@@ -10,6 +10,7 @@ const util = require('../../utils/util.js');
 const analytics = require('../../utils/analytics.js');
 const sched = require('../../utils/scheduleEngine.js');
 const studyPlan = require('../../utils/studyPlan.js');
+const tutorGate = require('../../utils/tutorGate.js');
 
 const AVATARS = ['🐯', '🐻', '🐰', '🐱', '🐶', '🐼', '🦁', '🐸', '🐵', '🐧', '🦊', '🐥'];
 const GRADES = ['小班', '中班', '大班', '一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
@@ -48,6 +49,23 @@ Page({
       if (tb) tb.setData({ selected: 3 });
     }
     this.render();
+  },
+
+  /* ======================= 退出微信登录（2026-09-22） ======================= */
+  logout() {
+    wx.showModal({
+      title: '退出微信登录',
+      content: '退出后不再把数据同步到该微信账号，本机数据会保留并继续可用。确定退出吗？',
+      confirmColor: '#FF7A7A',
+      confirmText: '退出登录',
+      success: (res) => {
+        if (!res.confirm) return;
+        store.logout();
+        this.setData({ showWxDetail: false });
+        this.render();
+        util.toast('已退出微信登录，数据保留在本机', 'success');
+      }
+    });
   },
 
   /* ======================= 微信绑定（可点击入口） ======================= */
@@ -121,7 +139,9 @@ Page({
       scheduleInfo: scheduleInfo,
       planInfo: this.buildPlanInfo(),
       hubInfo: this.buildHubInfo(),
-      learnerSummary: this.buildLearnerSummary(store.get())
+      learnerSummary: this.buildLearnerSummary(store.get()),
+      tutorLocked: !tutorGate.getGate().ok,
+      tutorLockReason: tutorGate.getGate().reason
     });
   },
 
@@ -255,8 +275,35 @@ Page({
   /** 网页看板入口：per-user 网页口令生成（与微信账户绑定） */
   goWebPortal() { wx.navigateTo({ url: '/pkgTools/webportal/webportal' }); },
 
-  /** 导学中心入口（学习主线聚合：AI 导学 / 错题本 / 导学报告） */
-  goTutorHub() { wx.navigateTo({ url: '/pkgGuide/tutorHub/tutorHub' }); },
+  /** 导学中心入口（学习主线聚合：AI 导学 / 错题本 / 导学报告）
+   *  ⚠️ 门禁（2026-09-22）：未添加孩子或未建成长计划时，导学功能禁用。
+   *     弹出引导，引导用户先完成前置条件，不进入导学中心。 */
+  goTutorHub() {
+    const gate = tutorGate.getGate();
+    if (!gate.ok) { this.showTutorLocked(gate); return; }
+    wx.navigateTo({ url: '/pkgGuide/tutorHub/tutorHub' });
+  },
+
+  /** 导学未启用时的引导弹窗（按缺哪一步分流动作） */
+  showTutorLocked(gate) {
+    if (!gate.hasChild) {
+      wx.showModal({
+        title: '请先添加孩子',
+        content: '导学功能需要先添加孩子，才能针对 TA 定制学习计划与导学内容。',
+        confirmText: '去添加孩子',
+        cancelText: '稍后',
+        success: (res) => { if (res.confirm) this.openAdd(); }
+      });
+    } else {
+      wx.showModal({
+        title: '请先建立学习计划',
+        content: '导学建立在「成长计划」之上。请先为孩子生成一份阶段学习计划，再开启导学功能。',
+        confirmText: '去建计划',
+        cancelText: '稍后',
+        success: (res) => { if (res.confirm) this.goPlan(); }
+      });
+    }
+  },
 
   /** 导学中心入口摘要：待订正 + 已验证 */
   buildHubInfo() {

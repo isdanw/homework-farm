@@ -5,13 +5,25 @@
  *  · 数据来自本地 tutorStore；进入页面时静默 pull 云端回填（闭环 S1，失败不提示）
  */
 const tutorStore = require('../../utils/tutorStore.js');
+const tutorGate = require('../../utils/tutorGate.js');
+const store = require('../../utils/store.js');
 
 Page({
   data: {
-    overview: { sessions: 0, mistakes: 0, pending: 0, evidence: 0 }
+    overview: { sessions: 0, mistakes: 0, pending: 0, evidence: 0 },
+    locked: false,
+    lockReason: ''
   },
 
   onShow() {
+    // 门禁（2026-09-22）：未添加孩子或未建成长计划时，导学功能禁用
+    const gate = tutorGate.getGate();
+    if (!gate.ok) {
+      this.setData({ locked: true, lockReason: gate.reason });
+      return;
+    }
+    this.setData({ locked: false, lockReason: '' });
+
     // 静默同步（60 秒节流；无云环境 / 失败一律静默）→ 回填完成后重渲染
     tutorStore.syncFromCloud().then(merged => {
       this.render();
@@ -38,9 +50,23 @@ Page({
     });
   },
 
+  /* 门禁守卫：任一入口点击时再校验一次，避免缓存/深链绕过 */
+  guard() {
+    const gate = tutorGate.getGate();
+    if (!gate.ok) { this.setData({ locked: true, lockReason: gate.reason }); return false; }
+    return true;
+  },
+
   /* 三个入口（复测不单列：复测需从具体错题发起，收敛到错题本内） */
-  goTutor() { wx.navigateTo({ url: '/pkgGuide/tutor/tutor' }); },
-  goMistakes() { wx.navigateTo({ url: '/pkgTools/mistakes/mistakes' }); },
-  goReport() { wx.navigateTo({ url: '/pkgGuide/report/report' }); },
-  goExam() { wx.navigateTo({ url: '/pkgGuide/examGallery/examGallery' }); }
+  goTutor() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgGuide/tutor/tutor' }); },
+  goMistakes() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgTools/mistakes/mistakes' }); },
+  goReport() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgGuide/report/report' }); },
+  goExam() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgGuide/examGallery/examGallery' }); },
+
+  /* 锁定态引导：根据缺哪一步分流到「我的」或「成长计划」 */
+  goMine() { wx.switchTab({ url: '/pages/mine/mine' }); },
+  goPlanFromHub() {
+    const first = store.getTypeList()[0];
+    wx.navigateTo({ url: '/pkgTools/plan/plan' + (first ? '?key=' + first.key : '') });
+  }
 });

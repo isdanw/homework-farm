@@ -746,9 +746,11 @@ function getSyncState() {
     ready: cloudReady,
     openid: _openid,
     blocked: _cloudBlocked,
-    // 只有「环境已接入云、但身份或网络出问题」才算降级。
-    // 环境本身没接云（cloudReady=false，如纯离线开发）不算降级，不必骚扰用户。
-    degraded: !!(cloudReady && (_accountDegraded || _cloudBlocked || !_openid)),
+    // 只有「环境已接入云、且身份/网络真的出问题」才算降级，需提示用户。
+    //  · 环境本身没接云（cloudReady=false，如纯离线开发）不算降级；
+    //  · 用户主动选择「本地模式」（从未绑定微信，_openid 为空）也不算降级 —— 这是 2026-09-22
+    //    登录策略调整后的预期状态，不应弹「网络异常」告警（上传本就由 canSync 凭 _openid 拦截）。
+    degraded: !!(cloudReady && (_accountDegraded || _cloudBlocked)),
     dirty: !!t.dirty,
     pendingSince: t.pendingSince || 0,
     attempts: t.attempts || 0,
@@ -987,7 +989,9 @@ function sanitizeForCloud(root) {
  */
 function cloudDownload() {
   return new Promise((resolve) => {
-    if (!cloudReady) return resolve({ ok: false, empty: true });
+    // 无确定身份（未绑定微信）时，绝不向云端拉取 —— 否则云函数凭自身 openid 上下文
+    // 会把该微信账号的数据静默拉回，等效于「首次启动自动登录」。本地模式只认本机。
+    if (!cloudReady || !_openid) return resolve({ ok: false, empty: true });
     wx.cloud.callFunction({ name: 'syncData', data: { action: 'download' } })
       .then(res => {
         const result = (res && res.result) || {};
@@ -1089,8 +1093,10 @@ async function initAccount() {
   // 1) 读缓存
   try { _openid = wx.getStorageSync(OPENID_KEY) || ''; } catch (e) {}
 
-  // 2) 云可用则向服务端确认真正的 openid
-  if (cloudReady && wx.cloud && wx.cloud.callFunction) {
+  // 2) 仅当用户此前主动绑定过（已缓存 openid）才向服务端确认真正的 openid（防同设备多微信串号）。
+  //    ⚠️ 首次进入且从未绑定：默认**不自动登录微信**，保持本地模式，
+  //       直到用户在「我的 → 去绑定」手动触发（见 bindWechat）。2026-09-22 登录策略调整。
+  if (cloudReady && wx.cloud && wx.cloud.callFunction && _openid) {
     try {
       const res = await wx.cloud.callFunction({ name: 'syncData', data: { action: 'whoami' } });
       const oid = res && res.result && res.result.openid;
@@ -1101,8 +1107,9 @@ async function initAccount() {
       console.warn('[store] 获取 openid 失败：本地照常保存，暂不上云', e);
     }
   }
-  if (!_openid) _accountDegraded = true;
-
+  // ⚠️ 不再因「_openid 为空」置 _accountDegraded：2026-09-22 起首启默认本地模式，
+  // 未绑定微信是预期状态（非降级/非网络异常）。真实的身份/网络失败已在上方 whoami 的
+  // catch / 空 oid 分支置位，此处再置会把「本地模式」误报成「同步异常」。
   // 3) 切换账号：清空内存根，强制从本账号命名空间重新加载
   _root = null;
 
@@ -1134,7 +1141,8 @@ async function initAccount() {
   let root = null;
   try { root = wx.getStorageSync(storageKey()); } catch (e) {}
   if (!root || !root.users || !root.users.length) {
-    if (cloudReady) {
+    // 仅在有确定身份时才尝试从云端恢复（首次本地模式不拉取，避免静默登录）
+    if (cloudReady && _openid) {
       const dl = await cloudDownload();   // { ok, empty, failed }
       if (dl.failed) {
         // 云端「可能」有真实数据但没拉下来 → 只阻断「上云」避免本地空态覆盖云端，
@@ -1144,7 +1152,7 @@ async function initAccount() {
       }
       // dl.ok 已写入 _root / 命名空间；dl.empty 走下面兜底占位切片
     }
-  } else if (cloudReady) {
+  } else if (cloudReady && _openid) {
     await mergeRemote();       // 本地已有数据：只补云端独有孩子，绝不覆盖本地
   }
 
@@ -1223,6 +1231,46 @@ async function bindWechat() {
   return { ok: true, changed: true };
 }
 
+/**
+ * 退出微信登录（2026-09-22 新增）
+ *  · 解除与微信账号的绑定，回到「本地模式」：不再上云、不再按 openid 命名空间隔离。
+ *  · **不删除任何本地数据**：把当前数据迁回 base key（wb_hwfarm_data_v2），
+ *    保证退出后仍以本地模式无缝继续；下次启动因无缓存 openid 也不会自动重新登录。
+ *  · 之后用户在「我的 → 去绑定」手动触发，才会再次调用 whoami 绑定并上云。
+ *  · 与 bindWechat 对称：bind 走 base→openid 命名空间迁移，logout 走反向迁移。
+ */
+function logout() {
+  const root = getRoot();
+  // 1) 当前数据迁回本地 base key（防丢失）
+  try { wx.setStorageSync(BASE_KEY, root); } catch (e) {}
+
+  // 2) 清理 openid 命名空间、缓存与同步标记
+  //    ⚠️ 以下三行调用时 storageKey()/syncTagKey() 仍指向 openid 命名空间（_openid 尚未清空）
+  const nsKey = storageKey();
+  try { wx.removeStorageSync(nsKey); } catch (e) {}
+  try { wx.removeStorageSync(OPENID_KEY); } catch (e) {}
+  try { wx.removeStorageSync(syncTagKey()); } catch (e) {}
+
+  // 3) 重置内存态为本地模式
+  _openid = '';
+  _cloudBlocked = false;
+  _accountDegraded = false;
+  _root = null;
+  getRoot();                          // 从 BASE_KEY 重新加载，内存态与本地一致
+
+  // 4) 同步 app 全局状态（解除降级提示）
+  try {
+    const app = (typeof getApp === 'function') ? getApp() : null;
+    if (app && app.globalData) {
+      app.globalData.cloudRestoreFailed = false;
+      app.globalData.syncDegraded = false;
+    }
+  } catch (e2) {}
+
+  emit(get());
+  return true;
+}
+
 /* --------------------------- 导出 / 导入备份 --------------------------- */
 /** 导出整份数据（含所有孩子）到手机文件（可分享给家长微信保存） */
 function exportJSON() {
@@ -1264,7 +1312,7 @@ module.exports = {
   save, reset,
   on, off, emit,
   makePlant, defaultData,
-  setCloudReady, cloudUpload, cloudDownload, initAccount, bindWechat,
+  setCloudReady, cloudUpload, cloudDownload, initAccount, bindWechat, logout,
   flushSync, isDirty, getSyncState, isAccountDegraded,
   reconcileWithCloud, getCloudBase,
   getOpenid, getBindInfo, getWxProfile, setWxProfile, isOnboarded, isGuest,
