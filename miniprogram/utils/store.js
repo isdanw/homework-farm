@@ -790,6 +790,7 @@ function cloudUpload(immediate) {
 
 function doUpload(retryLeft) {
   if (!canSync()) return;
+  if (isBarePlaceholderOnly(_root)) return;          // 双重兜底：占位根绝不产生云端幽灵档案（flushSync 直调 doUpload 也拦得住）
   // 已有请求在途：不丢弃，重新排一次防抖（否则这次改动会被在途请求的
   // 成功回调误判为「已同步」而永远推不上去）
   if (inflight) { cloudUpload(); return; }
@@ -891,16 +892,21 @@ function reconcileWithCloud(cloudRoot) {
     if (!cu || !cu.id) return;
     const lu = local.users.find(x => x && x.id === cu.id);
 
-    // ① 云端独有的孩子 → 整体追加
-    if (!lu) {
+    // ① 云端独有 / 云端真实孩子覆盖本地占位（id 撞 'guest'）→ 追加或原地替换
+    if (!lu || lu.__placeholder) {
       const adopted = ensureUserFields(Object.assign({}, cu));
       delete adopted.__placeholder;                 // 占位切片永不进入真源（R5）
-      local.users.push(adopted);
+      if (lu && lu.__placeholder) {
+        const idx = local.users.indexOf(lu);
+        local.users[idx] = adopted;
+      } else {
+        local.users.push(adopted);
+      }
       changed = true;
       return;
     }
 
-    // ② 两端都有 → 只对 homework 的单调量做并集
+    // ② 两端都有真实孩子 → 只对 homework 的单调量做并集
     const chw = cu.homework, lhw = lu.homework;
     if (!chw || typeof chw !== 'object') return;
     if (!lhw || typeof lhw !== 'object') { lu.homework = JSON.parse(JSON.stringify(chw)); changed = true; return; }
@@ -927,9 +933,13 @@ function reconcileWithCloud(cloudRoot) {
     });
   });
 
-  // 云端独有孩子并入后，currentUserId 可能指向已不存在的孩子 → 收敛到第一个
-  if (changed && (!local.currentUserId || !local.users.find(u => u.id === local.currentUserId))) {
-    local.currentUserId = local.users[0] && local.users[0].id;
+  // 云端独有孩子并入后，currentUserId 可能指向已不存在/仅占位的孩子 → 收敛到第一个真实孩子
+  if (changed) {
+    const curReal = local.users.find(u => u && u.id === local.currentUserId && !u.__placeholder);
+    if (!curReal) {
+      const firstReal = local.users.find(u => u && !u.__placeholder);
+      local.currentUserId = firstReal ? firstReal.id : (local.users[0] && local.users[0].id);
+    }
   }
   return changed;
 }
@@ -1045,22 +1055,32 @@ function mergeRemote() {
         if (typeof result.cloudUpdatedAt === 'number') setCloudBase(result.cloudUpdatedAt);
         if (!remote || !Array.isArray(remote.users) || !remote.users.length) return resolve(false);
         const local = getRoot();
-        const localIds = {};
-        (local.users || []).forEach(u => { if (u && u.id) localIds[u.id] = true; });
 
         let changed = false;
         remote.users.forEach(r => {
-          if (!r || !r.id || localIds[r.id]) return;        // 本地已有 → 保留本地，绝不覆盖
+          if (!r || !r.id) return;
+          const existing = local.users.find(x => x && x.id === r.id);
+          if (existing && !existing.__placeholder) return;   // 本地已有真实同 id 孩子 → 保留本地，绝不覆盖
           const adopted = ensureUserFields(Object.assign({}, r));
           delete adopted.__placeholder;
-          local.users.push(adopted);
-          localIds[r.id] = true;
+          if (existing && existing.__placeholder) {
+            // 本地占位切片与云端真实孩子 id 撞车（均为 'guest'）：用云端真实孩子原地替换占位，
+            // 否则 users 里会残留两条 id='guest'，get() 仍优先命中占位 → 孩子「看起来没显示」。
+            const idx = local.users.indexOf(existing);
+            local.users[idx] = adopted;
+          } else {
+            local.users.push(adopted);                       // 云端独有孩子 → 追加
+          }
           changed = true;
         });
 
         if (changed) {
-          if (!local.currentUserId || !local.users.find(u => u.id === local.currentUserId)) {
-            local.currentUserId = local.users[0].id;
+          // 当前指向的孩子若只是占位的「体验切片」（本地本就空、云端补回真实孩子时常见），
+          // 必须改指到第一个真实孩子，否则 get() 仍会取到占位切片 → 孩子「看起来没显示」。
+          const curReal = local.users.find(u => u && u.id === local.currentUserId && !u.__placeholder);
+          if (!curReal) {
+            const firstReal = local.users.find(u => u && !u.__placeholder);
+            local.currentUserId = firstReal ? firstReal.id : (local.users[0] && local.users[0].id);
           }
           try { wx.setStorageSync(storageKey(), local); } catch (e) {}
           markDirty();                                      // 新并入的孩子需要上云留档
@@ -1113,29 +1133,69 @@ async function initAccount() {
   // 3) 切换账号：清空内存根，强制从本账号命名空间重新加载
   _root = null;
 
-  // 4) 首启迁移：把旧 base key 数据搬进当前账号命名空间（仅一次）
-  //    同时兜住「上次启动 whoami 失败 → 数据落在 base key」的情况
-  if (_openid) {
-    try {
-      const legacy = wx.getStorageSync(BASE_KEY);
-      const ns = wx.getStorageSync(storageKey());
-      if (legacy && legacy.users && legacy.users.length &&
-          (!ns || !ns.users || !ns.users.length)) {
-        wx.setStorageSync(storageKey(), legacy);
-        try { wx.removeStorageSync(BASE_KEY); } catch (e2) {}
+  // 4) 命名空间归并（修复「数据在某命名空间、当前读不到」导致的「误判未添加孩子」）
+  //    · 已绑定微信（_openid 非空）：当前命名空间空 → 优先用裸 BASE_KEY（whoami 失败期落地），
+  //      其次用「其它 openid 命名空间里用户最多的那份」（同机换号 / 开发者工具不同身份兜底）。
+  //    · 本地模式（_openid 空）：裸 BASE_KEY 空 → 把任意 openid 命名空间里的真实孩子
+  //      合并搬回 BASE_KEY（2026-09-22 登录策略改首启本地模式后，旧版自动登录写下的
+  //      命名空间数据读不到，必须搬回兜底 key，否则老用户被误判「未添加孩子」）。
+  try {
+    const KEY_PREFIX = `${BASE_KEY}_`;
+    const nsKeys = (wx.getStorageInfoSync().keys || []).filter(k => k.indexOf(KEY_PREFIX) === 0);
+    const readKey = (k) => { try { return wx.getStorageSync(k); } catch (e) { return null; } };
+    const realCount = (r) => (r && Array.isArray(r.users)) ? r.users.filter(u => u && !u.__placeholder).length : 0;
+
+    if (!_openid) {
+      // 本地模式：BASE_KEY 为空才搬回（已有数据不动，避免覆盖本地真实数据）
+      const base = readKey(BASE_KEY);
+      if (realCount(base) === 0 && nsKeys.length) {
+        const merged = { version: 2, users: [], currentUserId: '' };
+        let curOk = false;
+        nsKeys.forEach(k => {
+          const r = readKey(k);
+          if (!r || !Array.isArray(r.users)) return;
+          r.users.forEach(u => {
+            if (!u || u.__placeholder) return;
+            if (!merged.users.find(x => x.id === u.id)) merged.users.push(u);
+          });
+          if (r.currentUserId && merged.users.find(x => x.id === r.currentUserId) && !curOk) {
+            merged.currentUserId = r.currentUserId; curOk = true;
+          }
+        });
+        if (!merged.currentUserId && merged.users[0]) merged.currentUserId = merged.users[0].id;
+        if (merged.users.length) {
+          wx.setStorageSync(BASE_KEY, merged);
+          nsKeys.forEach(k => { try { wx.removeStorageSync(k); } catch (e) {} });
+          // 脏标记也搬回兜底 key（保证后续上云不丢积压改动）
+          const legacyTag = readKey(SYNCTAG_KEY);
+          if (legacyTag && legacyTag.dirty) {
+            if (!readSyncTag().dirty) writeSyncTag(legacyTag);
+            try { wx.removeStorageSync(SYNCTAG_KEY); } catch (e) {}
+          }
+        }
       }
-    } catch (e) {}
-    // 4b) 脏标记必须跟着一起迁移：脏标记是按 openid 隔离的（syncTagKey），
-    //     「whoami 失败期间落在兜底 key 的改动」若不迁移，openid 恢复后 flushSync
-    //     读的是另一个 key，积压的改动就永远推不上去（首次上云静默丢失）。
-    try {
-      const legacyTag = wx.getStorageSync(SYNCTAG_KEY);
-      if (legacyTag && legacyTag.dirty) {
-        if (!readSyncTag().dirty) writeSyncTag(legacyTag);
-        wx.removeStorageSync(SYNCTAG_KEY);
+    } else {
+      // 已绑定：当前命名空间空 → 从裸 BASE_KEY / 其它命名空间补数据（不删源，避免误删其它身份）
+      const cur = readKey(storageKey());
+      if (realCount(cur) === 0) {
+        let src = null;
+        const base = readKey(BASE_KEY);
+        if (realCount(base) > 0) src = base;
+        else {
+          let best = 0;
+          nsKeys.forEach(k => {
+            if (k === storageKey()) return;
+            const n = realCount(readKey(k));
+            if (n > best) { best = n; src = readKey(k); }
+          });
+        }
+        if (src) {
+          wx.setStorageSync(storageKey(), src);
+          try { wx.removeStorageSync(BASE_KEY); } catch (e) {}
+        }
       }
-    } catch (e) {}
-  }
+    }
+  } catch (e) { console.warn('[store] 命名空间归并异常', e); }
 
   // 5) 加载本账号数据
   let root = null;
@@ -1226,23 +1286,38 @@ async function bindWechat() {
     _root = null;
     getRoot();
   }
+
+  // ⚠️ 重新绑定后补齐云端孩子（2026-09-23 修：「退出→重绑」孩子不显示的根因兜底）
+  //  · 本地迁移是「本地→命名空间」单向搬家，不会去云端把该 openid 已同步的孩子拉回来。
+  //    若本地本就缺这份数据（如重装/清缓存后只剩云端档案），只做本地搬家会得到空/占位切片，
+  //    孩子看起来「没了」。这里补一次合并远程：只并入「云端有、本地无」的孩子，绝不覆盖本地。
+  //  · 离线（cloudReady=false）时跳过，避免无谓云调用；本地数据照常保留。
+  if (cloudReady && _openid) {
+    try { await mergeRemote(); } catch (e) { console.warn('[store] 重绑后合并云端孩子失败', e); }
+  }
+
   try { wx.setStorageSync(OPENID_KEY, oid); } catch (e) {}
   emit(get());
   return { ok: true, changed: true };
 }
 
 /**
- * 退出微信登录（2026-09-22 新增）
+ * 退出微信登录（2026-09-22 新增；2026-09-22 修订：退出仅解绑微信、保留本地数据）
  *  · 解除与微信账号的绑定，回到「本地模式」：不再上云、不再按 openid 命名空间隔离。
- *  · **不删除任何本地数据**：把当前数据迁回 base key（wb_hwfarm_data_v2），
- *    保证退出后仍以本地模式无缝继续；下次启动因无缓存 openid 也不会自动重新登录。
+ *  · **保留全部本地数据**（孩子 / 打卡 / 农场 / 计划），仅把当前数据迁回 base key，
+ *    并把微信身份资料（wxProfile + 遗留 WXPROFILE_KEY）清空 —— 退出后「我的」页不再
+ *    显示微信昵称/头像等登录信息，但本地孩子数据照常保留、本地模式可继续用。
  *  · 之后用户在「我的 → 去绑定」手动触发，才会再次调用 whoami 绑定并上云。
- *  · 与 bindWechat 对称：bind 走 base→openid 命名空间迁移，logout 走反向迁移。
+ *  · 与 bindWechat 对称：bind 走 base→openid 命名空间迁移，logout 走反向迁移（保留 users）。
  */
 function logout() {
   const root = getRoot();
-  // 1) 当前数据迁回本地 base key（防丢失）
+  // 1) 当前数据迁回本地 base key（保留孩子等本地数据，不清 users）
+  //    仅清掉微信身份资料：退出即解除微信关联，避免「我的」页残留旧昵称/头像
+  if (root && root.wxProfile) root.wxProfile = { nickname: '', avatarUrl: '' };
   try { wx.setStorageSync(BASE_KEY, root); } catch (e) {}
+  // 1b) 清掉遗留的旧微信资料 key（getWxProfile 会回退读它，不删则退出后仍显示旧昵称/头像）
+  try { wx.removeStorageSync(WXPROFILE_KEY); } catch (e) {}
 
   // 2) 清理 openid 命名空间、缓存与同步标记
   //    ⚠️ 以下三行调用时 storageKey()/syncTagKey() 仍指向 openid 命名空间（_openid 尚未清空）

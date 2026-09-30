@@ -35,3 +35,15 @@ _attic_dead_audio/
 
 # CloudBase CLI 状态目录（含临时密钥 tmpSecretId/tmpSecretKey/refreshToken，严禁提交）
 .tcb_home/
+
+# 高危文件改前备份（web/index.html 1.4MB 单文件，改前必留副本，但不必入库）
+.backup-*/
+
+# 冒烟/截图产物
+.artifacts/
+
+# Python 编译产物（scripts 下的测试脚本会生成）
+scripts/__pycache__/
+
+# 临时调试复现脚本（_repro_*，非功能代码）
+scripts/_repro_*.js

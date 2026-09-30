@@ -4,7 +4,9 @@
 <meta charset="UTF-8" data-page-node-id="GnBValBqZyHJxYWL0EAtb1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="3EMISQCWiN7tEH8b11NRmC">
 <title>家长数据看板 · 小小农场成长记</title>
-<!-- 只读云数据控制台：CloudBase 静态托管 + webAdminQuery 只读代理（token 校验） -->
+<!-- 家长数据看板：CloudBase 静态托管 + webAdminQuery 只读代理（token 校验）
+     ⚠️ 唯一写入边界（2026-09-28 决策 3 / T21）：**只有「学习单」一路可写**（webAdminWrite.orders），
+     其余全部模块严格只读。改本文件前先读 scripts/check-web-orders.cjs §4 的写边界断言。 -->
 <style>
   :root{
     --navy:#1d2b53; --gold:#c9a227; --gold-soft:#faf3dd;
@@ -149,6 +151,51 @@
   .report-sec{margin-bottom:14px}
   .report-sec h4{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:7px}
   .report-sec h4::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--gold)}
+  /* 学习单（T21）：状态徽章与锚点/回执小节。纯新增，不改动任何既有选择器 */
+  .obadge{display:inline-block;padding:1px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .b-issued{background:var(--amber-soft);color:var(--amber)}
+  .b-submitted{background:var(--blue-soft);color:var(--blue)}
+  .b-closed{background:var(--green-soft);color:var(--green)}
+  .b-cancelled{background:#eef0f6;color:var(--navy)}
+  .b-voided{background:var(--red-soft);color:var(--red)}
+  .okey{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--mut);word-break:break-all}
+  .obtns{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .obtns button{border:1px solid var(--line);color:var(--ink2);background:#fff;border-radius:8px;padding:6px 14px;font-size:12.5px;cursor:pointer}
+  .obtns button.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
+  .obox{background:#f7f8fb;border:1px solid #eef0f4;border-radius:10px;padding:12px 14px;margin-top:10px}
+  .obox .kv{font-size:12.5px;padding:3px 0;display:flex;gap:10px;align-items:flex-start}
+  .obox .kv .k{color:var(--mut);flex:none;width:80px}
+  .obox .kv .v{flex:1;white-space:pre-wrap;word-break:break-word;min-width:0}
+  /* ── 学习单写区（T21 · 本看板唯一可写区域）：出单 / 回执表单 ── */
+  .owrite{margin-bottom:14px}
+  .owrite .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .owrite .tabs button{border:1px solid var(--line);color:var(--ink2);background:#fff;border-radius:8px;padding:6px 16px;font-size:12.5px;cursor:pointer;font-weight:600}
+  .owrite .tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
+  .ofrm .fr{margin:0 0 10px}
+  .ofrm .fr>label{display:block;font-size:12px;color:var(--mut);margin:0 0 4px;font-weight:600}
+  .ofrm input[type=text],.ofrm input[type=number],.ofrm select,.ofrm textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--ink);background:#fff;font-family:inherit}
+  .ofrm textarea{min-height:64px;resize:vertical;line-height:1.6}
+  .ofrm select{height:34px}
+  .ofrm .two{display:flex;gap:10px}
+  .ofrm .two>div{flex:1;min-width:0}
+  .ofrm .hint{font-size:11.5px;color:var(--mut);line-height:1.7;margin:2px 0 10px}
+  .ofrm .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line2)}
+  .ofrm .acts .mut{font-size:11.5px}
+  .obtn{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer}
+  .obtn.ghost{background:#fff;color:var(--ink2);border-color:var(--line);font-weight:600}
+  .obtn[disabled]{opacity:.5;cursor:not-allowed}
+  .opick{display:flex;gap:8px;flex-wrap:wrap}
+  .opick button{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:8px;padding:7px 14px;font-size:12.5px;cursor:pointer;text-align:left}
+  .opick button.on{background:var(--gold-soft);border-color:var(--gold);color:var(--ink);font-weight:700}
+  .opick button .s{display:block;font-size:11px;color:var(--mut);font-weight:400;margin-top:2px}
+  .osteps{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .osteps .s{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:20px;padding:3px 12px}
+  .osteps .s.on{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);font-weight:700}
+  .omsg{border-radius:8px;padding:8px 12px;font-size:12.5px;margin:10px 0 0;line-height:1.7}
+  .omsg.ok{background:var(--green-soft);color:var(--green);border:1px solid #cfe6d1}
+  .omsg.err{background:var(--red-soft);color:var(--red);border:1px solid #f2cfc9}
+  .omsg.warn{background:var(--amber-soft);color:var(--amber);border:1px solid #f0dcbb}
+  .odrop{border:1px dashed var(--line);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--mut);margin:0 0 10px;line-height:1.7}
   @media(max-width:900px){
     .side{position:fixed;left:0;top:0;transform:translateX(-100%);box-shadow:0 0 30px rgba(0,0,0,.25)}
     .side.open{transform:translateX(0)}
@@ -175,7 +222,7 @@
 <div class="app" data-page-node-id="WRrEwanBquqNC4qDwbxP8l">
   <div class="overlay" id="overlay" data-page-node-id="uegsf1WFMi18QcKF4taCwY"></div>
   <aside class="side" id="side" data-page-node-id="JmQEweAwTs6PfTDhVYiVdq">
-    <div class="brand" data-page-node-id="m0incgNmiqGXss4AnH53e2"><b data-page-node-id="XFluQgxcl0jmScVJTGuVNW">家长数据看板</b><span data-page-node-id="kb12vS1bHBDtnuXlUwHV0F">HW-FARM · 只读</span></div>
+    <div class="brand" data-page-node-id="m0incgNmiqGXss4AnH53e2"><b data-page-node-id="XFluQgxcl0jmScVJTGuVNW">家长数据看板</b><span data-page-node-id="kb12vS1bHBDtnuXlUwHV0F">HW-FARM · 学习单可写</span></div>
     <div class="navgrp" data-page-node-id="ScueBVev8S19jsy4IjWDVf">总览</div>
     <nav class="nav" data-page-node-id="99JBTxNe8cj6iadAeDFyV9">
       <a class="on" data-v="overview" data-page-node-id="zDeoDl7fFDQGr91ksfNMkp"><svg viewBox="0 0 24 24" data-page-node-id="swBfEYXgfh7zZtcpPHgMNq"><rect x="3" y="3" width="7" height="9" rx="1.5" data-page-node-id="qJZXZFtrbYeTbSDFkIt1OR"/><rect x="14" y="3" width="7" height="5" rx="1.5" data-page-node-id="GSMxVokf4m2dbAcctTfKt5"/><rect x="14" y="11" width="7" height="10" rx="1.5" data-page-node-id="pXkU4HSrzoAzhVnMA8PcCL"/><rect x="3" y="15" width="7" height="6" rx="1.5" data-page-node-id="uOlmdAIzR9idK9A7s194Yh"/></svg>概览看板</a>
@@ -191,6 +238,7 @@
     <div class="navgrp" data-page-node-id="znRYigXddA1VH8iEf0ofmE">导学</div>
     <nav class="nav" data-page-node-id="yUJ4Mss5X7x7tDfdfTyRs0">
       <a data-v="tutor" data-page-node-id="M6EL1EhBCBHHwqjc5n08C7"><svg viewBox="0 0 24 24" data-page-node-id="IgUhu8A0F5KlwOYrx9TAEW"><path d="M4 5h16v11H7l-3 3Z" data-page-node-id="JoM1MVyZryEKeBJ9dlOS9d"/><path d="M8 9h8M8 12h5" data-page-node-id="kKy7AyL6TqMFet9xgNV949"/></svg>全科导学</a>
+      <a data-v="orders" data-page-node-id="ordersNavItem"><svg viewBox="0 0 24 24" data-page-node-id="ordersNavSvg"><path d="M6 3h9l4 4v14H6Z" data-page-node-id="ordersNavP1"/><path d="M15 3v4h4M9 12h6M9 16h4" data-page-node-id="ordersNavP2"/><path d="M9 8.5l1.4 1.4L13 7.3" data-page-node-id="ordersNavP3"/></svg>学习单</a>
     </nav>
     <div class="navgrp" data-page-node-id="examsNavGrp">资源库</div>
     <nav class="nav" data-page-node-id="examsNav">
@@ -322,6 +370,15 @@
         <div id="tasksContent" data-page-node-id="MKli4prFFn8ujS7Wk1xDHs"></div>
       </section>
 
+      <!-- 学习单（T21）：出单 / 回执（两步选择）/ 计划下钻 / 时间线 ——「计划 → 出单 → 执行 → 回执 → 评语」闭环，
+           与小程序「学习单」页、工作台出单区**同一份云端数据、同一套状态机**。 -->
+      <section class="view" id="orders" data-page-node-id="ordersView">
+        <div class="note" data-page-node-id="ordersNote">「学习单」是「计划 → 出单 → 执行 → 回执 → 评语」闭环的家长操作台：每张单都锚定到某份成长计划的某个任务（<code data-page-node-id="ordersNoteC1">planId</code> = 学科key@计划创建时间戳），从出单到回执到评语全程带时间戳（<code data-page-node-id="ordersNoteC2">events</code> 只追加不覆盖）。<b data-page-node-id="ordersNoteB1">本页是本看板唯一的可写区域</b>：可以在这里<b data-page-node-id="ordersNoteB3">出单</b>与<b data-page-node-id="ordersNoteB4">交回执</b>，其余模块（打卡 / 农场 / 试卷 / 档案）仍严格只读；状态推进一律由云端状态机裁决，本页不推导、不改写。<b data-page-node-id="ordersNoteB2">回执 ≠ 掌握证据</b>，掌握度只来自复测达标（tutor_evidence.passed=true）。</div>
+        <div id="childChipsOrders" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px" data-page-node-id="ordersChips"></div>
+        <div id="ordersWrite" data-page-node-id="ordersWrite"></div>
+        <div id="ordersContent" data-page-node-id="ordersContent"></div>
+      </section>
+
       <!-- 时间轴记录（对应小程序「打卡明细 / 错题本 / 评语」+ 工作台「时间轴 / 记录」） -->
       <section class="view" id="timeline" data-page-node-id="b9OspRiPNMnlxrnBxJeVdS">
         <div class="note" data-page-node-id="M3OUwKQoBD1rGrECTHK1TZ">「时间轴记录」对应小程序打卡明细、老师评语与错题生命周期：按日期倒序的打卡时间轴、老师评语分析、行为事件与错题状态流转。</div>
@@ -343,11 +400,11 @@
       <section class="view" id="set" data-page-node-id="V3AxUqXGXkiLc1wLpBtnNB">
         <div class="card" data-page-node-id="YYZ3ELWSWd9RRD4qiMe9F4"><h3 data-page-node-id="URkJdaIxxkCOXEX4HwDOSo">环境与口令</h3>
           <p style="font-size:13px;color:var(--ink2);line-height:1.9" data-page-node-id="kXvn2HqLUJVkod0pDtVOVN">
-            · 数据源：云开发同一环境只读代理云函数 <code data-page-node-id="SDuJi6hh8MlIGHNSqLB59k">webAdminQuery</code>（管理员权限，跨 openid 聚合）。<br data-page-node-id="HvKLxPd3ARwAGn6x1wPyTZ">
+            · 数据源：云开发同一环境云函数 <code data-page-node-id="SDuJi6hh8MlIGHNSqLB59k">webAdminQuery</code>（读 · 管理员权限，跨 openid 聚合）；学习单写入另走 <code data-page-node-id="ordersWriteFn">webAdminWrite</code> 的 <code>orders</code> 通道。<br data-page-node-id="HvKLxPd3ARwAGn6x1wPyTZ">
             · 环境 ID：<code id="envText" data-page-node-id="nbVAbhF6gcAfB81UHo4fqf">—</code><br data-page-node-id="YXuUppFHZhhD3DN9I9juez">
             · 访问口令：云端环境变量 <code data-page-node-id="vQFdtzuCkfIEUNb1R7pJLP">WEB_DASHBOARD_TOKEN</code>，前端本地存储带入；不符即拒绝。<br data-page-node-id="LX1pUB0aVTHnmeXtWDf7P8">
             · 当前口令：<code id="tokenMask" data-page-node-id="mbD32oMre96VKBRMNAztHQ">未设置</code><br data-page-node-id="oODKDJdzpwoxpjGDYHAEFZ">
-            · 本控制台为只读，不写库、不调用 AI。
+            · 写入边界：<b data-page-node-id="ordersScopeNote">仅「学习单」可写</b>（出单 / 交回执），其余模块严格只读，不写库、不调用 AI。状态与事件只由云端状态机推进，端上不推导。
           </p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px" data-page-node-id="qDJHUVlWz6cGOsBHXVTyEv">
             <button class="btn-refresh" id="changeToken" data-page-node-id="3ySDU66osbqdkDHlDWecVW">清除口令并重新输入</button>
@@ -397,7 +454,7 @@
 <div class="gate" id="gate" data-page-node-id="OPZ39HXX642Tn1zWg3EidC">
   <div class="gatecard" data-page-node-id="SNrdq3DFkWK59nGzBXFCgl">
     <h2 data-page-node-id="uehgxWAO0El69bvdnow8oL">请输入访问口令</h2>
-    <p data-page-node-id="zHjLeIsjhZ9gVZqTHlJQc1">本看板只读访问小程序云数据。口令可在小程序「网页看板」一键生成（含深链/二维码），或使用部署者设置的管理员口令。口令仅保存在本机浏览器（localStorage），不上传第三方。</p>
+    <p data-page-node-id="zHjLeIsjhZ9gVZqTHlJQc1">本看板读取小程序云数据；除「学习单」外全部只读。口令可在小程序「网页看板」一键生成（含深链/二维码），或使用部署者设置的管理员口令。口令仅保存在本机浏览器（localStorage），不上传第三方。</p>
     <input id="tokenInput" type="password" placeholder="粘贴访问口令" autocomplete="off" data-page-node-id="QVRczjcRhWl0J1i2ipyuDi">
     <button id="tokenSave" data-page-node-id="JFBXrVaXoNRFVD1e3xlrSM">进入看板</button>
     <div class="hint" data-page-node-id="QQnk5dGOJo8dHHe7vTkgXK">小程序生成的口令与你的微信账户绑定，仅展示该账户数据；管理员口令可看全部。</div>
@@ -28332,7 +28389,7 @@ function acc(){
 /* ============ 运行时状态 ============ */
 let app = null;
 let TOKEN = localStorage.getItem(TOKEN_KEY) || '';
-let DATA = { overview:null, profile:null, tutor:null, farm:null, exams:null };
+let DATA = { overview:null, profile:null, tutor:null, farm:null, exams:null, orders:null };
 let currentRange = '7d';
 let selectedAccount = 0;
 let studyPlanTab = '';   // 学习计划当前标签（学科 key 或 'daily'），切换账号时自动校正
@@ -28365,30 +28422,43 @@ async function refreshAll(){
   setStatus('正在拉取云数据…', 'loading');
   try { if(!app) await initCloud(); }
   catch(e){ setStatus('初始化失败：' + e.message, 'err'); return; }
+  /* ⚠️ 先把视图切到「加载中」骨架，再开始拉数据。
+     Promise.all 期间 DATA.* 全是 null，而全部渲染都在 Promise.all **之后**才发生 ——
+     也就是说从过门到数据到达这约 8 秒里，学习单页除了静态 note 外**什么都没有**。
+     真实事故：owner 报「网页端没找到交回执的入口」，真机复现即为此态
+     （#ordersWrite 与 #ordersContent 双空，连页签都没有）。
+     入口必须在第一时间就在，数据晚到只该影响内容，不该影响「有没有这个功能」。 */
+  renderOrders();
   const tasks = {
     overview: query('overview', { range: currentRange }),
     profile:  query('profile'),
     tutor:    query('tutor'),
     farm:     query('farm'),
-    exams:    query('exams')
+    exams:    query('exams'),
+    // 学习单：一次拉回本口令可见范围的全部单（管理员口令下 = 全部孩子的单），
+    // 端上按 openid 过滤到当前选中孩子 → 切换孩子 chip 无需重新请求。
+    orders:   query('orders', { limit: 300 })
   };
-  const [o,p,t,f,x] = await Promise.all([
+  const [o,p,t,f,x,od] = await Promise.all([
     tasks.overview.catch(e=>({__err:e.message})),
     tasks.profile.catch(e=>({__err:e.message})),
     tasks.tutor.catch(e=>({__err:e.message})),
     tasks.farm.catch(e=>({__err:e.message})),
-    tasks.exams.catch(e=>({__err:e.message}))
+    tasks.exams.catch(e=>({__err:e.message})),
+    tasks.orders.catch(e=>({__err:e.message}))
   ]);
   DATA.overview = o.__err ? null : o;
   DATA.profile  = p.__err ? null : p;
   DATA.tutor    = t.__err ? null : t;
   DATA.farm     = f.__err ? null : f;
   DATA.exams    = x.__err ? null : x;
+  DATA.orders   = od.__err ? null : od;
 
   renderOverview(); renderToday(); renderFarm(); renderTutor();
   renderArchive(); renderTasks(); renderTimeline(); renderReport(); renderExams();
+  renderOrders();
 
-  const errs = [o,p,t,f,x].filter(v=>v.__err).map(v=>v.__err);
+  const errs = [o,p,t,f,x,od].filter(v=>v.__err).map(v=>v.__err);
   if(errs.length){
     const authFail = errs.some(m=>/口令|token|auth|no_token/i.test(m));
     if(authFail){ setStatus('访问被拒绝：口令错误或未配置，请在「设置」重新输入。', 'err'); showGate(); }
@@ -28797,6 +28867,731 @@ function renderTasks(){
   }));
 }
 
+/* ============ 学习单（T21：出单 / 回执 / 计划下钻 / 时间线） ============ */
+/*
+ * ⚠️⚠️ 本区块是全看板**唯一的可写区域**，也是「家长数据看板只读」这条既有约束的
+ * **唯一例外**（2026-09-28 决策 3）。设计文档原文：
+ *     「网页看板**开启 `orders` 权限** | `webAdminQuery` 新增 `module:'orders'`（读）；
+ *       `webAdminWrite` 白名单新增 `orders`（写）」
+ *     角色定位：「**家长在线出单 / 审核**」
+ * 除 `orders` 外，打卡 / 农场 / 试卷 / 档案 / 报告全部严格只读 —— 这不是可选项，
+ * 由 scripts/check-web-orders.cjs §4 的**写边界断言**逐条锁死（云函数名白名单 + 单一路径 + 保留键拦截）。
+ *
+ * 五条不许破的规矩（与工作台 src/logic/orders.ts、小程序 pkgGuide/order 同源）：
+ *   ① **只有 orders 一路可写**：全部写入只经 callWrite() 走 webAdminWrite 的 orders 通道；
+ *      不新增第二条写路径，不动 hw_farm_user / tutor_* 的写。
+ *   ② **业务规则一行都不在这**：O1–O4 的实现全在 canonical orderKit + orderActions，
+ *      云端 require 的是同一份副本（sha256 锁）。本页只做**搬运 + 组装锚点**，不写状态机分支。
+ *   ③ **端上不是权威**：status / events 只能由云端状态机推进。本页不计算、不推断、不覆盖
+ *      这两个字段；读回来的单原样展示，错误码原样翻人话。
+ *   ④ **保留键双层防御**：出单/回执 payload 不许携带 status / events / openid / _openid / clientId
+ *      —— 一旦允许端上直传，O2/O4 立刻失效。云函数有同名门禁，本页再加一层。
+ *   ⑤ **回执 ≠ 掌握证据**：本页不得出现「掌握」类结论（活动 ≠ 证据 ≠ 掌握）。
+ *      verdict 四值 null(证据不足)/未达标/部分达标/达标，全部由云端出，端上无权参与。
+ *
+ * 文案三端同表（小程序 pkgGuide/order/order.js、工作台 src/logic/orders.ts、本页）：
+ * 任何一项改动都必须三端同步，否则同一张单在不同端会显示成两个名字。
+ */
+const ORDER_STATUS_TEXT = { issued:'待回执', submitted:'已回执', closed:'已归档', cancelled:'已取消', voided:'已作废' };
+const ORDER_STATUS_CLS  = { issued:'b-issued', submitted:'b-submitted', closed:'b-closed', cancelled:'b-cancelled', voided:'b-voided' };
+const ORDER_EVENT_TEXT  = { issued:'出单', copied:'复制到执行端', submitted:'提交回执', evaluated:'生成评语与汇总', polished:'AI 润色评语', ticked:'标记任务完成', closed:'归档关闭', cancelled:'取消', voided:'作废' };
+const ORDER_BY_TEXT     = { mp:'小程序', web:'网页看板', workbench:'工作台', sys:'系统', ai:'AI' };
+/* 变式/边界结果的档位 = orderKit.toBucket 的输出；端上不得改写 */
+const ORDER_BUCKET_TEXT = { independent:'独立完成', prompted:'提示后完成', incomplete:'未完成', untested:'未测', '':'未记录' };
+/* 训练类型 = orderKit.KIND_LABEL（逐字一致，三端同表） */
+const ORDER_KIND_TEXT   = { concept:'讲概念', example:'讲例题', mistake:'讲错题', review:'复习巩固', express:'仅练表达' };
+const ORDER_KIND_ORDER  = ['concept','example','mistake','review','express'];
+/* 时长候选 = 小程序 MINUTE_CHOICES（逐字一致） */
+const ORDER_MINUTES     = [5,10,15];
+/* 帮助层级 = 小程序 D_LEVELS（回执里要确认「用了哪几级」） */
+const ORDER_D_LEVELS    = ['D0','D1','D2','D3','D4'];
+/* 错误码 → 人话。与工作台 ORDER_ERROR_TEXT 同表；未知码回显原文（便于排查），**绝不吞掉** */
+const ORDER_ERROR_TEXT  = {
+  auth:'口令无效或已撤销，请重新连接云端。',
+  no_openid:'云端未能解析到孩子身份，已拒绝写入（不产生无主数据）。',
+  bad_action:'端上发出的动作云端不认识，可能是版本不一致。',
+  bad_param:'入参不完整或含不允许的字段。',
+  bad_transition:'当前状态不允许这一步（状态机拦下了）。',
+  bad_receipt:'回执内容无法归一，请检查必填项后再提交。',
+  already_submitted:'本单已提交过回执。一个出单只能对应一个回执；如需修正请作废重开。',
+  plan_mismatch:'所选计划与这张单的出单锚点不一致，请重新选择。',
+  no_anchor:'出单必须锚定学习计划里的具体任务，缺一不可。',
+  not_found:'云端找不到这张学习单（可能是本机缓存里的旧单）。',
+  evaluate_error:'证据审核失败，回执未落库；请核对回执内容。',
+  order_error:'云端学习单操作失败。',
+  network:'网络或环境不可达。'
+};
+/* 回执字段中文名。未知键**不丢弃**，回落成键名原样显示 —— 展示层宁可显示得难看，也不能悄悄吞字段 */
+const RECEIPT_FIELD_TEXT = { mode:'模式', topic:'主题', childQuote:'孩子原话', stuckPoint:'卡点', dLevelsUsed:'用到的提示层级', variantQuestion:'变式题', variantResult:'变式结果', boundaryQuestion:'边界题', boundaryResult:'边界结果', expressionNote:'表达记录', conclusion:'结论', nextRaw:'下一步原文', rounds:'轮次', minutes:'时长(分钟)', selfEval:'自评(0-5)', errorType:'错因(E1–E9)', markedNotMeasured:'已标注未测', parsedBy:'抽取方式', submittedAt:'提交时间', submittedBy:'提交人', rawText:'提交原文' };
+const RECEIPT_FIELD_ORDER = ['topic','childQuote','stuckPoint','dLevelsUsed','variantQuestion','variantResult','boundaryQuestion','boundaryResult','expressionNote','conclusion','nextRaw','rounds','minutes','selfEval','errorType','markedNotMeasured','parsedBy','submittedAt','submittedBy','rawText','mode'];
+/* 回执里「云端代解析」的缺失项 → 人话（只提示，不拒绝提交：缺什么由云端折算成证据完整度） */
+const RECEIPT_MISSING_TEXT = { orderNo:'训练编号', topic:'知识点与核心目标', childQuote:'孩子的解释片段', stuckPoint:'发现的具体问题', dLevelsUsed:'用到的 D 层级', variantQuestion:'变式题题目', variantResult:'变式结果', boundaryQuestion:'边界题问题', boundaryResult:'边界结果', expression:'表达表现段' };
+
+function fmtDT(v){
+  const n = Number(v) || 0;
+  if(!n || n < 1e12) return '—';        /* 0 / 秒级 / 非法一律「—」，绝不显示 1970 */
+  const d = new Date(n); if(isNaN(d)) return '—';
+  const p = x => (x<10?'0'+x:''+x);
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function orderStatusText(s){ return ORDER_STATUS_TEXT[s] || (s ? String(s) : '—'); }
+function orderBadge(s){ return '<span class="obadge '+(ORDER_STATUS_CLS[s]||'b-cancelled')+'">'+esc(orderStatusText(s))+'</span>'; }
+function orderByText(b){ return ORDER_BY_TEXT[b] || (b ? String(b) : '—'); }
+function orderBucketText(k){ return (k in ORDER_BUCKET_TEXT) ? ORDER_BUCKET_TEXT[k] : (k ? String(k) : '—'); }
+function orderSubjText(o){ return (o.plan && o.plan.subjectName) || subjName(o.subject); }
+function orderErrText(code, msg){
+  const base = ORDER_ERROR_TEXT[code];
+  if(base) return msg ? (msg + '（' + base + '）') : base;
+  return msg || ('未识别的错误（' + (code||'unknown') + '）');
+}
+
+/* ================================================================== *
+ * 一、写通道（本看板**唯一**写路径）
+ * ================================================================== */
+
+/**
+ * 端上不许直传的保留键 —— 与云函数 webAdminWrite、工作台 cloudClient 的同名门禁
+ * 构成**双层防御**。为什么必须有：status / events 是 O2（回执 1:1）与 O4（append-only）
+ * 的载体，一旦允许端上直传，状态机立刻失去权威，整个闭环可被任意伪造。
+ */
+const ORDER_RESERVED_KEYS = ['status','events','openid','_openid','clientId'];
+
+/**
+ * 学习单**唯一**写出口。`by` 固定 'web' —— 三端留痕口径统一（mp / web / workbench），
+ * 让「这张单是在哪出的、谁交的回执」在 events 时间线上永远可查（O4）。
+ *
+ * 读走 webAdminQuery、写走 webAdminWrite.orders：这两条通道的边界**就是**本看板的写边界。
+ * 任何其它模块想直接调本函数或自己拼 webAdminWrite 入参，都算破坏架构决策 ——
+ * 正确做法是先讨论边界，而不是再加一处写（见文件头注释 ①）。
+ */
+async function callWrite(action, payload){
+  const body = Object.assign({}, payload || {});
+  for(const k of ORDER_RESERVED_KEYS){
+    if(Object.prototype.hasOwnProperty.call(body, k)){
+      return { ok:false, code:'bad_param', msg:'学习单写入不接受端上直传「' + k + '」：状态与事件只能由云端状态机推进' };
+    }
+  }
+  if(!TOKEN) return { ok:false, code:'auth', msg:orderErrText('auth') };
+  try{
+    if(!app) await initCloud();
+    const res = await app.callFunction({
+      name : 'webAdminWrite',
+      data : { token: TOKEN, orders: Object.assign({ action: action, by: 'web' }, body) }
+    });
+    const r = (res && res.result) || {};
+    if(!r.ok){
+      const code = r.code || 'order_error';
+      return { ok:false, code:code, msg:orderErrText(code, r.msg) };
+    }
+    return { ok:true, order:r.order||null, data:r };
+  }catch(e){
+    return { ok:false, code:'network', msg:orderErrText('network', errText(e)) };
+  }
+}
+
+/* ================================================================== *
+ * 二、计划 → 出单锚点（O1：只搬运，不计算）
+ * ================================================================== */
+
+/**
+ * 该计划下**全部未勾选**任务，带云端同源的 si / ti 下标。
+ *
+ * ⚠️ si / ti 是 stages / stage.tasks 的**下标**（ti 是**阶段内**下标），必须原样取自
+ *    遍历顺序 —— 若先 filter 再重新编号，两端下标立刻错位，回执就会挂到错误的
+ *    计划任务上。这条约束与小程序 `buildTasks`、工作台 `planTaskOf` 完全同源：
+ *    **映射层绝不重排、绝不过滤，脏任务只标记不剔除**（保位）。
+ */
+function planTasksOf(plan){
+  const rows = [];
+  if(!plan || !Array.isArray(plan.stages)) return rows;
+  let cum = 0;
+  plan.stages.forEach(function(st, si){
+    ((st && st.tasks) || []).forEach(function(t, ti){
+      cum += Number(t && t.days) || 1;
+      if(t && t.done) return;                      /* 已勾选的不再出单（与小程序一致） */
+      rows.push({
+        si: si, ti: ti,
+        name: (t && t.name) || '',
+        stageName: (st && st.name) || '',
+        days: Number(t && t.days) || 1,
+        dueDay: cum
+      });
+    });
+  });
+  return rows;
+}
+
+/**
+ * 可出单的计划 = 已「开始计划」（startDate 有值）+ 有 createdAt（能构造 planId）+ 有未勾选任务。
+ * 空计划 / 全部勾完 / 无 createdAt → **不可出单**：此时正确动作是去小程序推进计划，
+ * 而不是自由出单（决策 4「暂不支持无计划自由出单」是同一条约束的另一面）。
+ * 无 createdAt 时**宁可不出单，也不补一个 Date.now()** —— 否则会产生一张挂在假 planId 上的孤儿单。
+ */
+function issuablePlansOf(a){
+  const sp = (a && a.studyPlans) || {};
+  const out = [];
+  Object.keys(sp).forEach(function(k){
+    const p = sp[k] || {};
+    if(!p.startDate || !p.createdAt || !Array.isArray(p.stages)) return;
+    const tasks = planTasksOf(p);
+    if(!tasks.length) return;
+    out.push({ key:k, plan:p, tasks:tasks });
+  });
+  return out;
+}
+
+/**
+ * 回执的 `planCtx`：端上只报**事实**（计划时间戳变了没 / 锚点任务还在不在），
+ * 判不判定由云端 `orderActions.submit` 的 cycle.planDrift / cycle.planOrphan 负责。
+ */
+function planCtxOf(a, planKey, si, ti){
+  const p = ((a && a.studyPlans) || {})[planKey];
+  if(!p) return null;
+  const stages = Array.isArray(p.stages) ? p.stages : [];
+  const st = stages[si];
+  const t = (st && Array.isArray(st.tasks)) ? st.tasks[ti] : null;
+  return { updatedAt: Number(p.updatedAt) || 0, taskExists: !!(t && t.name) };
+}
+
+/* ================================================================== *
+ * 三、写区（出单 / 回执）—— 纯渲染，不含任何业务判定
+ * ================================================================== */
+
+let oWriteTab   = 'issue';   /* 'issue' | 'receipt' */
+let oMsg        = null;      /* {kind:'ok'|'err'|'warn', text} */
+let oBusy       = false;
+/* 出单 */
+let oIssuePlanIdx = 0;
+let oIssueTaskIdx = 0;
+let oIssueKind    = 'concept';
+let oIssueMinutes = 10;
+/* 回执（两步选择，与小程序 rStep 同口径：1 选计划 | 2 选出单 | 3 粘贴与确认） */
+let oRcptStep  = 1;
+let oRcptPlan  = '';
+let oRcptOrder = '';
+let oRcptPaste = '';
+
+function oMsgHtml(){
+  if(!oMsg) return '';
+  return '<div class="omsg ' + esc(oMsg.kind) + '" data-order-msg="1">' + esc(oMsg.text) + '</div>';
+}
+
+/** 重查学习单并重绘（写成功后调用：状态与事件一律以云端回流为准） */
+async function refreshOrders(){
+  try{ DATA.orders = await query('orders', { limit: 300 }); }
+  catch(e){ /* 拉取失败保留旧数据，不把已渲染的页面清空 */ }
+  renderOrders();
+}
+
+/** 出单面板（返回**卡片内容**，由 renderOrdersWrite 统一包卡片与页签）：选计划 → 选任务 → 选类型与时长 */
+function issuePanelHtml(a){
+  const list = issuablePlansOf(a);
+  if(!list.length){
+    return '<div class="empty">还没有可以出单的学习计划。学习单必须锚定计划里的具体任务（O1）——'
+      + '请先在小程序「我的 → 成长计划」生成并「开始计划」，再回来看板出单。'
+      + '本看板<b>不支持无计划自由出单</b>。</div>';
+  }
+  if(oIssuePlanIdx >= list.length) oIssuePlanIdx = 0;
+  const cur = list[oIssuePlanIdx];
+  const tasks = cur.tasks;
+  if(oIssueTaskIdx >= tasks.length) oIssueTaskIdx = 0;
+  const t = tasks[oIssueTaskIdx];
+
+  const planBtns = list.map(function(x,i){
+    return '<button data-oi-pplan="' + i + '" class="' + (i===oIssuePlanIdx?'on':'') + '">'
+      + esc(x.plan.subjectName || subjName(x.key))
+      + '<span class="s">' + esc(x.plan.grade||'') + ' ' + esc(x.plan.term||'') + ' · 起始 ' + esc(x.plan.startDate||'—')
+      + ' · 待出单 ' + x.tasks.length + ' 个任务</span></button>';
+  }).join('');
+
+  const taskBtns = tasks.map(function(x,i){
+    return '<button data-oi-ptask="' + i + '" class="' + (i===oIssueTaskIdx?'on':'') + '">'
+      + esc(x.name || '（任务名缺失）')
+      + '<span class="s">' + esc(x.stageName || '未命名阶段') + ' · 计划第 ' + x.dueDay + ' 天'
+      + ' · 锚点 si=' + x.si + ' ti=' + x.ti + '</span></button>';
+  }).join('');
+
+  const kindBtns = ORDER_KIND_ORDER.map(function(k){
+    return '<button data-oi-pkind="' + esc(k) + '" class="' + (k===oIssueKind?'on':'') + '">' + esc(ORDER_KIND_TEXT[k]||k) + '</button>';
+  }).join('');
+
+  const minBtns = ORDER_MINUTES.map(function(m){
+    return '<button data-oi-pmin="' + m + '" class="' + (m===oIssueMinutes?'on':'') + '">' + m + ' 分钟</button>';
+  }).join('');
+
+  return '<div data-order-write="issue">'
+    + '<div class="hint">选计划 → 选任务 → 选类型与时长。<b>出单即落云端</b>，小程序的「学习单」页会立刻看到这张单；'
+    + '训练单全文在小程序端复制（本页不出全文，避免两端各生成一份口径不同的提示词）。</div>'
+    + '<div class="ofrm">'
+    +   '<div class="fr"><label>① 选择计划</label><div class="opick">' + planBtns + '</div></div>'
+    +   '<div class="fr"><label>② 选择任务（只列未勾选；下标 si/ti 原样取自云端计划，绝不重排）</label><div class="opick">' + taskBtns + '</div></div>'
+    +   '<div class="fr"><label>③ 训练类型</label><div class="opick">' + kindBtns + '</div></div>'
+    +   '<div class="fr"><label>④ 计划时长</label><div class="opick">' + minBtns + '</div></div>'
+    +   '<div class="odrop">将锚定：<b>' + esc(cur.plan.subjectName||subjName(cur.key)) + '</b> · '
+    +     esc(t ? (t.name||'（任务名缺失）') : '（无任务）') + ' · <span class="okey">'
+    +     esc(cur.key + '@' + (cur.plan.createdAt||0)) + '</span> · si=' + (t?t.si:'—') + ' ti=' + (t?t.ti:'—')
+    +   '</div>'
+    +   '<div class="acts"><button class="obtn" data-oi-do="issue"' + (oBusy?' disabled':'') + '>'
+    +     (oBusy ? '出单中…' : '出单（落云端）') + '</button>'
+    +     '<span class="mut">留痕：issuedBy=web，出单时间由云端写入 events。</span></div>'
+    + '</div></div>';
+}
+
+/** 回执面板（返回**卡片内容**）：三步（先选计划 → 再选出单 → 粘贴并确认），与小程序同口径 */
+function receiptPanelHtml(a, plans, mine){
+  const pending = mine.filter(function(o){ return o.status === 'issued'; });
+  if(!pending.length){
+    return '<div class="empty">当前没有「待回执」的学习单。所有单都已回执过 —— 先去「出单」开一张新单吧。</div>';
+  }
+  /* 第一步的候选计划 = 有 issued 单的计划（与小程序 buildReceiptPlans 同口径） */
+  const rPlans = plans.filter(function(p){ return (p.issued||0) > 0; });
+  const steps = '<div class="osteps">'
+    + '<span class="s ' + (oRcptStep>=1?'on':'') + '">1 选计划</span>'
+    + '<span class="s ' + (oRcptStep>=2?'on':'') + '">2 选出单</span>'
+    + '<span class="s ' + (oRcptStep>=3?'on':'') + '">3 粘贴并确认</span>'
+    + '</div>';
+
+  let body = '';
+  if(oRcptStep === 1){
+    body = '<div class="hint">先选「属于哪一份计划」，再从该计划下选出具体出单 —— '
+      + '回执不会被挂到错的计划上（云端还会用 planId 做一次对位校验，不符直接拒绝）。</div>'
+      + '<div class="opick">' + rPlans.map(function(p){
+          return '<button data-or-pplan="' + esc(p.planId) + '" class="' + (oRcptPlan===p.planId?'on':'') + '">'
+            + esc(p.subjectName || subjName(p.key))
+            + '<span class="s">' + esc(p.taskName||'（任务名缺失）') + ' · ' + esc(p.stageName||'—')
+            + ' · 待回执 ' + p.issued + ' 张</span></button>';
+        }).join('') + '</div>';
+  } else if(oRcptStep === 2){
+    const rows = pending.filter(function(o){ return o.plan && o.plan.planId === oRcptPlan; });
+    body = '<div class="hint">只列出该计划下状态为「待回执」的单。<b>一个出单只能对应一个回执</b>（O2）。</div>'
+      + (rows.length
+          ? '<div class="opick">' + rows.map(function(o){
+              return '<button data-or-porder="' + esc(o.orderNo||'') + '" class="' + (oRcptOrder===o.orderNo?'on':'') + '">'
+                + esc(o.orderNo||'—')
+                + '<span class="s">' + esc(o.plan&&o.plan.taskName||'') + ' · ' + esc(ORDER_KIND_TEXT[o.kind]||o.kind||'')
+                + ' · 出单 ' + esc(fmtDT(o.issuedAt)) + ' · ' + esc(orderByText(o.issuedBy)) + '</span></button>';
+            }).join('') + '</div>'
+          : '<div class="empty">该计划下没有待回执的出单。回执只能对应真实出过的单，不支持手工造单提交。</div>'
+            + '<div class="acts"><button class="obtn ghost" data-or-back="1">返回上一步</button></div>');
+  } else {
+    const o = pending.filter(function(x){ return x.orderNo === oRcptOrder; })[0];
+    if(!o){
+      body = '<div class="empty">所选学习单已不在待回执状态（可能刚被其它端回执过）。请返回上一步重新选择。</div>'
+        + '<div class="acts"><button class="obtn ghost" data-or-back="1">返回上一步</button></div>';
+    } else {
+      body = '<div class="hint">把豆包给出的<b>训练证据回执全文</b>整段粘贴进来。解析在<b>云端</b>用与小程序完全相同的那一份规则完成'
+        + '（端上不解析 —— 解析规则一旦分叉，同一段回执在三端会算出三种结论）。'
+        + '缺项不会挡住提交：缺什么会如实折算成证据完整度，并把缺项列在这里提醒你。</div>'
+        + '<div class="odrop">将回执到：<b>' + esc(o.orderNo) + '</b> · ' + esc(o.plan&&o.plan.subjectName||'')
+        + ' · ' + esc(o.plan&&o.plan.taskName||'') + ' · <span class="okey">' + esc(o.plan&&o.plan.planId||'') + '</span></div>'
+        + '<div class="ofrm">'
+        +   '<div class="fr"><label>回执原文（粘贴豆包给出的全文）</label>'
+        +     '<textarea data-or-paste="1" placeholder="费曼训练证据回执&#10;训练编号：…&#10;知识点与核心目标：…&#10;【首次表现】…&#10;【变式验证】…">' + esc(oRcptPaste) + '</textarea></div>'
+        +   '<div class="two">'
+        +     '<div class="fr"><label>轮次（1–9，可留空）</label><input type="number" min="1" max="9" data-or-q="rounds" placeholder="解析结果优先"></div>'
+        +     '<div class="fr"><label>时长 / 分钟（0–600）</label><input type="number" min="0" max="600" data-or-q="minutes" placeholder="解析结果优先"></div>'
+        +     '<div class="fr"><label>自评（0–5）</label><input type="number" min="0" max="5" data-or-q="selfEval" placeholder="解析结果优先"></div>'
+        +     '<div class="fr"><label>错因（E1–E9，可留空）</label><input type="text" data-or-q="errorType" placeholder="如 E4"></div>'
+        +   '</div>'
+        +   '<div class="acts">'
+        +     '<button class="obtn" data-oi-do="submit"' + (oBusy?' disabled':'') + '>' + (oBusy ? '提交中…' : '提交回执') + '</button>'
+        +     '<button class="obtn ghost" data-or-back="1">返回上一步</button>'
+        +     '<span class="mut">留痕：submittedBy=web；<b>回执 ≠ 掌握证据</b>，掌握度只来自复测达标。</span>'
+        +   '</div>'
+        + '</div>';
+    }
+  }
+
+  return '<div data-order-write="receipt">' + steps + body + '</div>';
+}
+
+function renderOrdersWrite(a, plans, mine, loading){
+  const wbox = document.getElementById('ordersWrite');
+  if(!wbox) return;
+  plans = plans || []; mine = mine || [];
+  const issued = mine.filter(function(o){ return o.status === 'issued'; }).length;
+  const tabs = '<div class="tabs">'
+    + '<button data-ow-tab="issue" class="' + (oWriteTab==='issue'?'on':'') + '">出单</button>'
+    + '<button data-ow-tab="receipt" class="' + (oWriteTab==='receipt'?'on':'') + '">交回执' + (issued?'（'+issued+'）':'') + '</button>'
+    + '</div>';
+  /* loading：**页签照渲染**（入口必须在第一时间就在），只有真正需要数据的面板才给占位。
+     两个面板对数据的依赖并不相同，不该一刀切：
+       · 出单 —— 只用 `a.studyPlans`（来自 profile 模块），**与 orders 无关** →
+         profile 一到就能出单，不该被 orders 的延迟拖住；
+       · 回执 —— 必须等 orders（要列出「待回执」的单），所以它才需要占位。
+     绝不因为「数据还没到」就把写区整块清空 —— 那正是 owner 报「没找到交回执的入口」的形态。 */
+  const blocked = !a || (oWriteTab === 'receipt' && loading);
+  const inner = blocked
+    ? '<div class="empty">学习单数据加载中…加载完成后即可在此出单 / 交回执。</div>'
+    : ((oWriteTab === 'issue') ? issuePanelHtml(a) : receiptPanelHtml(a, plans, mine));
+  wbox.innerHTML = '<div class="card owrite">' + tabs + inner + oMsgHtml() + '</div>';
+
+  wbox.querySelectorAll('[data-ow-tab]').forEach(function(b){
+    b.addEventListener('click', function(){ oWriteTab = b.dataset.owTab; oMsg = null; renderOrders(); });
+  });
+  wbox.querySelectorAll('[data-oi-pplan]').forEach(function(b){
+    b.addEventListener('click', function(){ oIssuePlanIdx = +b.dataset.oiPplan; oIssueTaskIdx = 0; renderOrders(); });
+  });
+  wbox.querySelectorAll('[data-oi-ptask]').forEach(function(b){
+    b.addEventListener('click', function(){ oIssueTaskIdx = +b.dataset.oiPtask; renderOrders(); });
+  });
+  wbox.querySelectorAll('[data-oi-pkind]').forEach(function(b){
+    b.addEventListener('click', function(){ oIssueKind = b.dataset.oiPkind; renderOrders(); });
+  });
+  wbox.querySelectorAll('[data-oi-pmin]').forEach(function(b){
+    b.addEventListener('click', function(){ oIssueMinutes = +b.dataset.oiPmin; renderOrders(); });
+  });
+  wbox.querySelectorAll('[data-or-pplan]').forEach(function(b){
+    b.addEventListener('click', function(){ oRcptPlan = b.dataset.orPplan; oRcptOrder=''; oRcptStep = 2; oMsg=null; renderOrders(); });
+  });
+  wbox.querySelectorAll('[data-or-porder]').forEach(function(b){
+    b.addEventListener('click', function(){ oRcptOrder = b.dataset.orPorder; oRcptStep = 3; oMsg=null; renderOrders(); });
+  });
+  wbox.querySelectorAll('[data-or-back]').forEach(function(b){
+    b.addEventListener('click', function(){ oRcptStep = Math.max(1, oRcptStep-1); if(oRcptStep<3) oRcptOrder=''; oMsg=null; renderOrders(); });
+  });
+  const ta = wbox.querySelector('[data-or-paste]');
+  if(ta) ta.addEventListener('input', function(){ oRcptPaste = ta.value; });   /* 只存内存，不写 localStorage */
+  wbox.querySelectorAll('[data-oi-do]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if(oBusy) return;
+      if(b.dataset.oiDo === 'issue') doIssue();
+      else doSubmitReceipt();
+    });
+  });
+}
+
+/** 出单：组装锚点 → 云端 issue。**唯一写动作之一** */
+async function doIssue(){
+  const a = acc(); if(!a) return;
+  const list = issuablePlansOf(a);
+  const cur = list[oIssuePlanIdx];
+  if(!cur){ oMsg = {kind:'err', text:'没有可出单的计划任务。'}; renderOrders(); return; }
+  const t = cur.tasks[oIssueTaskIdx];
+  if(!t){ oMsg = {kind:'err', text:'没有可出单的任务。'}; renderOrders(); return; }
+
+  /* planTask 是 O1 的锚点：key / si / ti / taskName 缺一不可，
+     且 planCreatedAt 必须是**当前这份计划**的 createdAt（计划重生成即换 planId，旧单不会错挂新计划）。 */
+  const planTask = {
+    key: cur.key,
+    si: t.si,
+    ti: t.ti,
+    planCreatedAt: cur.plan.createdAt,
+    subjectName: cur.plan.subjectName || subjName(cur.key),
+    stageName: t.stageName,
+    taskName: t.name,
+    goal: '',
+    days: t.days,
+    dueDay: t.dueDay,
+    startDate: cur.plan.startDate || '',
+    planUpdatedAt: Number(cur.plan.updatedAt) || 0,
+    scaffoldLevel: ''
+  };
+
+  oBusy = true; oMsg = null; renderOrders();
+  const res = await callWrite('issue', {
+    planTask: planTask,
+    opts: { kind: oIssueKind, minutes: oIssueMinutes, issuedBy: 'web' }
+  });
+  oBusy = false;
+  if(!res.ok){ oMsg = {kind:'err', text:'出单失败：' + res.msg}; renderOrders(); return; }
+  oMsg = {kind:'ok', text:'出单成功：' + ((res.order && res.order.orderNo) || '') + '（' + (res.data && res.data.deduped ? '云端已有同单，未重复创建' : '已落云端') + '）'
+    + '。复制训练单全文请到小程序「学习单」页。'};
+  await refreshOrders();
+}
+
+/** 交回执：把粘贴原文交云端解析 → submit。**唯一写动作之二** */
+async function doSubmitReceipt(){
+  const a = acc(); if(!a) return;
+  const pending = ((DATA.orders && DATA.orders.orders) || []).filter(function(o){
+    return (!o.openid || o.openid === a.openid) && o.status === 'issued' && o.orderNo === oRcptOrder;
+  });
+  const o = pending[0];
+  if(!o){ oMsg = {kind:'err', text:'所选学习单已不在待回执状态，请返回重新选择。'}; oRcptStep = 2; renderOrders(); return; }
+  const rawText = String(oRcptPaste || '').trim();
+  if(!rawText){ oMsg = {kind:'err', text:'请先粘贴回执原文。'}; renderOrders(); return; }
+
+  /* 量化项：只在人确实填了数字时才传（留空 = 让云端按解析结果走，不覆盖） */
+  const wbox = document.getElementById('ordersWrite');
+  const quant = {};
+  if(wbox) wbox.querySelectorAll('[data-or-q]').forEach(function(inp){
+    const v = String(inp.value||'').trim();
+    if(!v) return;
+    const k = inp.dataset.orQ;
+    if(k === 'errorType'){ if(/^E[1-9]$/.test(v.toUpperCase())) quant.errorType = v.toUpperCase(); return; }
+    const n = Number(v);
+    if(!isNaN(n)) quant[k] = n;
+  });
+
+  const planKey = (o.plan && o.plan.key) || o.subject;
+  const planId  = (o.plan && o.plan.planId) || '';
+  const planCtx = planCtxOf(a, planKey, o.plan?o.plan.si:-1, o.plan?o.plan.ti:-1);
+
+  oBusy = true; oMsg = null;
+  renderOrders();
+  const payload = { orderNo: o.orderNo, planId: planId, rawText: rawText, parsedBy: 'rule' };
+  if(Object.keys(quant).length) payload.quant = quant;
+  if(planCtx) payload.planCtx = planCtx;
+  const res = await callWrite('submit', payload);
+  oBusy = false;
+  if(!res.ok){ oMsg = {kind:'err', text:'回执未提交：' + res.msg}; renderOrders(); return; }
+
+  const miss = (res.data && res.data.parsed && res.data.parsed.missing) || [];
+  if(miss.length){
+    oMsg = {kind:'warn', text:'回执已提交，但原文里有 ' + miss.length + ' 项没抽取到（'
+      + miss.map(function(k){ return RECEIPT_MISSING_TEXT[k] || k; }).join('、')
+      + '）。这不会挡住闭环 —— 缺项已如实折算成证据完整度，本次结论可能是「证据不足」。'};
+  } else {
+    oMsg = {kind:'ok', text:'回执已提交，评语与汇总已生成（见下方时间线）。回执 ≠ 掌握证据：掌握度只来自复测达标。'};
+  }
+  oRcptPaste = ''; oRcptOrder = ''; oRcptStep = 1;
+  await refreshOrders();
+}
+
+let ordersPlanFilter = '';   /* 计划下钻：'' = 全部计划 */
+let ordersSel = '';          /* 当前展开详情的单号 */
+
+/** 单张单的详情块：锚点 → 出单 → 回执 → 评语，全部取自云端原值 */
+function orderDetailHtml(o){
+  const p = o.plan || {};
+  const evs = Array.isArray(o.events) ? o.events : [];
+  const tl = evs.length
+    ? '<div class="tl">'+evs.map(function(e){
+        const lb = ORDER_EVENT_TEXT[e.type] || e.type || '事件';
+        const dt = e.detail ? (' <span class="mut">'+esc(e.detail)+'</span>') : '';
+        return '<div class="it"><div class="dt">'+fmtDT(e.at)+' · '+esc(orderByText(e.by))+'</div><div class="tx"><b>'+esc(lb)+'</b>'+dt+'</div></div>';
+      }).join('')+'</div>'
+    : '<div class="empty">无事件记录（云端 events 为空）</div>';
+
+  /* 锚点：O1 的五个字段是「这单挂在哪个计划的哪个任务上」的全部依据 */
+  let anchor = '<div class="obox"><div class="kv"><span class="k">计划锚点</span><span class="v">'
+    + '<b>'+esc(orderSubjText(o))+' · '+esc(p.taskName||'（任务名缺失）')+'</b>'
+    + '<div class="okey">planId = '+esc(p.planId||'（无锚点）')+'</div>'
+    + '<div class="mut">阶段 '+esc(p.stageName||'—')+' · 计划内下标 si='+esc(String(p.si||0))+' ti='+esc(String(p.ti||0))
+    + ' · 起始 '+fmtDate(p.startDate)+' · 到期第 '+esc(String(p.dueDay||'?'))+' 天</div>'
+    + '</span></div>';
+
+  const ts = [[ 'createdAt','建档',o.createdAt ],['issuedAt','出单',o.issuedAt],['submittedAt','回执',o.submittedAt],['closedAt','归档',o.closedAt],['voidedAt','作废',o.voidedAt]];
+  anchor += ts.map(function(x){
+    if(!x[2]) return '';
+    const by = x[0]==='issuedAt' ? (' · 由'+esc(orderByText(o.issuedBy)))
+             : x[0]==='submittedAt' ? (' · 由'+esc(orderByText(o.submittedBy))) : '';
+    return '<div class="kv"><span class="k">'+x[1]+'</span><span class="v">'+fmtDT(x[2])+by+'</span></div>';
+  }).join('');
+  if(o.voidReason) anchor += '<div class="kv"><span class="k">作废原因</span><span class="v">'+esc(o.voidReason)+'</span></div>';
+  if(o.reissueOf)  anchor += '<div class="kv"><span class="k">重开自</span><span class="v">'+esc(o.reissueOf)+'</span></div>';
+  anchor += '</div>';
+
+  /* 回执：显式字段按序渲染，未知字段回落键名（不丢） */
+  let receipt = '<div class="empty">尚未回执</div>';
+  const r = o.receipt;
+  if(r && typeof r === 'object'){
+    const shown = RECEIPT_FIELD_ORDER.filter(function(k){ const v=r[k]; return v!==undefined && v!==null && v!=='' && !(Array.isArray(v)&&!v.length); });
+    const extra = Object.keys(r).filter(function(k){ return k!=='fields' && RECEIPT_FIELD_ORDER.indexOf(k)<0; });
+    const cell = function(k){
+      let v = r[k];
+      if(k==='submittedAt') v = fmtDT(v);
+      else if(k==='submittedBy') v = orderByText(v);
+      else if(k==='variantResult'||k==='boundaryResult') v = orderBucketText(v);
+      else if(k==='dLevelsUsed') v = (Array.isArray(v)?v:[]).join('、') || '—';
+      else if(Array.isArray(v)) v = v.join('、');
+      else if(typeof v==='boolean') v = v?'是':'否';
+      else v = String(v);
+      return '<div class="kv"><span class="k">'+esc(RECEIPT_FIELD_TEXT[k]||k)+'</span><span class="v">'+esc(v)+'</span></div>';
+    };
+    receipt = '<div class="obox">'+shown.map(cell).join('')
+      + extra.map(function(k){ return '<div class="kv"><span class="k">'+esc(k)+'</span><span class="v">'+esc(String(r[k]))+'</span></div>'; }).join('')
+      + (extra.length ? '<div class="mut" style="margin-top:6px">↑ 云端回执里出现了本页未登记的新字段，已按原始键名显示（请同步三端文案表）</div>' : '')
+      + '</div>';
+  }
+
+  /* 评语：规则为主，AI 只润色。verdict 取引擎自带 verdictText，端上不重算、不翻译 */
+  let comment = '<div class="empty">尚无评语</div>';
+  const ev = o.evaluation;
+  if(ev && typeof ev === 'object'){
+    const cs = ev.commentSource === 'ai' ? 'AI 润色' : '规则';
+    const checks = Array.isArray(ev.checks) ? ev.checks : [];
+    comment = '<div class="obox">'
+      + '<div class="kv"><span class="k">本次表现</span><span class="v"><b>'+esc(ev.verdictText || (ev.verdict===null?'证据不足':(ev.verdict||'—')))+'</b>'
+      + ' <span class="mut">· 证据完整度：'+esc(ev.completeness||'—')+' · 评语来源：'+esc(cs)+'</span></span></div>'
+      + '<div class="kv"><span class="k">评语</span><span class="v">'+esc(ev.comment||'—')+'</span></div>'
+      + (checks.length ? '<div class="kv"><span class="k">证据核对</span><span class="v">'+checks.map(function(c){
+          return '<span class="obadge '+(c.pass?'b-closed':'b-issued')+'">'+(c.pass?'✓':'○')+' '+esc(c.label||c.id||'')+'</span>';
+        }).join(' ')+'</span></div>' : '')
+      + '<div class="mut" style="margin-top:6px">评语为规则生成'+(ev.commentSource==='ai'?'、AI 仅作措辞润色':'')+'；「'+esc(ev.verdictText||'')+'」只描述本次练习表现，<b>不是掌握度结论</b>。</div>'
+      + '</div>';
+  }
+
+  /* cycle：闭环自身的信息（计划漂移/孤儿/重复卡点/下一步建议/复测提示） */
+  let cyc = '';
+  const cy = o.cycle;
+  if(cy && typeof cy === 'object'){
+    const items = [];
+    if(cy.planOrphan) items.push('本单锚定的计划已被重建，单已成孤儿（只能作废重开）');
+    if(cy.planDrift)  items.push('本单实际完成时间偏离计划排期');
+    if(cy.planDelta)  items.push('计划第 '+esc(String(cy.planDelta.dueDay))+' 天 vs 实际第 '+esc(String(cy.planDelta.actualDay))+' 天（偏差 '+esc(String(cy.planDelta.delta))+'）');
+    if(cy.repeatStuck) items.push('同一任务已连续 '+esc(String(cy.repeatStuck))+' 次出现卡点');
+    if(cy.nextSuggest) items.push('下一步建议：'+esc(String(cy.nextSuggest)));
+    if(cy.retestHint)  items.push('建议安排复测：'+esc(String(cy.retestHint.topic||'')));
+    if(items.length) cyc = '<div class="obox"><div class="kv"><span class="k">闭环信息</span><span class="v">'+items.map(function(t){return '· '+t;}).join('<br>')+'</span></div></div>';
+  }
+
+  return '<div class="card" style="margin-top:14px" data-order-detail="'+esc(o.orderNo||o.clientId||'')+'">'
+    + '<h3>单详情 · '+esc(o.orderNo||o.id||'—')+' '+orderBadge(o.status)+'</h3>'
+    + '<div class="mut" style="margin:-4px 0 10px">'+esc(o.title||'')+' · '+esc(orderSubjText(o))+' · '+esc(o.kind||'—')+(o.minutes?' · '+esc(String(o.minutes))+' 分钟':'')+'</div>'
+    + anchor
+    + '<div class="report-sec" style="margin-top:14px"><h4>回执</h4>'+receipt+'</div>'
+    + '<div class="report-sec"><h4>评语与汇总（规则）</h4>'+comment+cyc+'</div>'
+    + '<div class="report-sec"><h4>事件时间线（O4 · 只追加）</h4><div class="mut" style="margin-bottom:6px">什么时间出单、什么时间回执，全部按发生顺序记录；已发生的事件不会被改写。</div>'+tl+'</div>'
+    + '</div>';
+}
+
+function renderOrders(){
+  const chips = document.getElementById('childChipsOrders');
+  const box = document.getElementById('ordersContent');
+  const wbox = document.getElementById('ordersWrite');
+  if(!chips || !box) return;
+
+  /* ⚠️ 「还没加载完」与「确实没有账号」是两件事，必须分开处理：
+     · DATA.profile === null → **加载中**。绝不许清空写区 —— 否则用户在数据到达前的
+       那几秒里看到的是一片空白，会直接判定「网页端没有出单 / 交回执功能」。
+       （真实事故：owner 报「网页端没找到交回执的入口」，真机复现即为此态。）
+     · accounts 为空数组 → 才是真的没有可展示的孩子。
+     写区骨架（出单 / 交回执 两个页签）在两种情况下都必须在：出单只依赖 profile 的
+     studyPlans，与 orders 无关，没有任何理由因为「数据晚到」把入口藏起来。 */
+  if(!DATA.profile){
+    chips.innerHTML = '';
+    renderOrdersWrite(null, [], [], true);
+    box.innerHTML = '<div class="card"><div class="empty">学习单数据加载中…</div></div>';
+    return;
+  }
+  if(!DATA.profile.accounts || !DATA.profile.accounts.length){
+    chips.innerHTML = '';
+    if(wbox) wbox.innerHTML = '';
+    box.innerHTML = '<div class="card"><div class="empty">该口令下没有可展示的孩子账号。</div></div>';
+    return;
+  }
+  renderChips('childChipsOrders', function(){ ordersPlanFilter=''; ordersSel=''; renderOrders(); });
+  const a = acc(); if(!a) return;
+
+  if(!DATA.orders){
+    /* 数据未到（仍在拉取中，或 orders 模块拉取失败）——
+       **同样保留写区骨架**：出单只用 profile.studyPlans，清空写区会把出单入口一起弄没。 */
+    renderOrdersWrite(a, [], [], true);
+    box.innerHTML = '<div class="card"><div class="empty">学习单数据加载中…若长时间没有数据，请点右上角「重新拉取」；若始终失败，最常见原因是 webAdminQuery 的 orders 模块未部署 —— 具体原因见顶部状态条。</div></div>';
+    return;
+  }
+
+  const all = Array.isArray(DATA.orders.orders) ? DATA.orders.orders : [];
+  /* 单机版口令（非管理员）下云端已按绑定 openid 过滤过，这里的再过滤是幂等的；
+     管理员口令下云端回**全部孩子**的单，这一道过滤才是真正生效的那道。 */
+  const mine = all.filter(function(o){ return !o.openid || o.openid === a.openid; });
+  const unowned = all.length - all.filter(function(o){ return !!o.openid; }).length;
+  /* 计划聚合直接用云端那一份（T23：三端渲染同一份聚合，避免各算一遍算出三种口径），
+     只按 openid 过滤到当前孩子。 */
+  const plans = (Array.isArray(DATA.orders.plans) ? DATA.orders.plans : []).filter(function(p){ return !p.openid || p.openid === a.openid; });
+
+  /* ⚠️ 写区必须在**任何早退之前**渲染：新账号一张单都没有，若把写区放在下面
+     「该账号还没有学习单」的分支之后，就永远出不了第一张单（出单入口被自己挡住）。 */
+  renderOrdersWrite(a, plans, mine);
+
+  const cnt = { issued:0, submitted:0, closed:0, cancelled:0, voided:0 };
+  mine.forEach(function(o){ if(cnt[o.status]!==undefined) cnt[o.status]++; });
+
+  const view = ordersPlanFilter ? mine.filter(function(o){ return o.plan && o.plan.planId === ordersPlanFilter; }) : mine;
+
+  let html = '<div class="sumrow" data-page-node-id="ordersSum">'
+    + '<b>学习单闭环</b>'
+    + '<span class="pill">待回执 '+cnt.issued+'</span>'
+    + '<span class="pill">已回执 '+cnt.submitted+'</span>'
+    + '<span class="pill">已归档 '+cnt.closed+'</span>'
+    + '<span class="pill">已作废 '+cnt.voided+'</span>'
+    + '<span class="pill">已取消 '+cnt.cancelled+'</span>'
+    + '<span class="m">共 '+mine.length+' 张 · 涉及 '+plans.length+' 份计划</span>'
+    + '</div>';
+
+  if(unowned) html += '<div class="note">有 '+unowned+' 张单缺少账号归属（云端 openid 为空），已一并显示在每位孩子的列表里。这属于历史数据异常，建议核对 tutor_orders 的 openid 字段。</div>';
+
+  if(!mine.length){
+    html += '<div class="card"><div class="empty">该账号还没有学习单。学习单在小程序「学习单」页或工作台出单页创建 —— 出单必须锚定到一份已开始的成长计划任务，不支持无计划自由出单。</div></div>';
+    box.innerHTML = html; return;
+  }
+
+  /* —— 计划维度聚合（决策 1 的基数 1:N 可视化：一份计划 → N 张单）—— */
+  html += '<div class="card" style="margin-bottom:14px" data-page-node-id="ordersPlanCard"><h3>按计划聚合（1 份计划 → N 张单）</h3>'
+    + '<div class="mut" style="margin:-4px 0 10px">点任意一行只看这份计划下的单；再点顶部「全部计划」回到全部。</div>'
+    + '<div class="sched"><table><tr><th>计划任务</th><th>学科</th><th>阶段</th><th>锚点下标</th><th>待回执</th><th>已回执</th><th>已归档</th><th>合计</th><th>最近出单</th></tr>'
+    + plans.map(function(p){
+        const on = ordersPlanFilter === p.planId;
+        return '<tr data-planrow="'+esc(p.planId)+'" style="cursor:pointer'+(on?';background:#faf3dd':'')+'">'
+          + '<td><div style="font-weight:700">'+esc(p.taskName||'（任务名缺失）')+'</div><div class="okey">'+esc(p.planId)+'</div></td>'
+          + '<td>'+esc(p.subjectName||subjName(p.key))+'</td>'
+          + '<td>'+esc(p.stageName||'—')+'</td>'
+          + '<td class="mut">si='+esc(String(p.si))+' ti='+esc(String(p.ti))+'</td>'
+          + '<td>'+(p.issued?orderBadge('issued')+' '+p.issued:'<span class="mut">0</span>')+'</td>'
+          + '<td>'+(p.submitted?p.submitted:'<span class="mut">0</span>')+'</td>'
+          + '<td>'+(p.closed?p.closed:'<span class="mut">0</span>')+'</td>'
+          + '<td><b>'+p.total+'</b></td>'
+          + '<td class="mut">'+fmtDT(p.lastAt)+'</td>'
+          + '</tr>';
+      }).join('')
+    + '</table></div></div>';
+
+  /* —— 出单明细 —— */
+  const btns = '<div class="obtns">'
+    + '<button data-planfilter="" class="'+(ordersPlanFilter?'':'on')+'">全部计划（'+mine.length+'）</button>'
+    + plans.map(function(p){ return '<button data-planfilter="'+esc(p.planId)+'" class="'+(ordersPlanFilter===p.planId?'on':'')+'">'+esc(p.subjectName||subjName(p.key))+' · '+esc(p.taskName||'（任务名缺失）')+'（'+p.total+'）</button>'; }).join('')
+    + '</div>';
+
+  const rows = view.map(function(o){
+    const sel = ordersSel === o.orderNo;
+    const ev = o.evaluation || {};
+    const verdict = ev.verdictText || (ev.verdict===null?'证据不足':(ev.verdict||''));
+    return '<tr data-orderno="'+esc(o.orderNo||o.id||'')+'" style="cursor:pointer'+(sel?';background:#faf3dd':'')+'">'
+      + '<td><div style="font-weight:700">'+esc(o.orderNo||o.id||'—')+'</div><div class="mut">'+esc(o.title||'')+'</div></td>'
+      + '<td>'+esc(orderSubjText(o))+'<div class="mut">'+esc((o.plan&&o.plan.taskName)||'—')+'</div></td>'
+      + '<td>'+esc(o.kind||'—')+(o.minutes?'<div class="mut">'+esc(String(o.minutes))+' 分钟</div>':'')+'</td>'
+      + '<td>'+orderBadge(o.status)+'</td>'
+      + '<td class="mut">'+fmtDT(o.issuedAt)+'<div>'+esc(orderByText(o.issuedBy))+'</div></td>'
+      + '<td class="mut">'+fmtDT(o.submittedAt)+'</td>'
+      + '<td>'+(verdict?esc(verdict):'<span class="mut">—</span>')+'</td>'
+      + '</tr>';
+  }).join('');
+
+  html += '<div class="card" data-page-node-id="ordersListCard"><h3>出单明细'+(ordersPlanFilter?'（已按计划过滤）':'')+' · 共 '+view.length+' 张</h3>'
+    + btns
+    + (view.length
+        ? '<div class="sched"><table><tr><th>单号</th><th>学科 · 锚定任务</th><th>类型</th><th>状态</th><th>出单</th><th>回执</th><th>本次表现</th></tr>'+rows+'</table></div>'
+        : '<div class="empty">该计划下暂无学习单</div>')
+    + '</div>';
+
+  /* —— 单详情（选中后展开）—— */
+  const picked = ordersSel ? view.filter(function(o){ return (o.orderNo||o.id) === ordersSel; })[0] : null;
+  if(picked) html += orderDetailHtml(picked);
+
+  box.innerHTML = html;
+
+  box.querySelectorAll('[data-planrow]').forEach(function(tr){
+    tr.addEventListener('click', function(){
+      const v = tr.dataset.planrow;
+      ordersPlanFilter = (ordersPlanFilter === v) ? '' : v;
+      ordersSel = '';
+      renderOrders();
+    });
+  });
+  box.querySelectorAll('[data-planfilter]').forEach(function(b){
+    b.addEventListener('click', function(){ ordersPlanFilter = b.dataset.planfilter || ''; ordersSel=''; renderOrders(); });
+  });
+  box.querySelectorAll('[data-orderno]').forEach(function(tr){
+    tr.addEventListener('click', function(){
+      const v = tr.dataset.orderno;
+      ordersSel = (ordersSel === v) ? '' : v;
+      renderOrders();
+      if(ordersSel){ const d = box.querySelector('[data-order-detail]'); if(d) d.scrollIntoView({ block:'nearest', behavior:'smooth' }); }
+    });
+  });
+}
+
 /* ============ 时间轴记录 ============ */
 function renderTimeline(){
   const box = document.getElementById('childChipsTL');
@@ -28863,9 +29658,11 @@ function renderReport(){
 function switchView(v){
   document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
   const el=document.getElementById(v); if(el) el.classList.add('on');
-  const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',exams:'试卷库',archive:'学习者档案',tasks:'计划与课表',timeline:'时间轴记录',report:'学习报告',set:'环境与口令'};
+  const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',orders:'学习单',exams:'试卷库',archive:'学习者档案',tasks:'计划与课表',timeline:'时间轴记录',report:'学习报告',set:'环境与口令'};
   document.getElementById('title').textContent=map[v]||v;
-  document.getElementById('sub').textContent=(map[v]||'')+' · 只读';
+  /* 每个视图的副标题后缀 —— 口径与「只读」文案一致：只有「学习单」是可写区（决策 3） */
+  const suffix = (v === 'orders') ? ' · 可写（出单 / 交回执）' : ' · 只读';
+  document.getElementById('sub').textContent=(map[v]||'')+suffix;
   document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
   document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
   if(v==='set') loadVisionConfig();

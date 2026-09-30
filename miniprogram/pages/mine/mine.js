@@ -286,7 +286,16 @@ Page({
 
   /** 导学未启用时的引导弹窗（按缺哪一步分流动作） */
   showTutorLocked(gate) {
-    if (!gate.hasChild) {
+    if (!gate.bound) {
+      // 本地模式 / 已退出登录：首要引导是去绑定微信
+      wx.showModal({
+        title: '请先绑定微信',
+        content: '导学功能（AI 导学 / 错题本 / 导学报告）需要绑定微信后使用，数据将与该账号同步。本地模式仅保留打卡与农场。',
+        confirmText: '去绑定微信',
+        cancelText: '稍后',
+        success: (res) => { if (res.confirm) this.bindWechat(); }
+      });
+    } else if (!gate.hasChild) {
       wx.showModal({
         title: '请先添加孩子',
         content: '导学功能需要先添加孩子，才能针对 TA 定制学习计划与导学内容。',

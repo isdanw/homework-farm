@@ -11,8 +11,23 @@
     "test:cloud-cas": "node scripts/test-cloud-cas.cjs",
     "test:plan-feedback": "node scripts/test-report-plan-feedback.cjs",
     "test:waq-exams": "node scripts/test-webadminquery-exams.cjs",
-    "test": "node scripts/test-store-persistence.cjs && node scripts/test-tutor-store.cjs && node scripts/test-tutor-sync-dedupe.cjs && node scripts/test-cloud-cas.cjs && node scripts/test-report-plan-feedback.cjs && node scripts/test-webadminquery-exams.cjs",
-    "test:counterproof": "sh scripts/counterproof.sh"
+    "check:order-page": "node scripts/check-order-page.cjs",
+    "check:web-orders": "node scripts/check-web-orders.cjs",
+    "test:web-order-write": "node scripts/test-web-order-write.cjs",
+  "test:order-e2e": "node scripts/test-order-e2e.cjs",
+    "smoke:web-orders": "/Users/yiyo/.workbuddy/binaries/python/versions/3.14.3/bin/python3 scripts/smoke-web-orders.py",
+  "check:gateway-route": "sh scripts/check-gateway-route.sh",
+    "test": "node scripts/test-store-persistence.cjs && node scripts/test-tutor-store.cjs && node scripts/test-tutor-sync-dedupe.cjs && node scripts/test-cloud-cas.cjs && node scripts/test-report-plan-feedback.cjs && node scripts/test-webadminquery-exams.cjs && node scripts/test-order-contract.cjs && node scripts/test-order-kit.cjs && node scripts/test-order-kit-sync.cjs && node scripts/test-order-plan-aggregate.cjs && node scripts/test-tutor-orders.cjs && node scripts/test-tutor-sync-orders.cjs && node scripts/test-order-store.cjs && node scripts/check-order-page.cjs && node scripts/check-web-orders.cjs && node scripts/test-web-order-write.cjs && node scripts/test-order-e2e.cjs",
+    "test:counterproof": "sh scripts/counterproof.sh",
+    "test:order-contract": "node scripts/test-order-contract.cjs",
+    "test:order-kit": "node scripts/test-order-kit.cjs",
+    "test:order-kit-sync": "node scripts/test-order-kit-sync.cjs",
+    "test:order-plan-aggregate": "node scripts/test-order-plan-aggregate.cjs",
+    "test:tutor-orders": "node scripts/test-tutor-orders.cjs",
+    "test:tutor-sync-orders": "node scripts/test-tutor-sync-orders.cjs",
+    "test:order-store": "node scripts/test-order-store.cjs",
+    "test:orders-counterproof": "COUNTERPROOF=1 node scripts/test-tutor-orders.cjs && COUNTERPROOF=1 node scripts/test-tutor-sync-orders.cjs && COUNTERPROOF=1 node scripts/test-order-store.cjs",
+    "test:orders": "node scripts/test-order-contract.cjs && node scripts/test-order-kit.cjs && node scripts/test-order-kit-sync.cjs && node scripts/test-tutor-orders.cjs && node scripts/test-tutor-sync-orders.cjs && node scripts/test-order-store.cjs && node scripts/check-order-page.cjs && node scripts/check-web-orders.cjs && node scripts/test-web-order-write.cjs && node scripts/test-order-e2e.cjs"
   },
   "dependencies": {
     "miniprogram-ci": "^2.0.24"

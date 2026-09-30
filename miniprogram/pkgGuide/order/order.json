@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "学习单",
+  "navigationBarBackgroundColor": "#BFE6FF",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F0",
+  "enablePullDownRefresh": true
+}

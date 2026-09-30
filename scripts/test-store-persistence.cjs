@@ -73,6 +73,11 @@ function resetEnv() {
     },
     setStorageSync(k, v) { storage.set(k, JSON.parse(JSON.stringify(v))); },
     removeStorageSync(k) { storage.delete(k); },
+    // ⚠️ 缺这个桩会让 store.js initAccount 的「命名空间归并」整块抛异常
+    //    （TypeError: wx.getStorageInfoSync is not a function），
+    //    连带 3 条断言长期误报红：降级标记 / flushSync 补推 / 脏标记清除。
+    //    这是**测试台缺口**，不是产品缺陷 —— wx.getStorageInfoSync 是真实存在的微信 API。
+    getStorageInfoSync() { return { keys: Array.from(storage.keys()), currentSize: 0, limitSize: 10240 }; },
     cloud: {
       callFunction({ name, data }) {
         const action = data && data.action;
@@ -125,6 +130,24 @@ function freshStore() {
   return s;
 }
 
+/**
+ * 声明「本用例的前提是：用户此前已主动绑定过微信」—— 即 OPENID_KEY 里有缓存的 openid。
+ *
+ * ⚠️ 为什么必须显式声明（2026-09-28 修）：
+ *   2026-09-22 登录策略调整后，initAccount() **不再自动登录微信**，只在「已缓存 openid」
+ *   （用户此前绑定过）时才调 whoami 确认身份；首启未绑定一律走「本地模式」。
+ *   而 store 的 canSync() = cloudReady && _openid && !_cloudBlocked。
+ *   于是不声明这一步时 _openid 恒为空 → 一次云调用都不发（连 whoami 都不调），
+ *   「上传 / CAS 基线 / 命名空间隔离」类断言会全部假红 —— 表现为
+ *   「flushSync 补推不上」「base=undefined」这种看不出病因的失败。
+ *   本挂具函数让这个前提在用例里**可见**，而不是靠隐式全局状态。
+ *
+ * 需要测「本地模式 / 未绑定」的用例（T1b / T2 / T7）**不要**调它。
+ */
+function bindCached() {
+  storage.set(OPENID_KEY, OPENID);
+}
+
 /** 造一个「真实孩子」切片（有 homework 完成记录，能通过 hasRealActivity） */
 function realChild(id, patch) {
   return Object.assign({
@@ -164,14 +187,37 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   resetEnv();
   behavior.whoami = 'fail';
   {
+    /* ⚠️ 场景前提（2026-09-22 登录策略调整后必须显式种下）：
+       initAccount 只在**已缓存 openid**（用户此前主动绑定过）时才向服务端确认身份；
+       首启未绑定默认走「本地模式」，不调 whoami、也不算降级（那条路径见 T1b）。
+       本用例测的是「已绑定用户这次 whoami 失败」，所以必须预置 OPENID_KEY。 */
     const s = freshStore();
+    storage.set(OPENID_KEY, OPENID);
     await s.initAccount();
     s.addUser({ nickname: '测试娃', grade: '一年级' });
-    const raw = storage.get(BASE_KEY);
-    ok(!!raw, '数据落到兜底 key（未确认 openid 时不丢）');
+    /* 已绑定时 storageKey() = 账号命名空间。whomai 失败只影响「能不能上云」，
+       不影响「写到哪个命名空间」—— 身份是从缓存里知道的，不该退回兜底 key。 */
+    const raw = storage.get(NS_KEY);
+    ok(!!raw, '数据落到账号命名空间（身份确认失败也不丢盘）');
     ok(!!raw && raw.users.length === 1 && raw.users[0].nickname === '测试娃', '孩子资料已落盘', JSON.stringify(raw && raw.users.map(u => u.nickname)));
     ok(s.getSyncState().degraded === true, '标记为降级（app.js 会弹「数据已存本机」提示）');
     ok(s.isOnboarded() === true, 'isOnboarded() 正确为 true');
+  }
+
+  /* ---- T1b: 首启未绑定（本地模式）→ 不调 whoami、不算降级、不上云 ---- */
+  group('T1b 首启未绑定 = 本地模式（2026-09-22 策略），不得误报「同步异常」');
+  resetEnv();
+  {
+    const s = freshStore();                 // 不种 OPENID_KEY
+    await s.initAccount();
+    ok(calls.indexOf('whoami') < 0, '未绑定时不自动登录微信（不调 whoami）', 'calls=' + calls.join(','));
+    ok(s.getSyncState().degraded === false, '未绑定不算降级（否则会误弹「网络异常」告警）');
+    ok(s.getOpenid() === '', 'openid 保持为空');
+    s.addUser({ nickname: '测试娃' });
+    await sleep(60);
+    ok(uploaded.length === 0, '本地模式不上云（canSync 由 openid 拦截）', 'uploaded=' + uploaded.length);
+    const raw = storage.get(BASE_KEY);
+    ok(!!raw && raw.users.length === 1, '数据落到兜底 key，本地照常可用');
   }
 
   /* ---- T2: 未启用的占位切片不得产生云端档案 ---- */
@@ -192,6 +238,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   {
     behavior.upload = 'fail';
     const s = freshStore();
+    storage.set(OPENID_KEY, OPENID);   // 「已绑定」（同上：不种则走本地模式，canSync 恒 false，本用例无从检验）
     await s.initAccount();
     s.addUser({ nickname: '测试娃' });
     await sleep(60);
@@ -202,7 +249,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await sleep(30);
     ok(uploaded.length === 1, '恢复后 flushSync 补推成功成功的 1 次', 'uploaded=' + uploaded.length);
     ok(s.isDirty() === false, '补推成功后脏标记清除');
-    ok(uploaded[0].users[0].nickname === '测试娃', '推送的是本地最新数据');
+    // ⚠️ 必须防空：uploaded 为空时 uploaded[0] 会抛 TypeError，
+    //    把「一条断言失败」升级成「整个文件中断」，后面的用例全跑不到（曾经如此）
+    ok(!!uploaded[0] && uploaded[0].users[0].nickname === '测试娃', '推送的是本地最新数据');
   }
 
   /* ---- T4: 2 秒防抖窗口内切后台 → onHide flush 兜住 ---- */
@@ -210,6 +259,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   resetEnv();
   {
     const s = freshStore();
+    bindCached();
     await s.initAccount();
     s.addUser({ nickname: '测试娃' });
     ok(uploaded.length === 0, 'addUser 后 2 秒防抖期内确实还没上云');
@@ -304,6 +354,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   {
     behavior.download = 'fail';
     const s = freshStore();
+    bindCached();
     await s.initAccount();
     const st = s.getSyncState();
     ok(st.blocked === true, '置为云端保护期（防止本地空态覆盖云端）');
@@ -316,26 +367,33 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(uploaded.length === 0, '保护期内不上云');
   }
 
-  /* ---- T10: P0-1 端到端 —— whoami 失败期积压的改动，身份恢复后必须补推 ---- */
-  group('T10 whoami 恢复后把兜底 key 的积压改动补上云');
+  /* ---- T10: P0-1 端到端 —— 本地模式（未绑定）期积压的改动，绑定微信后必须补推 ---- */
+  group('T10 绑定微信后把兜底 key 的积压改动补上云');
   resetEnv();
   {
-    behavior.whoami = 'fail';
+    /* ⚠️ 2026-09-22 起「身份恢复」的入口是用户在「我的 → 去绑定」触发的 bindWechat()，
+       不再是下一次 initAccount 自动 whoami。本用例随之改写，覆盖的目标不变：
+       本地模式期产生的改动不能因为换了命名空间就丢。 */
     const s = freshStore();
-    await s.initAccount();
+    await s.initAccount();                     // 未绑定 → 本地模式
+    ok(s.getOpenid() === '', '前提：处于本地模式（openid 为空）');
     s.addUser({ nickname: '离线期娃' });
     await sleep(60);
     ok(!!storage.get(BASE_KEY), '离线期数据在兜底 key');
     ok(s.isDirty() === true, '离线期留下脏标记');
     ok(uploaded.length === 0, '离线期确实没上云');
 
-    // 下一次启动：身份恢复正常
-    behavior.whoami = 'ok';
-    await s.initAccount();
-    ok(!!storage.get(NS_KEY), '兜底 key 数据已迁移进账号命名空间');
+    // 用户点「去绑定」→ whoami 成功 → 数据迁进账号命名空间
+    const r = await s.bindWechat();
+    ok(r && r.ok === true, '绑定成功', JSON.stringify(r));
+    ok(s.getOpenid() === OPENID, 'openid 已就位');
+    ok(!!storage.get(NS_KEY), '兜底 key 数据已迁进账号命名空间');
     ok(!storage.get(BASE_KEY), '兜底 key 已清空，不会重复迁移');
-    await sleep(30);
-    ok(uploaded.length === 1, '积压改动被补推上云（脏标记也随身份一并迁移）', 'uploaded=' + uploaded.length);
+    ok(!!storage.get(NS_KEY).users.find(u => u.nickname === '离线期娃'), '迁过去的是离线期那份数据');
+
+    s.flushSync(true);                         // app.onShow / onHide 的动作
+    await sleep(40);
+    ok(uploaded.length === 1, '积压改动被补推上云', 'uploaded=' + uploaded.length);
     ok(!!uploaded[0] && uploaded[0].users[0].nickname === '离线期娃', '补推的是离线期产生的那份数据');
   }
 
@@ -344,6 +402,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   resetEnv();
   {
     const s = freshStore();
+    bindCached();
     await s.initAccount();
     const id = s.addUser({ nickname: 'A' });
 
@@ -367,6 +426,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   resetEnv();
   {
     const s = freshStore();
+    bindCached();
     await s.initAccount();
     s.addUser({ nickname: '加一', grade: '一年级' });
 
@@ -393,6 +453,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   {
     storage.set('wb_hwfarm_wxprofile', { nickname: '旧昵称', avatarUrl: 'https://old/a.png' });
     const s = freshStore();
+    bindCached();
     await s.initAccount();
     const p = s.getWxProfile();
     ok(p.nickname === '旧昵称' && p.avatarUrl === 'https://old/a.png', '读到旧 key 的内容', JSON.stringify(p));
@@ -407,6 +468,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   resetEnv();
   {
     const s = freshStore();
+    bindCached();
     await s.initAccount();
     s.setWxProfile({ nickname: '还没建娃' });
     await sleep(2100);
@@ -424,6 +486,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   resetEnv();
   {
     const s = freshStore();
+    bindCached();
     await s.initAccount();
     s.addUser({ nickname: '加一' });
     s.flushSync(true);

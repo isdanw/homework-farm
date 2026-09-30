@@ -3,7 +3,8 @@
  *
  * 职责（不可破坏的红线）：
  *   · 写。但只写「导学镜像」四类集合（tutor_sessions/mistakes/evidence/reviews）+「试卷库」
- *     （exam_resources）+ 孩子切片（learner / subjectProfiles / nickname / grade）；
+ *     （exam_resources）+ 孩子切片（learner / subjectProfiles / nickname / grade）+「学习单」
+ *     （tutor_orders，见下方 orders 专用通道）；
  *     绝不触碰 homework/checkin/schedule/农场等小程序权威数据，避免镜像写回污染主链路。
  *   · 身份解析：复用 webAdminQuery 的 token→openid 机制（web_portal_bindings），不接收微信上下文。
  *   · 去重：tutor_* 与 exam_resources 均按 openid+clientId 查重。**T5 起 tutor_* 改为三路合并**
@@ -12,16 +13,28 @@
  *     绝不静默覆盖。（F-B 试卷库的判定顺序不同，见 writeExams 注释。）
  *   · 纯数据搬运，不调用 AI、不做"掌握"判定。
  *
+ * ⚠️ orders 通道是**唯一的例外形态**，读本文件前请先理解：
+ *   · 入参 `event.orders` 是**对象** { action, ...payload }，不是数组；传数组一律拒绝。
+ *   · 业务规则零实现 —— 全部转发给 orderActions（canonical 副本，与 tutorOrder 逐字节相同），
+ *     由哈希锁（scripts/test-order-kit-sync.cjs）保证两端不会漂移。
+ *   · 学习单的 status / events 承载 O2（回执 1:1）/O4（append-only）两条硬契约，
+ *     因此**只允许走动作层**，永不允许「批量覆盖写」。
+ *
  * 入参：
  *   { token:'xxx', sessions:[], mistakes:[], evidence:[], reviews:[], exams:[],
  *     profile:{ nickname, grade, learner, subjectProfiles, baseUpdatedAt } }
  *   （每条 tutor 记录可带 baseUpdatedAt = 上次下拉时的云端 updatedAt，不落库；
  *     exams 每条的 clientId = resourceId）
+ *   { token:'xxx', orders:{ action:'issue'|'submit'|'void'|…, ...payload } }
  * 出参：{ ok:true, scope, openid, added, skipped, updated, exams?, conflictCount, conflicts[], profile }
  *       或 { ok:false, code, msg }
  */
 
 const tcb = require('@cloudbase/node-sdk');
+
+const kit = require('./orderKit');
+const orderActions = require('./orderActions').createActions(kit);
+const { makeDeps } = require('./orderCloudDeps');
 
 const ENV = process.env.TCB_ENV || 'workbuddy-d2gsgtfvmde5c9adf';
 const COLLS = {
@@ -31,6 +44,7 @@ const COLLS = {
   reviews: 'tutor_reviews',
   evidence: 'tutor_evidence',
   exams: 'exam_resources',
+  orders: 'tutor_orders',
   bindings: 'web_portal_bindings'
 };
 
@@ -391,29 +405,46 @@ async function writeProfile(openid, profile) {
 }
 
 /* ---------- R2：云端 e2e 测试残留自清理 ----------
- * 仅删除 tutor_sessions 中 clientId 以 'e2e-' 开头的文档。
+ * 只删除 clientId 以 'e2e-' 开头的文档；集合白名单见 E2E_SCOPES。
  * E2E 脚本本地已按前缀自清扫，云端残留由本动作兜底（§9.2 运维项⑤）。
- * 严格白名单：只动 e2e- 前缀、只动 tutor_sessions；绝不触碰真实用户数据或其它集合。
- * 权限：仅管理员口令（WEB_DASHBOARD_TOKEN + WEB_ADMIN_ALLOW_WRITE=1）可触发；per-user 绑定令牌一律拒绝。 */
+ * 严格白名单：只动 e2e- 前缀、只动白名单集合；绝不触碰真实用户数据或其它集合。
+ * 权限：仅管理员口令（WEB_DASHBOARD_TOKEN + WEB_ADMIN_ALLOW_WRITE=1）可触发；per-user 绑定令牌一律拒绝。
+ *
+ * 【T24 补 tutor_orders】2026-09-29：
+ *   学习单上线时（T14）**漏了**把 tutor_orders 加进白名单 —— 于是学习单 E2E 的残留
+ *   只能靠人去控制台手工删（开发计划 T24 卡里把这条记成了「项目已知坑」，
+ *   与 tutor_sessions 同款问题）。清理动作按 clientId 前缀工作、与具体集合无关，
+ *   把 tutor_orders 加进来即可，无需新增任何权限或接口。
+ *   ⚠️ 出单走真实端上路径时云端自动生成的 clientId 形如 `to_YYMMDD_xxxxxx`，
+ *      **不带** e2e- 前缀 —— 这类数据不会被本动作删掉（也就不会误删真实单）。
+ *      只有外挂脚本显式带前缀造的数据才会被清理。 */
 const E2E_PREFIX = 'e2e-';
+/** 可清理集合白名单（**只允许**这几个；新增必须在此显式登记） */
+const E2E_SCOPES = ['tutor_sessions', 'tutor_orders'];
 async function cleanupE2E() {
   const dbh = db();
-  let scanned = 0, removed = 0, err = null;
-  try {
-    // clientId 前缀匹配：仅命中 e2e- 测试残留
-    const res = await dbh.collection('tutor_sessions')
-      .where({ clientId: dbh.command.regex('^' + E2E_PREFIX) })
-      .limit(100).get();
-    const list = (res && res.data) || [];
-    scanned = list.length;
-    for (const d of list) {
-      // 防御：双重校验，只删 clientId 确实以 e2e- 开头的文档，绝不波及真实数据
-      if (typeof d.clientId !== 'string' || !d.clientId.startsWith(E2E_PREFIX)) continue;
-      try { await dbh.collection('tutor_sessions').doc(d._id).remove(); removed++; } catch (e) {}
-    }
-  } catch (e) { err = (e && e.message) || String(e); }
-  return { ok: true, action: 'cleanup', scope: 'tutor_sessions', prefix: E2E_PREFIX,
-    scanned, removed, err: err || undefined };
+  const scopes = [];
+  let removedTotal = 0;
+  for (const name of E2E_SCOPES) {
+    let scanned = 0, removed = 0, err = null;
+    try {
+      // clientId 前缀匹配：仅命中 e2e- 测试残留
+      const res = await dbh.collection(name)
+        .where({ clientId: dbh.command.regex('^' + E2E_PREFIX) })
+        .limit(100).get();
+      const list = (res && res.data) || [];
+      scanned = list.length;
+      for (const d of list) {
+        // 防御：双重校验，只删 clientId 确实以 e2e- 开头的文档，绝不波及真实数据
+        if (typeof d.clientId !== 'string' || !d.clientId.startsWith(E2E_PREFIX)) continue;
+        try { await dbh.collection(name).doc(d._id).remove(); removed++; } catch (e) {}
+      }
+    } catch (e) { err = (e && e.message) || String(e); }
+    removedTotal += removed;
+    scopes.push({ scope: name, scanned, removed, err: err || undefined });
+  }
+  return { ok: true, action: 'cleanup', scope: E2E_SCOPES.join('+'), prefix: E2E_PREFIX,
+    scopes, removed: removedTotal };
 }
 
 /* ---------- 主入口 ---------- */
@@ -445,6 +476,40 @@ exports.main = async (event) => {
   let app2;
   try { app2 = tcb.init({ env: ENV }); } catch (e) {
     return { ok: false, code: 'init', msg: '云函数初始化失败：' + ((e && e.message) || e) };
+  }
+
+  /* ---------- 学习单（tutor_orders）专用通道 ----------
+   * 网页看板 / 工作台是本单的**第二写入口**（第一个是小程序 tutorOrder）。
+   * 关键是：两者必须共用同一份状态机与同一套硬契约，否则 O1–O4 必然分叉。
+   * 做法：orders 传**对象** { action, ...payload }，直接路由到 orderActions（canonical 副本，
+   * 与 tutorOrder 逐字节相同）；本文件不实现任何学习单业务规则。
+   *
+   * ⚠️ 传数组一律拒绝：数组形态意味着「批量覆盖」，而 orders 的 status / events 是
+   *    O2/O4 的载体，绝不允许被批量覆盖（这正是 tutorSync.push 对 orders 只补写不合并的同一条理由）。
+   * ⚠️ action 白名单由 orderActions.ACTIONS 决定，未知 action 必须显式报错，不得静默忽略。
+   */
+  if (event.orders !== undefined) {
+    if (Array.isArray(event.orders) || typeof event.orders !== 'object' || event.orders === null) {
+      return {
+        ok: false, code: 'bad_param',
+        msg: 'orders 必须是对象 { action, ...payload }；批量数组写入被拒绝（状态与事件不允许被覆盖）'
+      };
+    }
+    const req = event.orders;
+    const act = String(req.action || '');
+    if (orderActions.ACTIONS.indexOf(act) < 0) {
+      return { ok: false, code: 'bad_action', msg: '未知学习单 action: ' + (act || '(空)') };
+    }
+    try {
+      const deps = makeDeps(app2, openid, { collection: COLLS.orders });
+      const res = await orderActions[act](req, deps);
+      if (res && res.ok) {
+        try { await db().collection(COLLS.bindings).where({ token, revoked: false }).limit(1).update({ lastUsed: Date.now() }); } catch (e) {}
+      }
+      return res;
+    } catch (e) {
+      return { ok: false, code: 'order_error', msg: '学习单操作失败：' + ((e && e.message) || e) };
+    }
   }
 
   try {

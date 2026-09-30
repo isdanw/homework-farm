@@ -1,0 +1,304 @@
+<!-- 学习单页：出单 / 回执（两步选择）/ 我的单 -->
+<view class="or-page">
+
+  <!-- ══════════ 页签 ══════════ -->
+  <view class="or-tabs">
+    <view class="or-tab {{tab === 'issue' ? 'or-tab--on' : ''}}" data-tab="issue" bindtap="switchTab">出单</view>
+    <view class="or-tab {{tab === 'receipt' ? 'or-tab--on' : ''}}" data-tab="receipt" bindtap="switchTab">回执</view>
+    <view class="or-tab {{tab === 'mine' ? 'or-tab--on' : ''}}" data-tab="mine" bindtap="switchTab">我的单</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="or-state">
+    <view class="or-state-emoji">⏳</view>
+    <view class="or-state-title">正在同步云端…</view>
+  </view>
+
+  <!-- ══════════ 一、出单 ══════════ -->
+  <block wx:elif="{{tab === 'issue'}}">
+    <view wx:if="{{!plans.length}}" class="or-state">
+      <view class="or-state-emoji">📘</view>
+      <view class="or-state-title">还没有可以出单的学习计划</view>
+      <view class="or-state-sub">学习单必须锚定计划里的具体任务。先去「我的 → 成长计划」生成一份计划，再回来出单。</view>
+      <view class="or-btn or-btn--ghost" bindtap="switchTab" data-tab="mine">先看看我的单</view>
+    </view>
+
+    <block wx:else>
+      <view class="or-hint">选计划 → 选任务 → 选类型与时长。出单后会同时落库，并把训练单复制到剪贴板，粘贴到豆包即可开始。</view>
+
+      <!-- 1 选计划 -->
+      <view class="or-sec-title">① 选择计划</view>
+      <view class="or-cards">
+        <view wx:for="{{plans}}" wx:key="planId"
+              class="or-card {{planIdx === index ? 'or-card--on' : ''}}"
+              data-i="{{index}}" bindtap="onPlanPick">
+          <view class="or-card-top">
+            <text class="or-card-emoji">{{item.emoji}}</text>
+            <text class="or-card-name">{{item.subjectName}}</text>
+            <text wx:if="{{item.pendingCount}}" class="or-chip or-chip--warn">待回执 {{item.pendingCount}}</text>
+          </view>
+          <view class="or-card-sub">{{item.stageName}} · {{item.taskName}}</view>
+          <view class="or-card-meta">已有 {{item.orderCount}} 张单</view>
+        </view>
+      </view>
+
+      <!-- 2 选任务 -->
+      <view class="or-sec-title">② 选择任务</view>
+      <view class="or-list">
+        <view wx:for="{{tasks}}" wx:key="id"
+              class="or-row {{taskIdx === index ? 'or-row--on' : ''}}"
+              data-i="{{index}}" bindtap="onTaskPick">
+          <view class="or-row-main">
+            <view class="or-row-title">{{item.name}}</view>
+            <view class="or-row-sub">{{item.stageName}} · 计划第 {{item.dueDay}} 天</view>
+          </view>
+          <view class="or-radio">{{taskIdx === index ? '●' : '○'}}</view>
+        </view>
+      </view>
+
+      <!-- 3 选类型 -->
+      <view class="or-sec-title">③ 训练类型</view>
+      <view class="or-pills">
+        <view wx:for="{{kinds}}" wx:key="key"
+              class="or-pill {{kindIdx === index ? 'or-pill--on' : ''}}"
+              data-i="{{index}}" bindtap="onKindPick">{{item.label}}</view>
+      </view>
+
+      <!-- 4 选时长 -->
+      <view class="or-sec-title">④ 计划时长</view>
+      <view class="or-pills">
+        <view wx:for="{{minuteChoices}}" wx:key="*this"
+              class="or-pill {{minutes === item ? 'or-pill--on' : ''}}"
+              data-m="{{item}}" bindtap="onMinutePick">{{item}} 分钟</view>
+      </view>
+
+      <view class="or-btn or-btn--primary {{issuing ? 'or-btn--disabled' : ''}}" bindtap="doIssue">
+        {{issuing ? '出单中…' : '出单并复制'}}
+      </view>
+    </block>
+  </block>
+
+  <!-- ══════════ 二、回执（两步选择） ══════════ -->
+  <block wx:elif="{{tab === 'receipt'}}">
+    <view class="or-steps">
+      <view class="or-step {{rStep >= 1 ? 'or-step--on' : ''}}">1 选计划</view>
+      <view class="or-step {{rStep >= 2 ? 'or-step--on' : ''}}">2 选出单</view>
+      <view class="or-step {{rStep >= 3 ? 'or-step--on' : ''}}">3 粘贴并确认</view>
+    </view>
+
+    <!-- 第一步：选计划 -->
+    <block wx:if="{{rStep === 1}}">
+      <view wx:if="{{!rPlans.length}}" class="or-state">
+        <view class="or-state-emoji">🎉</view>
+        <view class="or-state-title">没有待回执的出单</view>
+        <view class="or-state-sub">所有计划下的学习单都已经回执过了。先去「出单」开一张新单吧。</view>
+      </view>
+      <block wx:else>
+        <view class="or-hint">先选「属于哪一份计划」，再从该计划下选出具体出单。这样回执不会被挂到错的计划上。</view>
+        <view wx:for="{{rPlans}}" wx:key="planId"
+              class="or-card" data-i="{{index}}" bindtap="onReceiptPlanPick">
+          <view class="or-card-top">
+            <text class="or-card-emoji">{{item.emoji}}</text>
+            <text class="or-card-name">{{item.subjectName}}</text>
+            <text class="or-chip or-chip--warn">{{item.pendingCount}} 张待回执</text>
+          </view>
+          <view class="or-card-sub">{{item.stageName}} · {{item.taskName}}</view>
+        </view>
+      </block>
+    </block>
+
+    <!-- 第二步：选出单 -->
+    <block wx:elif="{{rStep === 2}}">
+      <view wx:if="{{!rOrders.length}}" class="or-state">
+        <view class="or-state-emoji">📭</view>
+        <view class="or-state-title">该计划下没有待回执的出单</view>
+        <view class="or-state-sub">回执只能对应真实出过的单，不支持手工造单提交。</view>
+        <view class="or-btn or-btn--ghost" bindtap="backReceiptStep">返回上一步</view>
+      </view>
+      <block wx:else>
+        <view class="or-hint">只列出该计划下状态为「待回执」的单。一个出单只能对应一个回执。</view>
+        <view wx:for="{{rOrders}}" wx:key="orderNo"
+              class="or-row {{rOrderIdx === index ? 'or-row--on' : ''}}"
+              data-i="{{index}}" bindtap="onReceiptOrderPick">
+          <view class="or-row-main">
+            <view class="or-row-title">{{item.title}}</view>
+            <view class="or-row-sub">{{item.orderNo}} · {{item.issuedAtText}} 由{{item.issuedByText}}出单<text wx:if="{{item.minutes}}"> · {{item.minutes}} 分钟</text></view>
+          </view>
+          <view class="or-radio">{{rOrderIdx === index ? '●' : '○'}}</view>
+        </view>
+        <view class="or-btn or-btn--ghost" bindtap="backReceiptStep">返回上一步</view>
+      </block>
+    </block>
+
+    <!-- 第三步：粘贴 + 人工确认 -->
+    <block wx:else>
+      <view class="or-hint">把豆包给出的「费曼训练证据回执」原文整段粘进来，点「解析」。抽不到的字段会标为「未记录」，需要你手动补齐。</view>
+      <textarea class="or-ta" placeholder="【费曼训练证据回执】…" value="{{rawReceipt}}"
+                bindinput="onReceiptInput" maxlength="4000" auto-height></textarea>
+      <view class="or-btn or-btn--primary" bindtap="parseReceipt">解析回执</view>
+
+      <block wx:if="{{parsed}}">
+        <view class="or-sec-title">逐项确认（抽到的也要看一眼）</view>
+        <view class="or-field">
+          <view class="or-field-label">知识点与核心目标</view>
+          <input class="or-input" data-k="topic" value="{{confirm.topic}}" bindinput="onConfirmInput" placeholder="未记录 — 请手填" />
+        </view>
+        <view class="or-field">
+          <view class="or-field-label">孩子的解释（能确认原话才用引号）</view>
+          <textarea class="or-ta or-ta--sm" data-k="childQuote" value="{{confirm.childQuote}}" bindinput="onConfirmInput" placeholder="未记录" auto-height></textarea>
+        </view>
+        <view class="or-field">
+          <view class="or-field-label">卡点</view>
+          <input class="or-input" data-k="stuckPoint" value="{{confirm.stuckPoint}}" bindinput="onConfirmInput" placeholder="未记录" />
+        </view>
+
+        <view class="or-field">
+          <view class="or-field-label">变式题</view>
+          <input class="or-input" data-k="variantQuestion" value="{{confirm.variantQuestion}}" bindinput="onConfirmInput" placeholder="未记录" />
+          <view class="or-pills or-pills--tight">
+            <view class="or-pill {{confirm.variantResult === 'independent' ? 'or-pill--on' : ''}}" data-k="variantResult" data-v="independent" bindtap="onResultPick">独立完成</view>
+            <view class="or-pill {{confirm.variantResult === 'prompted' ? 'or-pill--on' : ''}}" data-k="variantResult" data-v="prompted" bindtap="onResultPick">提示后完成</view>
+            <view class="or-pill {{confirm.variantResult === 'incomplete' ? 'or-pill--on' : ''}}" data-k="variantResult" data-v="incomplete" bindtap="onResultPick">未完成</view>
+            <view class="or-pill {{confirm.variantResult === 'untested' ? 'or-pill--on' : ''}}" data-k="variantResult" data-v="untested" bindtap="onResultPick">未测</view>
+          </view>
+        </view>
+
+        <view class="or-field">
+          <view class="or-field-label">边界题</view>
+          <input class="or-input" data-k="boundaryQuestion" value="{{confirm.boundaryQuestion}}" bindinput="onConfirmInput" placeholder="未记录" />
+          <view class="or-pills or-pills--tight">
+            <view class="or-pill {{confirm.boundaryResult === 'independent' ? 'or-pill--on' : ''}}" data-k="boundaryResult" data-v="independent" bindtap="onResultPick">独立完成</view>
+            <view class="or-pill {{confirm.boundaryResult === 'prompted' ? 'or-pill--on' : ''}}" data-k="boundaryResult" data-v="prompted" bindtap="onResultPick">提示后完成</view>
+            <view class="or-pill {{confirm.boundaryResult === 'incomplete' ? 'or-pill--on' : ''}}" data-k="boundaryResult" data-v="incomplete" bindtap="onResultPick">未完成</view>
+            <view class="or-pill {{confirm.boundaryResult === 'untested' ? 'or-pill--on' : ''}}" data-k="boundaryResult" data-v="untested" bindtap="onResultPick">未测</view>
+          </view>
+        </view>
+
+        <view class="or-field">
+          <view class="or-field-label">用到的帮助层级（D0–D4）</view>
+          <view class="or-pills or-pills--tight">
+            <view wx:for="{{dLevels}}" wx:key="key"
+                  class="or-pill {{item.on ? 'or-pill--on' : ''}}"
+                  data-l="{{item.key}}" bindtap="onDLevelTap">{{item.key}}</view>
+          </view>
+        </view>
+
+        <view class="or-field">
+          <view class="or-field-label">轮次 / 实际时长（分钟） / 孩子自评 1–5</view>
+          <view class="or-triple">
+            <input class="or-input or-input--num" type="number" data-k="rounds" value="{{quant.rounds}}" bindinput="onQuantInput" placeholder="轮次" />
+            <input class="or-input or-input--num" type="number" data-k="minutes" value="{{quant.minutes}}" bindinput="onQuantInput" placeholder="分钟" />
+            <input class="or-input or-input--num" type="number" data-k="selfEval" value="{{quant.selfEval}}" bindinput="onQuantInput" placeholder="自评" />
+          </view>
+        </view>
+
+        <view class="or-field">
+          <view class="or-field-label">本次证据支持的结论</view>
+          <textarea class="or-ta or-ta--sm" data-k="conclusion" value="{{confirm.conclusion}}" bindinput="onConfirmInput" placeholder="未记录" auto-height></textarea>
+        </view>
+
+        <view class="or-note">提交后回执即锁定，不能再改。如需修正，请在单详情里「作废重开」——原单会保留在时间线里，不会被删掉。</view>
+        <view class="or-btn or-btn--primary {{submitting ? 'or-btn--disabled' : ''}}" bindtap="submitReceipt">
+          {{submitting ? '提交中…' : '确认无误，提交回执'}}
+        </view>
+        <view class="or-btn or-btn--ghost" bindtap="backReceiptStep">返回上一步</view>
+      </block>
+    </block>
+  </block>
+
+  <!-- ══════════ 三、我的单 ══════════ -->
+  <block wx:else>
+    <view class="or-counts">
+      <view class="or-count"><view class="or-count-n">{{counts.issued}}</view><view class="or-count-l">待回执</view></view>
+      <view class="or-count"><view class="or-count-n">{{counts.submitted}}</view><view class="or-count-l">已回执</view></view>
+      <view class="or-count"><view class="or-count-n">{{counts.closed}}</view><view class="or-count-l">已归档</view></view>
+      <view class="or-count"><view class="or-count-n">{{counts.voided + counts.cancelled}}</view><view class="or-count-l">作废/取消</view></view>
+    </view>
+
+    <view wx:if="{{!orders.length}}" class="or-state">
+      <view class="or-state-emoji">🗂️</view>
+      <view class="or-state-title">还没有学习单</view>
+      <view class="or-state-sub">去「出单」开一张。</view>
+    </view>
+
+    <block wx:else>
+      <!-- 计划维度聚合：一份计划 → N 张单 -->
+      <view class="or-sec-title">按计划汇总</view>
+      <view wx:for="{{agg}}" wx:key="planId" class="or-aggcard">
+        <view class="or-agg-head">{{item.subjectName}} · {{item.taskName}}</view>
+        <view class="or-agg-sub">{{item.planId}}</view>
+        <view class="or-agg-pills">
+          <text class="or-mini">共 {{item.total}}</text>
+          <text wx:if="{{item.issued}}" class="or-mini or-mini--warn">待回执 {{item.issued}}</text>
+          <text wx:if="{{item.submitted}}" class="or-mini or-mini--ok">已回执 {{item.submitted}}</text>
+          <text wx:if="{{item.closed}}" class="or-mini">已归档 {{item.closed}}</text>
+          <text wx:if="{{item.voided + item.cancelled}}" class="or-mini or-mini--mute">作废/取消 {{item.voided + item.cancelled}}</text>
+        </view>
+      </view>
+
+      <view class="or-sec-title">全部学习单</view>
+      <view wx:for="{{orders}}" wx:key="orderNo"
+            class="or-row or-row--tap" data-no="{{item.orderNo}}" bindtap="openDetail">
+        <view class="or-row-main">
+          <view class="or-row-title">{{item.title}}</view>
+          <view class="or-row-sub">{{item.orderNo}} · 出单 {{item.issuedAtText}} · <text class="or-st or-st--{{item.status}}">{{item.statusText}}</text></view>
+          <view wx:if="{{item.verdictText}}" class="or-row-sub">评语：{{item.verdictText}}</view>
+        </view>
+        <view class="or-arrow">›</view>
+      </view>
+    </block>
+  </block>
+
+  <!-- ══════════ 单详情（只读时间线） ══════════ -->
+  <view wx:if="{{detailOpen}}" class="or-mask" bindtap="closeDetail"></view>
+  <view wx:if="{{detailOpen}}" class="or-drawer">
+    <view class="or-drawer-head">
+      <text class="or-drawer-title">{{detail.title}}</text>
+      <text class="or-drawer-close" bindtap="closeDetail">✕</text>
+    </view>
+    <scroll-view scroll-y class="or-drawer-body">
+      <view class="or-dsec">
+        <view class="or-drow"><text class="or-dk">编号</text><text class="or-dv">{{detail.orderNo}}</text></view>
+        <view class="or-drow"><text class="or-dk">状态</text><text class="or-dv">{{detail.statusText}}</text></view>
+        <view class="or-drow"><text class="or-dk">学科/类型</text><text class="or-dv">{{detail.subjectName}} · {{detail.kindLabel}} · {{detail.minutes}} 分钟</text></view>
+        <view class="or-drow"><text class="or-dk">计划任务</text><text class="or-dv">{{detail.planStage}} · {{detail.planTask}}</text></view>
+      </view>
+
+      <view class="or-dsec">
+        <view class="or-sec-title">时间线（只读）</view>
+        <view wx:for="{{timeline}}" wx:key="id" class="or-tl">
+          <view class="or-tl-dot"></view>
+          <view class="or-tl-main">
+            <view class="or-tl-title">{{item.label}} <text class="or-tl-by">{{item.by}}</text></view>
+            <view class="or-tl-time">{{item.atText}}</view>
+            <view wx:if="{{item.detail}}" class="or-tl-detail">{{item.detail}}</view>
+          </view>
+        </view>
+      </view>
+
+      <block wx:if="{{detail.hasReceipt}}">
+        <view class="or-dsec">
+          <view class="or-sec-title">评语与汇总</view>
+          <view class="or-verdict">结论：{{detail.verdictText}}（证据{{detail.completeness}}）</view>
+          <view class="or-comment">{{detail.comment}}</view>
+          <view wx:if="{{detail.commentSource === 'ai'}}" class="or-tl-by">评语已由 AI 润色（事实未变）</view>
+          <view wx:if="{{detail.canPolish}}" class="or-polish">
+            <view class="or-btn or-btn--ghost" bindtap="doPolish">{{polishing ? '润色中…' : 'AI 润色一下'}}</view>
+            <view class="or-tl-by">当前为规则评语。润色只改措辞，不新增事实、不改结论；AI 不可用时继续用规则版。</view>
+          </view>
+          <view class="or-summary">{{detail.cycleSummary}}</view>
+        </view>
+      </block>
+
+      <view class="or-actions">
+        <view wx:if="{{!detail.tickApplied && detail.status !== 'voided' && detail.status !== 'cancelled'}}"
+              class="or-btn or-btn--ghost" bindtap="doTick">标记本任务完成</view>
+        <view wx:if="{{detail.retestTopic}}" class="or-btn or-btn--ghost" bindtap="goRetest">去做复测（才能产生证据）</view>
+        <view class="or-btn or-btn--ghost" bindtap="copyDetail">复制训练单</view>
+        <view wx:if="{{detail.status !== 'voided' && detail.status !== 'cancelled'}}"
+              class="or-btn or-btn--danger" bindtap="doReissue">作废重开</view>
+      </view>
+      <view class="or-foot">回执不是学习证据，「达标」只描述本次表现；掌握度只能由复测证据（≥5 题且 ≥80%）产生。</view>
+    </scroll-view>
+  </view>
+
+</view>

@@ -6,10 +6,12 @@
     <view style="margin-top:24rpx;font-size:38rpx;font-weight:800;color:#3A3A3A;">导学功能暂未启用</view>
     <view style="margin-top:16rpx;font-size:28rpx;color:#888;line-height:1.6;">
       <block wx:if="{{lockReason === 'no-child'}}">请先在「我的」添加孩子，才能使用导学功能。</block>
+      <block wx:elif="{{lockReason === 'no-bind'}}">导学功能需绑定微信后使用，数据将与该账号同步、可跨设备查看。本地模式仅保留打卡与农场。</block>
       <block wx:else>请先为孩子建立「成长计划」，才能使用导学功能。</block>
     </view>
     <view style="margin-top:48rpx;display:flex;flex-direction:column;gap:20rpx;width:100%;">
       <view wx:if="{{lockReason === 'no-child'}}" style="background:#5FBF6B;color:#fff;font-size:30rpx;font-weight:700;padding:24rpx 0;border-radius:999rpx;text-align:center;" bindtap="goMine">去添加孩子</view>
+      <view wx:elif="{{lockReason === 'no-bind'}}" style="background:#5FBF6B;color:#fff;font-size:30rpx;font-weight:700;padding:24rpx 0;border-radius:999rpx;text-align:center;" bindtap="goMine">去绑定微信</view>
       <view wx:else style="background:#5FBF6B;color:#fff;font-size:30rpx;font-weight:700;padding:24rpx 0;border-radius:999rpx;text-align:center;" bindtap="goPlanFromTutor">去建立计划</view>
       <view style="background:#fff;color:#666;border:3rpx solid #E2E2E2;font-size:30rpx;font-weight:600;padding:24rpx 0;border-radius:999rpx;text-align:center;" bindtap="lockBack">返回</view>
     </view>

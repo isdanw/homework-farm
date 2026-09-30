@@ -23,14 +23,22 @@
  * 【exam】入参：{ resourceId }  出参：{ ok:true, exam:{ …元数据, markdown, rawText, answers } }
  *
  * 【push】入参：
- *   { sessions:[], mistakes:[], evidence:[], reviews:[] }  每条必须带 clientId（本地 uid）
+ *   { sessions:[], mistakes:[], evidence:[], reviews:[], orders:[] }  每条必须带 clientId（本地 uid）
  *   行为：clientId 已存在 → 跳过（reviews 额外同步 stage/dueAt/done 进度）；
  *         不存在 → 补写。出参 { ok:true, added, skipped, updated }
+ *
+ *   ⚠️ orders 的分工契约（与 reviews 不同，别照抄）：
+ *     · tutorOrder 云函数 = 唯一带状态机的写入口（出单/回执/作废/重开）
+ *     · 本函数对 orders **只补写「云端不存在」的单**；已存在一律 skip，
+ *       **不合并 status、不追加/改写 events[]、不看 updatedAt**。
+ *     · 理由：status 与 events 承载 O2（回执 1:1）/O4（append-only）两条硬契约，
+ *       被本地副本覆盖就会出现「回执被抹掉」「审计链断掉」。宁可不合并，不可写坏。
  *
  * 红线：
  *   · 全部按 openid 隔离；openid 为空直接拒绝（不产生无主数据）
  *   · 纯数据搬运，不调用 AI、不做任何「掌握」判定
  *   · 试卷是**资源库条目**：不产生 evidence、不参与学情统计（§试卷登记入库规则）
+ *   · 学习单（tutor_orders）不是证据集合：本函数回传的 orders 不得写入 tutor_evidence
  */
 const tcb = require('@cloudbase/node-sdk');
 
@@ -39,7 +47,8 @@ const PULL_LIMITS = {
   tutor_sessions: 100,
   tutor_mistakes: 200,
   tutor_evidence: 200,
-  tutor_reviews: 100
+  tutor_reviews: 100,
+  tutor_orders: 200
 };
 
 /* push 各集合单次上限 */
@@ -47,7 +56,8 @@ const PUSH_LIMITS = {
   sessions: 100,
   mistakes: 200,
   evidence: 200,
-  reviews: 100
+  reviews: 100,
+  orders: 200
 };
 
 /* F-B：试卷库 */
@@ -69,12 +79,13 @@ function str(v, max) {
 /* ---------------- pull ---------------- */
 async function pull(app, openid) {
   const db = app.database();
-  const out = { sessions: [], mistakes: [], evidence: [], reviews: [] };
+  const out = { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [] };
   const map = {
     sessions: 'tutor_sessions',
     mistakes: 'tutor_mistakes',
     evidence: 'tutor_evidence',
-    reviews: 'tutor_reviews'
+    reviews: 'tutor_reviews',
+    orders: 'tutor_orders'
   };
   for (const key of Object.keys(map)) {
     const name = map[key];
@@ -103,7 +114,11 @@ async function pull(app, openid) {
     if (key === 'evidence') mapped = dedupeEvidence(mapped);
     out[key] = mapped;
   }
-  return { ok: true, sessions: out.sessions, mistakes: out.mistakes, evidence: out.evidence, reviews: out.reviews };
+  return {
+    ok: true,
+    sessions: out.sessions, mistakes: out.mistakes, evidence: out.evidence,
+    reviews: out.reviews, orders: out.orders
+  };
 }
 
 /** 复测证据折叠：识别「同一天 + 同知识点 + 同分数」且仅一份带 clientId 的重复写 */
@@ -209,7 +224,8 @@ async function push(app, openid, input) {
     sessions: 'tutor_sessions',
     mistakes: 'tutor_mistakes',
     evidence: 'tutor_evidence',
-    reviews: 'tutor_reviews'
+    reviews: 'tutor_reviews',
+    orders: 'tutor_orders'
   };
 
   for (const kind of Object.keys(collName)) {
@@ -227,6 +243,15 @@ async function push(app, openid, input) {
         exist = (res && res.data) || [];
       } catch (e) { exist = []; }
 
+      /* ── 学习单（orders）：只补写、绝不合并（分工契约，见 docs/orderProtocol.md §6）──
+       * tutorOrder 是**唯一**带状态机的写入口；本函数对已存在的单必须原样放过。
+       * 理由：orders 的 status 与 events[] 是 O2/O4 两条硬契约的载体，一旦被本地副本
+       * 覆盖，就会出现「回执被抹掉」「事件流水断链」——审计能力直接报废。
+       * 因此这里**不看 updatedAt、不做 LWW、不比对状态**，存在即 skip。 */
+      if (kind === 'orders' && exist.length) {
+        skipped++;
+        continue;
+      }
       if (exist.length) {
         // reviews 额外同步进度（复测推进后本地领先云端时回写）
         if (kind === 'reviews') {
@@ -320,7 +345,8 @@ exports.main = async (event) => {
         sessions: Array.isArray(event.sessions) ? event.sessions : [],
         mistakes: Array.isArray(event.mistakes) ? event.mistakes : [],
         evidence: Array.isArray(event.evidence) ? event.evidence : [],
-        reviews: Array.isArray(event.reviews) ? event.reviews : []
+        reviews: Array.isArray(event.reviews) ? event.reviews : [],
+        orders: Array.isArray(event.orders) ? event.orders : []
       };
       return await push(app, openid, input);
     }

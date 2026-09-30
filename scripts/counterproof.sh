@@ -63,7 +63,11 @@ for f in tutorSync syncData dailyReset webAdminQuery; do
     echo "无法从 $BASE 取出 cloudfunctions/$f/index.js"; exit 2; }
 done
 
-echo "反证基线：$BASE（最早一批修复的父提交 $(git log -1 --format=%h\ %s "$oldest")）"
+# ⚠️ 变量名必须写 `${BASE}` **带花括号**：本机 `/bin/sh`（2026-09-19 起）会把紧跟其后的
+#    全角字符首字节吞进变量名 → `BASE\xef: unbound variable`，脚本当场退出 127。
+#    这个 shell 不是 bash：bash 会在非 [A-Za-z0-9_] 处正确截断，所以「在 bash 里试没问题」
+#    完全不能作为安全依据。凡是 `$VAR` 后面接中文的，一律加花括号。
+echo "反证基线：${BASE}（最早一批修复的父提交 $(git log -1 --format=%h\ %s "$oldest")）"
 echo "         注：若将来所有被测文件都被重新修过一轮，基线会随之前移，老用例可能不再变红 ——"
 echo "             那种情况本脚本会**明确报红并退出非 0**（不会静默通过），届时用 BASE=<commit> 手工指定即可。"
 echo
@@ -101,6 +105,67 @@ red "syncData/dailyReset CAS" "$OUT"
 
 OUT=$(WAQ_PATH="$OLD/cf/webAdminQuery.js" node scripts/test-webadminquery-exams.cjs 2>&1)
 red "webAdminQuery exams 模块" "$OUT"
+
+# T23 · 计划维度聚合「三端一份实现」。两条反证**性质不同**，用两个不同的判定：
+#
+#   ① canonical 的行为规格：canonical 是 T23 新写的，git 里没有更早的版本可当基线，
+#      所以走 **`--counterproof-legacy` 进程内变异体** —— 把 canonical 的两个函数
+#      当场换成改造前的旧实现，再跑同一批断言。断言能红 → 用 red()。
+OUT=$(node scripts/test-order-plan-aggregate.cjs --counterproof-legacy 2>&1)
+red "计划聚合 canonical 规格" "$OUT"
+
+#   ② 云端输出 = canonical：这条反过来 —— 云端本来就是三端里的**参照实现**，
+#      拿旧基线跑它一样是绿的（T23 是把另两端对齐到云端），所以旧基线证明不了它。
+#      有效反证只能是「把云端换成工作台那套内联聚合」，由脚本内部生成变异体并自证，
+#      判定方式 = 脚本退出码 0 **且**输出含「反证有效 ✓」。
+selfproof() {
+  name=$1
+  out=$2
+  code=$3
+  if [ "$code" -eq 0 ] && printf '%s\n' "$out" | grep -q '反证有效 ✓'; then
+    printf '  ✅ %-26s 变异体反证有效（脚本内部自证）\n' "$name"
+  else
+    printf '  ❌ %-26s 变异体反证失效或脚本异常（exit=%s）\n' "$name" "$code"
+    fail=1
+  fi
+}
+
+OUT=$(COUNTERPROOF=1 node scripts/test-webadminquery-exams.cjs 2>&1); CODE=$?
+selfproof "计划聚合 云端=canonical" "$OUT" "$CODE"
+
+# ---------------------------------------------------------------------------
+# T24 · 学习单全链路双向 E2E。反证机制与前两种都不同，是**进程内内存变异体**：
+#   `E2E_MUTATE=<key> node scripts/test-order-e2e.cjs` —— 通过 Module._load 拦截被点名
+#   文件的 require，把内存里 _compile 过的「改坏版本」喂进去，磁盘一个字节都不动。
+# 为什么不能像上面那样走 git 基线：E2E 挂具驱动的是**四个云函数 + 两端真源码**的联合体，
+#   git 基线里 `order-kit/` 与 `pkgGuide/order/` 整目录都不存在，取不出「可运行的旧版」——
+#   基线版本连模块都加载不起来，那不是反证、是崩溃。
+# 判定比 red() 更严一条：**必须零「抛异常」**。
+#   本项目硬规矩「测试可以红，但绝不能死」：一处裸读（如 after.evaluation）在变异体下抛
+#   TypeError，会把「几条红」升级成「整段死」，后面用例根本跑不到 —— 从输出上看失败条数
+#   偏少，很容易被误读成「变异体效果较弱」而放过去。所以要单独把它算成 ❌。
+# ---------------------------------------------------------------------------
+mutation_red() {
+  name=$1
+  key=$2
+  OUT=$(E2E_MUTATE="${key}" node scripts/test-order-e2e.cjs 2>&1)
+  n=$(printf '%s\n' "$OUT" | grep -c '✗')
+  dead=$(printf '%s\n' "$OUT" | grep -c '抛异常')
+  if [ "$dead" -gt 0 ]; then
+    printf '  ❌ %-26s 变异体下段落中途死亡（%s 处抛异常）→ 违反「可红不可死」\n' "$name" "$dead"
+    fail=1
+  elif [ "$n" -gt 0 ]; then
+    printf '  ✅ %-26s 改坏即变红（%s 条失败断言，零段落死）\n' "$name" "$n"
+  else
+    printf '  ❌ %-26s 改坏仍全绿 → 该段断言无效，需加强\n' "$name"
+    fail=1
+  fi
+}
+
+mutation_red "E2E 锚点计划不符"   "plan_mismatch"
+mutation_red "E2E 重复提交 1:1"   "already_submitted"
+mutation_red "E2E 下拉不带学习单" "pull_no_orders"
+mutation_red "E2E 云端丢 openid"  "orders_drop_openid"
 
 echo
 PROBE=$(SRC_DIR="$OLD/utils" node scripts/probe-f8-wxprofile.cjs 2>&1)

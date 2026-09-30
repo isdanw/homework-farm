@@ -20,6 +20,9 @@
  *   · 已订正 = tutor_mistakes status='corrected'（≠掌握，单独计）
  */
 const tcb = require('@cloudbase/node-sdk');
+// 只 require orderKit（纯函数、零依赖、无写能力）。⚠️ 本函数**只读**，
+// 绝不可引入 orderActions / orderCloudDeps —— 那里面有写路径。
+const K = require('./orderKit');
 
 const ENV = process.env.TCB_ENV || 'workbuddy-d2gsgtfvmde5c9adf';
 const COLLS = {
@@ -32,6 +35,7 @@ const COLLS = {
   reviews: 'tutor_reviews',
   evidence: 'tutor_evidence',
   exams: 'exam_resources',
+  orders: 'tutor_orders',
   bindings: 'web_portal_bindings'
 };
 const READ_LIMIT = 200; // 单集合读取上限（防误拉全量，家庭自用量级足够）
@@ -288,7 +292,8 @@ async function profile(openid) {
  * sync 模块 —— 工作台「云→本地镜像下拉」专用数据出口（T2）
  * 与 tutor/profile 不同：不过滤字段、不限 100 条，透传全部业务字段（含 messages/stage/done），
  * 保证本地 家庭学习库 md 可被完整重建。仍受 token 鉴权与 openid 作用域约束（per-user 或 admin）。
- * 出参：{ profile:{nickname,grade,learner,subjectProfiles}, sessions, mistakes, evidence, reviews, exams }
+ * 出参：{ profile:{nickname,grade,learner,subjectProfiles,studyPlans,updatedAt}, sessions, mistakes, evidence, reviews, exams }
+ *   studyPlans = 成长计划（供工作台/网页构造学习单 O1 锚点，见下）
  *   exams = exam_resources 全字段（含 markdown/rawText/answers），F-B 起纳入下拉，供 papers md 重建。
  */
 async function sync(openid) {
@@ -315,6 +320,16 @@ async function sync(openid) {
       grade: cu.grade || data.grade || '',
       learner: cu.learner || null,
       subjectProfiles: cu.subjectProfiles || null,
+      // 成长计划（studyPlan 引擎写入 cu.studyPlans[typeKey] = {grade,term,textbook,subjectName,
+      // startDate,createdAt,updatedAt,stages:[{name,weeks,goal,tasks:[{name,days,done,doneAt}]}]}）。
+      // 与 profile 模块同源同字段，不改形状、不做归一化。
+      //
+      // 为什么必须下发（2026-09-28 补）：学习单的 O1 硬契约要求「单必锚计划任务」，
+      // 锚点必须与小程序侧 studyPlan.getCurrentTask(key) 同源（同一份 stages[].tasks[] 下标）。
+      // 工作台此前拿不到 studyPlans，就无法构造合法锚点 —— 一旦在端上「就近取材」
+      // （用 flows / recommend 的知识点凑一个锚点），出的单会挂在一份并不存在的计划任务上，
+      // 表现为「统计对不上、计划环关不掉」。宁可让端上明确知道"没有计划、不能出单"。
+      studyPlans: cu.studyPlans || null,
       // T5：文档级 updatedAt（syncData 每次全量写 _root 时刷新）→ 作「云端版本」基线，
       // 供工作台上推时判断「小程序是否在我下拉之后又写过」，从而避免静默覆盖。
       updatedAt: (u && u.updatedAt) || 0
@@ -354,8 +369,89 @@ async function exams(openid) {
   return { exams: list };
 }
 
-/* ---------- 主入口 ---------- */
-exports.main = async (event) => {
+/**
+ * orders 模块 —— 家长看板「学习单」**读**视图（决策 3：网页看板打开 orders 权限，该权限**含写**）
+ *
+ * ⚠️ 本模块**只负责读**。网页看板的写动作（出单 / 交回执）走 `webAdminWrite` 的 `orders` 通道，
+ * 不在这里 —— 本云函数保持纯读，不引入任何写路径（写边界见 `docs/orderProtocol.md` §6.2）。
+ *
+ * 与 exams 模块同理：只读、不写、不判定。**只回轻量字段**，不回 copyText / resumeText /
+ * recycleText / protocolBlock 四段大文本（那是执行端复制用的，端上可按需重新生成），
+ * 否则一次下拉会把上百张单的全文拖回来。
+ *
+ * 入参 query：{ planId?, subject?, status?, limit? }
+ * 出参：{
+ *   orders:[{ orderNo, clientId, openid, status, subject, subjectName, title, kind, minutes,
+ *             plan:{…锚点}, issuedAt, issuedBy, submittedAt, submittedBy, closedAt,
+ *             voidedAt, voidReason, reissueOf,
+ *             receipt:{…}, evaluation:{…}, cycle:{…}, events:[…], updatedAt }],
+ *   counts:{ issued, submitted, closed, cancelled, voided, total },
+ *   plans:[{ openid, planId, key, subjectName, stageName, taskName, si, ti,
+ *            issued, submitted, closed, cancelled, voided, total,
+ *            firstIssuedAt, lastIssuedAt, lastSubmittedAt, lastAt }]
+ * }
+ *
+ * plans 是「一份计划 → N 张单」的聚合（设计文档 §0.1 基数 1:N 的可视化落地）。
+ * **实现已收进 canonical `orderKit.planOrderAggregate`**（2026-09-29 T23）——
+ * 三端（小程序 / 网页 / 工作台）调同一个函数，一致性由 sha256 哈希锁保证。
+ * 此前三端各写一套，实测在「无锚点单 / 分组键是否含 openid / lastAt 兜底」三处分叉。
+ *
+ * ⚠️ openid 为什么必须回传（2026-09-28 补）：
+ *   家长看板是用**管理员口令**访问的，此时 ofilter 返回 {} → 一次拉回**所有孩子**的单。
+ *   若不回传 openid，网页端就只能把「哥哥的数学计划」和「妹妹的数学计划」渲染成两行同名行，
+ *   且无法按孩子 chip 过滤 —— 页面看着有数据，实际是错的。
+ *   回传 openid 不构成越权：同一口令下 profile 模块本来就回传裸 openid（见 accounts[].openid）。
+ *   前端只回显 maskOpenid(openid)，不展示完整值。
+ */
+async function orders(openid, query) {
+  const q = query || {};
+  const rows = await getAll(COLLS.orders, ofilter(COLLS.orders, openid));
+
+  // 大文本剔除（端上要用时按 orderKit 的 orderTextFor 重新生成，不依赖云端存全文）
+  const HEAVY = ['copyText', 'resumeText', 'recycleText', 'protocolBlock', 'promptText'];
+  const clean = (r) => {
+    const o = {};
+    for (const k of Object.keys(r)) {
+      if (k === '_id' || HEAVY.indexOf(k) >= 0) continue;
+      o[k] = r[k];
+    }
+    o.id = r.clientId || r._id;
+    // 文档属主与业务 openid 归一到一个字段：tutor_* 用明文 openid，兜底取 _openid
+    o.openid = r.openid || r._openid || '';
+    return o;
+  };
+
+  let list = rows.map(clean);
+
+  const planId = String(q.planId || '');
+  const subject = String(q.subject || '');
+  const status = String(q.status || '');
+  const oid = String(q.openid || '');
+  if (oid) list = list.filter((o) => o.openid === oid);
+  if (planId) list = list.filter((o) => o.plan && o.plan.planId === planId);
+  if (subject) list = list.filter((o) => o.subject === subject);
+  if (status) list = list.filter((o) => o.status === status);
+
+  list.sort((a, b) => (b.issuedAt || b.createdAt || 0) - (a.issuedAt || a.createdAt || 0));
+  const limit = Math.min(Number(q.limit) || 200, 500);
+  if (list.length > limit) list = list.slice(0, limit);
+
+  // 计划维度聚合**复用 canonical orderKit**（T23）：三端（小程序 / 网页 / 工作台）
+  // 必须调**同一个函数**。各端自己算一遍，必然算出三种口径 —— 本文件里原来的内联
+  // 实现就与另两端实测分叉过三处（无锚点单被丢弃 / 分组键缺 openid / lastAt 缺
+  // createdAt 兜底），详见 order-kit/orderKit.js §八 的注释。
+  //
+  // 注意 `K.planOrderAggregate(list)` 刻意**不开** `withOrders`：
+  // 云端响应不带下钻明细，200 张单全挂回去会把响应撑大一个数量级。
+  // 端上要下钻时按 planId 从扁平的 `orders` 里自己 filter。
+  return {
+    orders: list,
+    counts: K.countOrderStatuses(list),
+    plans: K.planOrderAggregate(list)
+  };
+}
+
+/* ---------- 主入口 ---------- */exports.main = async (event) => {
   const token = (event && event.token) || '';
   const expect = process.env.WEB_DASHBOARD_TOKEN;
 
@@ -380,6 +476,7 @@ exports.main = async (event) => {
     else if (module === 'profile') data = await profile(boundOpenid);
     else if (module === 'sync') data = await sync(boundOpenid);
     else if (module === 'exams') data = await exams(boundOpenid);
+    else if (module === 'orders') data = await orders(boundOpenid, event.query);
     else return { ok: false, code: 'bad_module', msg: '未知 module: ' + module };
     return { ok: true, module, scope: isAdmin ? 'admin' : 'user', data };
   } catch (e) {

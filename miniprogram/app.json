@@ -16,7 +16,8 @@
         "retest/retest",
         "learnerProfile/learnerProfile",
         "typeProfile/typeProfile",
-        "examGallery/examGallery"
+        "examGallery/examGallery",
+        "order/order"
       ]
     },
     {

@@ -40,6 +40,9 @@
  */
 const store = require('./store.js');
 const util = require('./util.js');
+// orderKit 是**叶子模块**（零依赖、纯函数、无 wx / DOM / 云调用），
+// 版本由 scripts/sync-order-kit.mjs 从 canonical 生成，sha256 锁死。
+const K = require('./orderKit.js');
 
 const BASE_KEY = 'wb_hwfarm_tutor_v1';
 
@@ -52,8 +55,8 @@ const SYNC_THROTTLE_MS = 60000;
 /* 有改动登记后的合并推送延迟：连续 3 次写操作只触发 1 次云调用 */
 const FLUSH_DEBOUNCE_MS = 1500;
 
-/* 本地持有的四个集合 */
-const KINDS = ['sessions', 'mistakes', 'evidence', 'reviews'];
+/* 本地持有的五个集合 */
+const KINDS = ['sessions', 'mistakes', 'evidence', 'reviews', 'orders'];
 
 function storageKey() {
   const oid = store.getOpenid();
@@ -61,7 +64,7 @@ function storageKey() {
 }
 
 function blank() {
-  return { sessions: [], mistakes: [], evidence: [], reviews: [], removed: [], pushQueue: [], lastSyncAt: 0 };
+  return { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], removed: [], pushQueue: [], lastSyncAt: 0 };
 }
 
 let _probeOid = '';            // 已探查过 _guest 空间的 openid（按身份各探一次）
@@ -73,6 +76,7 @@ function readAll() {
   if (!Array.isArray(all.mistakes)) all.mistakes = [];
   if (!Array.isArray(all.evidence)) all.evidence = [];
   if (!Array.isArray(all.reviews)) all.reviews = [];
+  if (!Array.isArray(all.orders)) all.orders = [];
   if (!Array.isArray(all.pushQueue)) all.pushQueue = [];
   if (!Array.isArray(all.removed)) all.removed = [];
   // 身份已确认且本进程还没为该身份探查过 → 探一次 _guest 空间（F9）。
@@ -500,6 +504,16 @@ const CLOUD_DEFAULTS = {
   reviews: {
     mistakeId: '', subject: '', subjectName: '', topic: '', errorType: '',
     stage: 1, dueAt: 0, done: false, createdAt: 0, updatedAt: 0
+  },
+  // 学习单：状态与事件是契约载体，**默认值只补缺失字段，绝不覆写云端值**
+  orders: {
+    orderNo: '', schema: 'order-v1', plan: null,
+    intent: '', evidenceType: 'retest', subject: '', subjectName: '',
+    status: 'issued', kind: '', minutes: '', title: '',
+    issuedAt: 0, issuedBy: '', submittedAt: 0, submittedBy: '', closedAt: 0,
+    receipt: null, evaluation: null, cycle: null,
+    voidedAt: 0, voidReason: '', reissueOf: '',
+    events: [], createdAt: 0, updatedAt: 0
   }
 };
 
@@ -523,10 +537,11 @@ function cloudToLocal(kind, cloud) {
 
 /**
  * 云 → 本地回填（换设备/清缓存恢复）。
- * remote: tutorSync(pull) 返回 { sessions, mistakes, evidence, reviews }
+ * remote: tutorSync(pull) 返回 { sessions, mistakes, evidence, reviews, orders }
  * 合并规则：
  *   · sessions / mistakes / evidence：按 id 并集，同 id 本地优先（本地是本机权威）
  *   · reviews：同 id 比 updatedAt，云端的更新则把云端字段全量覆盖过来
+ *   · orders：同 id **云端整条覆盖本地**（云端是唯一真相源，见本节末说明）
  *   · 任何被本地删过（removed 墓碑）的条目一律不回填
  */
 function mergeFromCloud(remote) {
@@ -560,6 +575,21 @@ function mergeFromCloud(remote) {
       Object.keys(inc).forEach(k => { cur[k] = inc[k]; });
       cur.updatedAt = cu;
     }
+  });
+
+  /* ── 学习单：与上面三个集合规则**不同** —— 已存在时云端整条覆盖本地 ──
+   * 理由：status 与 events[] 是 O2（回执 1:1）/ O4（append-only）的载体，云端是唯一真相源。
+   * 若沿用「本地优先」，本地那份旧快照（status=issued、无 receipt）就会盖掉云端的回执，
+   * 表现为「换设备后回执没了」——沉默且不可逆。
+   * 本地唯一可能比云端新的情形是「还没上云的新单」，那种情况云端压根没有该 id，走新增分支。
+   * 因此这里不做 LWW、不比较 updatedAt：**有则覆盖，无则新增**。 */
+  (Array.isArray(remote.orders) ? remote.orders : []).forEach(cloud => {
+    const loc = cloudToLocal('orders', cloud);
+    if (!loc) return;
+    if (isBuried(all, 'orders', loc.id)) return;
+    const i = all.orders.findIndex(x => x.id === loc.id);
+    if (i < 0) { all.orders.push(loc); added++; }
+    else { all.orders[i] = loc; }
   });
 
   all.lastSyncAt = Date.now();
@@ -606,9 +636,9 @@ function pushQueued() {
       if (!queue.length) return resolve({ ok: true, added: 0 });
       if (typeof wx === 'undefined' || !wx.cloud || !wx.cloud.callFunction) return resolve({ ok: false });
 
-      const payload = { sessions: [], mistakes: [], evidence: [], reviews: [] };
+      const payload = { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [] };
       queue.forEach(q => {
-        const arrName = { sessions: 'sessions', mistakes: 'mistakes', evidence: 'evidence', reviews: 'reviews' }[q.kind];
+        const arrName = { sessions: 'sessions', mistakes: 'mistakes', evidence: 'evidence', reviews: 'reviews', orders: 'orders' }[q.kind];
         if (!arrName) return;
         const item = (all[arrName] || []).find(x => x.id === q.id);
         if (item) payload[q.kind].push(Object.assign({}, item, { clientId: item.id, id: undefined }));
@@ -636,11 +666,133 @@ function pushQueued() {
   });
 }
 
+/* ======================= 学习单（order-v1.1） =======================
+ * 与另外四个集合的**关键差异**：学习单有状态机与审计流水，云端是唯一真相源。
+ * 因此本节的读写规则是刻意不对称的：
+ *   · 所有状态变更走云函数 `tutorOrder`（带 openid 上下文 + 与网页端共享同一份状态机）；
+ *     **本地绝不推演状态**——本地推演必然与云端分叉，且没有任何人会发现。
+ *   · 本地 `orders` 只是**读穿缓存**：云端返回什么就存什么，页面渲染读本地，省掉每次渲染打云。
+ *   · 出单失败（离线）→ 落本地 + 登记 pushQueue，下次 `tutorSync.push` 补写。
+ *     push 对 orders 只补写、不合并（见 docs/orderProtocol.md §6.4），所以补写不会写坏已有单。
+ *   · 判据（状态机、1:1、禁用词）全在 orderKit；页面不得自行判断合法跃迁。
+ */
+
+/** 全部学习单（按出单时间倒序） */
+function getOrders() {
+  return readAll().orders.slice().sort((a, b) => (b.issuedAt || 0) - (a.issuedAt || 0));
+}
+
+/** 按人读编号取单 */
+function getOrder(orderNo) {
+  const t = String(orderNo || '');
+  if (!t) return null;
+  return readAll().orders.find(o => o.orderNo === t) || null;
+}
+
+/** 某份计划（planId = key@createdAt）下的全部单，按时间倒序 */
+function getOrdersByPlan(planId) {
+  const p = String(planId || '');
+  if (!p) return [];
+  return getOrders().filter(o => o.plan && o.plan.planId === p);
+}
+
+/** 某份计划下**待回执**的单（回执第二步「选出单」的候选集：只列 issued） */
+function getPendingOrders(planId) {
+  return getOrdersByPlan(planId).filter(o => o.status === 'issued');
+}
+
+/**
+ * 状态计数（用于「计划 1:N 出单」的概览）。
+ * 口径来自 canonical `orderKit.countOrderStatuses` —— 不再在端上自己写一份，
+ * 否则又与云端分叉（T23）。
+ */
+function orderCounts(list) {
+  return K.countOrderStatuses(Array.isArray(list) ? list : getOrders());
+}
+
+/**
+ * 计划维度聚合：一份计划 → N 张单的状态与时间戳一览。
+ *
+ * ⚠️ 实现在 canonical `orderKit.planOrderAggregate`（2026-09-29 T23 收口）。
+ * 这里**曾经有一份自己的循环实现**，与云端实测分叉过三处：
+ *   · 分组键只用 planId（云端是 `openid::planId`）
+ *   · 聚合行缺 `openid` 字段
+ *   · `lastAt` 只兜 `issuedAt`（云端还兜 `createdAt`）
+ * 「三端渲染同一份聚合数据」不可能靠两份实现互相看齐 —— 那只是把分叉推迟到下次改动。
+ * 所以这里只剩一行转发，一致性交给 sha256 哈希锁。
+ */
+function planOrderAggregate() {
+  return K.planOrderAggregate(getOrders());
+}
+
+/**
+ * 把云端返回的单写入本地缓存（upsert）。
+ * ⚠️ 刻意用 writeAll 而不是 commit：数据来自云端，**不回推**，
+ *    否则每次读都会登记一条 pushQueue，形成无意义的回声推送。
+ */
+function saveOrderFromCloud(order) {
+  if (!order || !order.orderNo) return null;
+  const loc = cloudToLocal('orders', order);
+  if (!loc) return null;
+  const all = readAll();
+  const i = all.orders.findIndex(x => x.id === loc.id);
+  if (i < 0) all.orders.push(loc); else all.orders[i] = loc;
+  writeAll(all);
+  return loc;
+}
+
+/**
+ * 调一次学习单云函数（唯一写入口）。
+ * 成功时把返回的单（含 reissue 的 voided 单）落到本地缓存。
+ * @returns {Promise<{ok:boolean, code?:string, msg?:string, order?:Object}>} 永不 reject
+ */
+function orderApi(action, payload) {
+  return new Promise(resolve => {
+    try {
+      if (typeof wx === 'undefined' || !wx.cloud || !wx.cloud.callFunction) {
+        return resolve({ ok: false, code: 'no_cloud', msg: '当前环境无法连接云端' });
+      }
+      wx.cloud.callFunction({
+        name: 'tutorOrder',
+        data: Object.assign({ action: action }, payload || {})
+      }).then(res => {
+        const r = res && res.result;
+        if (!r) return resolve({ ok: false, code: 'no_result', msg: '云端无返回（函数可能未部署）' });
+        if (r.ok) {
+          if (r.order) saveOrderFromCloud(r.order);
+          if (r.voided) saveOrderFromCloud(r.voided);
+          if (Array.isArray(r.orders)) r.orders.forEach(saveOrderFromCloud);
+        }
+        resolve(r);
+      }).catch(e => resolve({ ok: false, code: 'network', msg: (e && e.errMsg) || '云函数调用失败' }));
+    } catch (e) {
+      resolve({ ok: false, code: 'local_error', msg: (e && e.message) || '调用异常' });
+    }
+  });
+}
+
+/**
+ * 离线出单兜底：把本地生成的单落盘并登记补写。
+ * 仅用于「云端调用失败」分支——云端成功时走 saveOrderFromCloud，不排队。
+ */
+function queueOrderPush(order) {
+  if (!order || !order.orderNo) return null;
+  const loc = cloudToLocal('orders', order);
+  if (!loc) return null;
+  const all = readAll();
+  const i = all.orders.findIndex(x => x.id === loc.id);
+  if (i < 0) all.orders.push(loc); else all.orders[i] = loc;
+  commit(all, [{ kind: 'orders', id: loc.id }]);
+  return loc;
+}
+
 module.exports = {
   getSessions, getActive, newSession, appendMessage, closeSession, removeSession, archiveCount,
   getMistakes, addMistake, setMistakeStatus, mistakeCount,
   getEvidence, addEvidence, evidencePassedCount,
   getReviews, getDueReviews, reviewPendingCount, upsertReview, advanceReview,
+  getOrders, getOrder, getOrdersByPlan, getPendingOrders, orderCounts, planOrderAggregate,
+  orderApi, saveOrderFromCloud, queueOrderPush,
   getLearnerContext,
   queuePush, mergeFromCloud, syncFromCloud, pushQueued,
   REVIEW_STAGE_DAYS
