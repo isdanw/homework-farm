@@ -1,7 +1,7 @@
 {
   "name": "studyPlanGen",
   "version": "1.0.0",
-  "description": "成长计划（阶段学习计划）生成，调用 CloudBase 内置 AI（hy3）",
+  "description": "成长计划（阶段成长计划）生成，调用 CloudBase 内置 AI（hy3）",
   "main": "index.js",
   "dependencies": {
     "@cloudbase/node-sdk": "^3.16.0"

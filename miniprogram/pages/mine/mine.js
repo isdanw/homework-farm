@@ -275,7 +275,7 @@ Page({
   /** 网页看板入口：per-user 网页口令生成（与微信账户绑定） */
   goWebPortal() { wx.navigateTo({ url: '/pkgTools/webportal/webportal' }); },
 
-  /** 导学中心入口（学习主线聚合：AI 导学 / 错题本 / 导学报告）
+  /** 导学中心入口（导学主线聚合：AI 导学 / 错题本 / 导学报告）
    *  ⚠️ 门禁（2026-09-22）：未添加孩子或未建成长计划时，导学功能禁用。
    *     弹出引导，引导用户先完成前置条件，不进入导学中心。 */
   goTutorHub() {
@@ -298,15 +298,15 @@ Page({
     } else if (!gate.hasChild) {
       wx.showModal({
         title: '请先添加孩子',
-        content: '导学功能需要先添加孩子，才能针对 TA 定制学习计划与导学内容。',
+        content: '导学功能需要先添加孩子，才能针对 TA 定制成长计划与导学内容。',
         confirmText: '去添加孩子',
         cancelText: '稍后',
         success: (res) => { if (res.confirm) this.openAdd(); }
       });
     } else {
       wx.showModal({
-        title: '请先建立学习计划',
-        content: '导学建立在「成长计划」之上。请先为孩子生成一份阶段学习计划，再开启导学功能。',
+        title: '请先建立成长计划',
+        content: '导学建立在「成长计划」之上。请先为孩子生成一份阶段成长计划，再开启导学功能。',
         confirmText: '去建计划',
         cancelText: '稍后',
         success: (res) => { if (res.confirm) this.goPlan(); }
@@ -323,8 +323,8 @@ Page({
       const parts = [];
       if (pending) parts.push('待订正 ' + pending + ' 题');
       if (ev) parts.push('已验证 ' + ev + ' 项');
-      return parts.length ? parts.join(' · ') : '导学助手 · 错题本 · 导学报告，一站式学习闭环';
-    } catch (e) { return '导学助手 · 错题本 · 导学报告，一站式学习闭环'; }
+      return parts.length ? parts.join(' · ') : '导学助手 · 错题本 · 导学报告，一站式导学闭环';
+    } catch (e) { return '导学助手 · 错题本 · 导学报告，一站式导学闭环'; }
   },
 
   exportData() {

@@ -1,5 +1,5 @@
 /**
- * 云函数 tutorOrder —— 全科导学「学习单」写入口（小程序侧，openid 通道）
+ * 云函数 tutorOrder —— 全科导学「导学单」写入口（小程序侧，openid 通道）
  * ============================================================
  * 职责：把「出单 → 豆包执行 → 回执 → 评语与汇总」的**状态变更**落进集合 `tutor_orders`。
  *
@@ -38,7 +38,7 @@ const COLL = 'tutor_orders';
  * 任何失败（断网 / 资源包未开通 / 模型幻觉）都静默回落规则版，不阻塞闭环。
  */
 const POLISH_PROMPT =
-  '你是「学习单评语」的文字编辑。下面给你一份【事实】和一份【规则评语】。\n' +
+  '你是「导学单评语」的文字编辑。下面给你一份【事实】和一份【规则评语】。\n' +
   '只允许把规则评语改写得更自然、更口语、更适合给孩子和家长看，长度相近（不超过 120 字）。\n\n' +
   '硬约束（违反即失败）：\n' +
   '1. 只能使用【事实】里出现的信息，不得新增任何事实、数字、题目、孩子原话或训练过程。\n' +
@@ -78,7 +78,7 @@ async function polishComment(app, order) {
 exports.main = async (event) => {
   const ev = event || {};
   const openid = (ev.userInfo && ev.userInfo.openId) || '';
-  if (!openid) return { ok: false, code: 'no_openid', msg: '缺少用户身份，无法操作学习单' };
+  if (!openid) return { ok: false, code: 'no_openid', msg: '缺少用户身份，无法操作导学单' };
 
   const action = String(ev.action || '');
   if (action !== 'polish' && actions.ACTIONS.indexOf(action) < 0) {
@@ -102,7 +102,7 @@ exports.main = async (event) => {
     }
     return await fn(ev, deps);
   } catch (e) {
-    return { ok: false, code: 'order_error', msg: '学习单操作失败：' + ((e && e.message) || e) };
+    return { ok: false, code: 'order_error', msg: '导学单操作失败：' + ((e && e.message) || e) };
   }
 };
 
@@ -114,7 +114,7 @@ async function runPolish(ev, deps, app) {
   const orderNo = String(ev.orderNo || '').trim();
   if (!orderNo) return { ok: false, code: 'bad_param', msg: '缺少 orderNo' };
   const doc = await deps.find({ orderNo: orderNo });
-  if (!doc) return { ok: false, code: 'not_found', msg: '学习单不存在：' + orderNo };
+  if (!doc) return { ok: false, code: 'not_found', msg: '导学单不存在：' + orderNo };
   if (!doc.evaluation || !doc.evaluation.comment) {
     return { ok: false, code: 'bad_transition', msg: '本单还没有规则评语（回执未提交），无法润色' };
   }

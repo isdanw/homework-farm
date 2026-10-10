@@ -114,7 +114,7 @@ exports.main = async () => {
     else if (status !== 'ok') summary.failed++;
   }
 
-  // S4：清理过期的 OCR 调试观测数据（含课表科目内容，避免长期留存儿童学习数据）
+  // S4：清理过期的 OCR 调试观测数据（含课表科目内容，避免长期留存儿童导学数据）
   try {
     const cutoff = new Date(Date.now() - OCR_RETAIN_DAYS * 86400000);
     for (let round = 0; round < 50; round++) {   // 每轮最多删 100 条，50 轮封顶防跑飞

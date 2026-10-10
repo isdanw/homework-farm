@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 网页看板「学习单」tab 静态校验（T21）——离线，无浏览器、无云依赖
+ * 网页看板「导学单」tab 静态校验（T21）——离线，无浏览器、无云依赖
  *
  * 为什么要有这个脚本：web/index.html 是 1.4MB 内联单文件（含内联 CloudBase SDK），
  * 既不好单测也不好 diff。T21 又是计划里标「高危」的一步。所以把它的关键契约
@@ -16,7 +16,7 @@
  *       保留键 5 个双层防御 / 写动作恰 2 种（issue+submit）/ 块外无写 /
  *       文案如实说明写边界（不得残留「本页只读」）
  *   §5 三端文案一致：状态表 / 事件表 / 操作者表 与 小程序、工作台逐字一致
- *   §6 禁用词门禁：学习单区域内不得出现「已掌握」类结论词
+ *   §6 禁用词门禁：导学单区域内不得出现「已掌握」类结论词
  *   §7 锚点可见：planId / si / ti 必须被渲染出来（O1 的界面面）
  *   §8 写路径语义：O1 锚点五件套 / si·ti 不重排 / O2 两步选择 + 1:1 / O3 不产证据
  *
@@ -160,12 +160,12 @@ const mpSrc = fs.readFileSync(MP_ORDER, 'utf8');
 let wbSrc = null;
 try { wbSrc = fs.readFileSync(WB_ORDERS, 'utf8'); } catch (e) { wbSrc = null; }
 
-/* 学习单区域：从「学习单（T21」注释块开始，到「时间轴记录」之前 */
-const O_START = webSrc.indexOf('/* ============ 学习单（T21');
+/* 导学单区域：从「导学单（T21」注释块开始，到「时间轴记录」之前 */
+const O_START = webSrc.indexOf('/* ============ 导学单（T21');
 const O_END = webSrc.indexOf('/* ============ 时间轴记录 ============ */');
 const ordersBlock = (O_START >= 0 && O_END > O_START) ? webSrc.slice(O_START, O_END) : '';
 
-/* 学习单的**界面区块**（HTML 模板部分）—— 必须与 ordersBlock（脚本部分）分开取。
+/* 导学单的**界面区块**（HTML 模板部分）—— 必须与 ordersBlock（脚本部分）分开取。
    文案类断言若落在脚本切片上会**永远匹配不到**（T21-b 踩过：断言写错导致假红），
    反向亦然：把「不许出现某代码」的断言落在 HTML 上会恒真。取源必须与判据同层。 */
 const OS_START = webSrc.indexOf('<section class="view" id="orders"');
@@ -265,7 +265,7 @@ section('0. 校验器自检（反证：证明 §5 的比较与 §4 的只读判�
      '自检（反证）：多一个保留键同样会被发现');
   // ③ 取源分层：文案判据必须落在 HTML 上，落在脚本上会恒假（这是本轮真实踩过的坑）
   ok(ordersSection.length > 0 && ordersBlock.length > 0, '自检：脚本切片与界面切片都取到了');
-  ok(ordersSection.indexOf('/* ============ 学习单') < 0,
+  ok(ordersSection.indexOf('/* ============ 导学单') < 0,
      '自检（关键）：界面切片确实是 HTML（不含脚本注释头）—— 两个切片不重叠');
   ok(/id="orders"/.test(ordersSection) && !/function renderOrders/.test(ordersSection),
      '自检：界面切片含 section 但不含脚本函数 —— 取源与判据同层');
@@ -293,9 +293,9 @@ section('1. 文件完整性');
 
 section('2. 导航与视图接线');
 (function wiring() {
-  ok(/<a[^>]*data-v="orders"[^>]*>[\s\S]{0,400}?学习单<\/a>/.test(webSrc), '侧栏 nav 有 data-v="orders" 且文案为「学习单」');
+  ok(/<a[^>]*data-v="orders"[^>]*>[\s\S]{0,400}?导学单<\/a>/.test(webSrc), '侧栏 nav 有 data-v="orders" 且文案为「导学单」');
   ok(/<section class="view" id="orders"/.test(webSrc), '存在 <section class="view" id="orders">');
-  ok(/\borders:'学习单'/.test(webSrc), 'switchView 的标题映射含 orders → 学习单');
+  ok(/\borders:'导学单'/.test(webSrc), 'switchView 的标题映射含 orders → 导学单');
   ok(/id="ordersContent"/.test(webSrc), '存在 #ordersContent 渲染容器');
   ok(/id="childChipsOrders"/.test(webSrc), '存在 #childChipsOrders 孩子切换容器');
   ok(/renderChips\('childChipsOrders'/.test(webSrc), '孩子切换容器确实绑定了 renderChips');
@@ -318,13 +318,13 @@ section('3. 数据接线');
   ok(/renderOrders\(\)/.test(webSrc), 'refreshAll 调用了 renderOrders()');
   ok(/\bconst \[o,p,t,f,x,od\] = await Promise\.all/.test(webSrc), 'Promise.all 解构含第 6 项 orders');
   ok(/\[o,p,t,f,x,od\]\.filter\(v=>v\.__err\)/.test(webSrc), '错误收集数组含 orders（失败不会被吞掉）');
-  ok(ordersBlock.length > 3000, '学习单代码块存在且规模合理（' + ordersBlock.length + ' 字节）');
+  ok(ordersBlock.length > 3000, '导学单代码块存在且规模合理（' + ordersBlock.length + ' 字节）');
 
   /* —— 3.5 加载期也必须渲染出「入口」（2026-09-29 owner 报「没找到交回执的入口」的根因）——
    *
    * 判据来历：当初 `renderOrders()` 只在 `await Promise.all` **之后**被调用一次。
    * 而 Promise.all 要先拉 6 个云模块（实测约 8 秒），期间 `DATA.*` 全是 null ——
-   * 于是从过门到数据到达这段时间里，学习单页除了静态 note 之外**什么都没有**：
+   * 于是从过门到数据到达这段时间里，导学单页除了静态 note 之外**什么都没有**：
    * `#ordersWrite` 与 `#ordersContent` 双空，连「出单 / 交回执」两个页签都不存在。
    * 真机复现即为此态（用真实口令登录，4.5 秒时读到的写区 innerHTML 为空）。
    *
@@ -354,7 +354,7 @@ section('3. 数据接线');
 
   ok(/function renderOrdersWrite\(a,\s*plans,\s*mine,\s*loading\)/.test(webSrc),
     'renderOrdersWrite 接受 loading 参数（加载态下仍渲染页签骨架）');
-  ok(/\?\s*'<div class="empty">学习单数据加载中/.test(webSrc),
+  ok(/\?\s*'<div class="empty">导学单数据加载中/.test(webSrc),
     '加载态下面板给出明确「加载中」占位，而不是留白');
   /* 两个面板对数据的依赖不同，不能一刀切 —— 出单只用 profile.studyPlans，
      回执必须等 orders。出单不该被 orders 的延迟拖住（那会让「能立刻做的事」被挡住）。 */
@@ -379,7 +379,7 @@ section('4. 写边界：**只有 orders 一路可写**，其余严格只读（�
   /* ── 判据的来历（改本节前必读）─────────────────────────────────────
    * 本节的判据在 2026-09-29 由「**全局禁止 webAdminWrite**」改为
    * 「**只允许 orders 一路写，且唯一出口**」。理由：
-   *   设计文档《学习单闭环设计_出单-回执.md》决策 3 的原文是
+   *   设计文档《导学单闭环设计_出单-回执.md》决策 3 的原文是
    *     「网页看板**开启 `orders` 权限** | webAdminQuery 新增 module:'orders'（读）；
    *       webAdminWrite 白名单新增 orders（写）」
    *   ——**写**字是决策本身，不是后来追加的。同文第 411 行并已明确修订
@@ -405,7 +405,7 @@ section('4. 写边界：**只有 orders 一路可写**，其余严格只读（�
   ok(used.length > 0, '能枚举出应用脚本调用的云函数（' + used.join(', ') + '）');
   const extra = used.filter(function (x) { return ALLOWED_FN.indexOf(x) < 0; });
   ok(extra.length === 0, '调用的云函数都在白名单内（越界：' + (extra.join(', ') || '无') + '）');
-  ok(used.indexOf('webAdminWrite') >= 0, 'webAdminWrite 在白名单内 —— 学习单是唯一破例的写通道（决策 3）');
+  ok(used.indexOf('webAdminWrite') >= 0, 'webAdminWrite 在白名单内 —— 导学单是唯一破例的写通道（决策 3）');
 
   /* —— 4.2 读通道只有 query() 一个出口 —— */
   const qCount = (appCode.match(/name\s*:\s*'webAdminQuery'/g) || []).length;
@@ -452,25 +452,25 @@ section('4. 写边界：**只有 orders 一路可写**，其余严格只读（�
   const leaked = forbidden.filter(function (x) { return (doIssueBody + doSubmitBody).indexOf(x) >= 0; });
   ok(leaked.length === 0, '不实现作废/重开/勾任务/归档等动作（越界：' + (leaked.join(', ') || '无') + '）');
 
-  /* —— 4.6 学习单区域之外不得有任何写 —— */
+  /* —— 4.6 导学单区域之外不得有任何写 —— */
   const outsideOrders = appCode.replace(stripComments(ordersBlock), '');
   ok(!/name\s*:\s*'webAdminWrite'/.test(outsideOrders),
-     'webAdminWrite 调用点全部落在「学习单」代码块内（块外出现 = 越权写其它模块）');
+     'webAdminWrite 调用点全部落在「导学单」代码块内（块外出现 = 越权写其它模块）');
   ok(/renderOrdersBody|^$/.test(renderOrdersBody) || !/\.callFunction\s*\(/.test(renderOrdersBody),
      'renderOrders 内不直连 callFunction（渲染与写入分离：写只在 doIssue / doSubmitReceipt）');
   ok(!/\.add\s*\(|\.update\s*\(|\.remove\s*\(/.test(ordersCode),
-     '学习单区域内不出现数据库直写方法（写一律经 cloud 状态机，不经端上集合操作）');
+     '导学单区域内不出现数据库直写方法（写一律经 cloud 状态机，不经端上集合操作）');
   ok(!/localStorage\.(setItem|removeItem)/.test(ordersCode),
-     '学习单区域不写 localStorage（回执草稿只存内存，不产生端上持久状态）');
-  ok(!/cloudbase\.init/.test(ordersCode), '学习单区域不自行初始化 SDK（复用既有 initCloud）');
+     '导学单区域不写 localStorage（回执草稿只存内存，不产生端上持久状态）');
+  ok(!/cloudbase\.init/.test(ordersCode), '导学单区域不自行初始化 SDK（复用既有 initCloud）');
 
   /* —— 4.7 文案必须如实说明写边界（说反了比不写更糟）—— */
-  ok(ordersSection.length > 300, '学习单界面区块已取出（' + ordersSection.length + ' 字节）');
-  ok(/本页是本看板唯一的可写区域/.test(ordersSection), '学习单界面文案明写「本页是本看板唯一的可写区域」');
+  ok(ordersSection.length > 300, '导学单界面区块已取出（' + ordersSection.length + ' 字节）');
+  ok(/本页是本看板唯一的可写区域/.test(ordersSection), '导学单界面文案明写「本页是本看板唯一的可写区域」');
   ok(!/本页只读/.test(ordersSection), '不再残留「本页只读」的旧文案（与实现相反）');
   ok(/出单/.test(ordersSection) && /交回执/.test(ordersSection), '界面文案点明两个写动作（出单 / 交回执）');
   ok(!/只读回放/.test(ordersSection), '不再把本页描述为「只读回放」');
-  ok(/学习单可写/.test(webSrc), '品牌栏文案标出写边界（HW-FARM · 学习单可写）');
+  ok(/导学单可写/.test(webSrc), '品牌栏文案标出写边界（HW-FARM · 导学单可写）');
   const subSuffix = webSrc.match(/suffix\s*=\s*\(v === 'orders'\)\s*\?\s*'([^']*)'\s*:\s*'([^']*)'/);
   ok(!!subSuffix, 'switchView 的副标题按视图区分写/读');
   ok(!!subSuffix && subSuffix[1].indexOf('可写') >= 0 && subSuffix[2].indexOf('只读') >= 0,
@@ -526,7 +526,7 @@ section('8. 写路径语义（O1 锚点 / O2 两步选择 / O3 不产证据）')
 
   /* —— O3：回执 ≠ 证据 —— */
   ok(!/tutor_evidence|tutorEvidence|knowledgePoints/.test(ordersCode),
-     'O3：学习单区域绝不触碰 tutor_evidence / knowledgePoints（回执 ≠ 证据 ≠ 掌握）');
+     'O3：导学单区域绝不触碰 tutor_evidence / knowledgePoints（回执 ≠ 证据 ≠ 掌握）');
   ok(/回执 ≠ 掌握证据/.test(webSrc), 'O3：页面明写「回执 ≠ 掌握证据」');
   ok(!/callWrite\('(?:evidence|reviews|mistakes|sessions)'/.test(doIssueCode + doSubmitCode),
      'O3：写白名单只到 orders，不含任何 tutor_* 集合');
@@ -591,7 +591,7 @@ section('6. 禁用词门禁（回执 ≠ 证据 ≠ 掌握）');
 (function banned() {
   const BANNED = ['已掌握', '已精通', '学会了', '完全懂了', '完全掌握', '稳稳掌握'];
   const hits = BANNED.filter((w) => ordersBlock.indexOf(w) >= 0);
-  ok(hits.length === 0, '学习单区域内不含结论类禁用词（命中：' + (hits.join('、') || '无') + '）');
+  ok(hits.length === 0, '导学单区域内不含结论类禁用词（命中：' + (hits.join('、') || '无') + '）');
 
   // 反证：把禁用词塞进一份副本，必须被判定命中
   const probe = ordersBlock + '已掌握';
@@ -618,5 +618,5 @@ section('7. 计划锚点可见（O1 的界面面）');
 })();
 
 console.log('\n通过 ' + passes + ' 项，失败 ' + fails + ' 项');
-if (fails) { console.error('\n❌ 网页看板「学习单」静态校验未通过'); process.exit(1); }
-console.log('✅ 网页看板「学习单」静态校验全通过');
+if (fails) { console.error('\n❌ 网页看板「导学单」静态校验未通过'); process.exit(1); }
+console.log('✅ 网页看板「导学单」静态校验全通过');

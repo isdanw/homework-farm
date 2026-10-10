@@ -32,7 +32,7 @@ const SUBJECT_LABELS = { chinese: '语文', math: '数学', english: '英语' };
 /**
  * 两种分析模式：
  *  · 'comment'（默认）老师课后评语 → 重点解读 / 家长这样做 / 需要留意
- *  · 'note'    孩子当天的学习记录（打卡描述）→ 今天做得好 / 可以改进 / 明天试试
+ *  · 'note'    孩子当天的导学记录（打卡描述）→ 今天做得好 / 可以改进 / 明天试试
  */
 const COMMENT_KEYS = [
   { key: 'point', emoji: '📌', title: '重点解读' },
@@ -67,10 +67,10 @@ function buildCommentPrompt(subjectLabel) {
 - 不用代码块，不列冗长清单，不编造未提及的信息。`;
 }
 
-/** 模式 B：孩子当天的学习记录（打卡时写的描述） */
+/** 模式 B：孩子当天的导学记录（打卡时写的描述） */
 function buildNotePrompt(subjectLabel) {
   return `你是一位温和、会鼓励孩子的小学家庭教育顾问。
-任务：根据家长或孩子记录的「当天${subjectLabel}学习情况」，给出精炼的评价与改进建议。
+任务：根据家长或孩子记录的「当天${subjectLabel}打卡情况」，给出精炼的评价与改进建议。
 
 **严格按以下三个简短板块输出**（每个板块以 emoji 标题开头，换行后直接写内容，板块之间空一行）：
 
@@ -123,7 +123,7 @@ exports.main = async (event) => {
   const childName = event.childName || '';
 
   if (!comment) {
-    return { ok: false, code: 'empty', msg: mode === 'note' ? '请先写一下今天的学习情况' : '请先粘贴老师的评语' };
+    return { ok: false, code: 'empty', msg: mode === 'note' ? '请先写一下今天的打卡情况' : '请先粘贴老师的评语' };
   }
   if (comment.length > 2000) return { ok: false, code: 'too_long', msg: '内容过长，请控制在 2000 字以内' };
 
@@ -133,7 +133,7 @@ exports.main = async (event) => {
   const userPrompt = mode === 'note'
     ? `学生${childName ? '（' + childName + '）' : ''}年级：${grade || '未填写'}\n` +
       `打卡项：${subjectLabel}\n\n` +
-      `今天的学习情况记录：\n${comment}`
+      `今天的打卡情况记录：\n${comment}`
     : `学生${childName ? '（' + childName + '）' : ''}年级：${grade || '未填写'}\n` +
       `学科：${subjectLabel}\n\n` +
       `老师评语：\n${comment}`;

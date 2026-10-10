@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-网页看板「学习单」tab 真实浏览器冒烟（T21 验收）
+网页看板「导学单」tab 真实浏览器冒烟（T21 验收）
 
 为什么要真浏览器：`scripts/check-web-orders.cjs` 是静态校验（读源码），它证明不了
 「渲染出来是对的」。web/index.html 是 1.4MB 内联单文件，也没有构建步骤可插桩，
@@ -256,7 +256,7 @@ def main():
         gate_visible = page.evaluate("() => getComputedStyle(document.getElementById('gate')).display !== 'none'")
         ok(gate_visible is True, '未设口令时口令门可见（fail-closed，不静默放行）')
 
-        # 学习单渲染器必须在全局可取（否则刷新入口调不到）
+        # 导学单渲染器必须在全局可取（否则刷新入口调不到）
         has_fn = page.evaluate("() => typeof renderOrders === 'function' && typeof switchView === 'function'")
         ok(has_fn is True, 'renderOrders / switchView 已在全局作用域可用')
 
@@ -267,7 +267,7 @@ def main():
 
         section('B. 渲染器行为层（灌合成数据，驱动真渲染器）')
         page.evaluate("() => { hideGate(); switchView('orders'); }")
-        # 先切到学习单视图：否则 #orders 是 display:none，playwright 无法点其中的按钮
+        # 先切到导学单视图：否则 #orders 是 display:none，playwright 无法点其中的按钮
         # （switchView 不触发 renderOrders，不会冲掉下面的灌数据）
 
         # ── B0 边界 ①：加载中（profile 还没到）────────────────────────────
@@ -280,7 +280,7 @@ def main():
         #    数据晚到只该影响「内容」，绝不该影响「有没有这个功能」。
         page.evaluate("() => { DATA.profile = null; DATA.orders = null; renderOrders(); }")
         txt = page.inner_text('#ordersContent')
-        ok('学习单数据加载中' in txt, '边界①：加载中（profile 未到）→ 明确提示而不是空白')
+        ok('导学单数据加载中' in txt, '边界①：加载中（profile 未到）→ 明确提示而不是空白')
         ok(page.inner_text('#childChipsOrders').strip() == '', '边界①：加载中 → 孩子 chip 区暂空')
         w = page.inner_html('#ordersWrite')
         ok(w.strip() != '', '边界①：加载中写区**不是空的**（绝不静默清空写区）')
@@ -305,7 +305,7 @@ def main():
             % json.dumps(PROFILE_PLAN_PAYLOAD, ensure_ascii=False)
         )
         txt = page.inner_text('#ordersContent')
-        ok('学习单数据加载中' in txt and '重新拉取' in txt,
+        ok('导学单数据加载中' in txt and '重新拉取' in txt,
            '边界③：orders 未到 → 明说加载中并指引「重新拉取」（不伪装成「空」）')
         w = page.inner_html('#ordersWrite')
         ok('data-ow-tab="receipt"' in w, '边界③：orders 未到但「交回执」页签仍在')
@@ -315,7 +315,7 @@ def main():
         page.click('#ordersWrite [data-ow-tab="receipt"]')
         page.wait_for_timeout(80)
         wtxt = page.inner_text('#ordersWrite')
-        ok('学习单数据加载中' in wtxt, '边界③：orders 未到切到「交回执」→ 该面板才给加载占位')
+        ok('导学单数据加载中' in wtxt, '边界③：orders 未到切到「交回执」→ 该面板才给加载占位')
         ok(page.query_selector_all('#ordersWrite [data-oi-do="issue"]') == [],
            '边界③：回执占位态下不残留出单按钮（不给出会误操作的按钮）')
         # 切回「出单」，避免把页签状态泄漏给后面的用例
@@ -327,7 +327,7 @@ def main():
             "() => { DATA.orders = { orders: [], counts: {total:0}, plans: [] }; renderOrders(); }"
         )
         txt = page.inner_text('#ordersContent')
-        ok('还没有学习单' in txt, '边界：无单 → 提示去小程序/工作台出单')
+        ok('还没有导学单' in txt, '边界：无单 → 提示去小程序/工作台出单')
         ok('不支持无计划自由出单' in txt, '边界：无单提示里写明「不支持无计划自由出单」（决策 4）')
 
         # B1 正常数据
@@ -343,10 +343,10 @@ def main():
         ok(page.evaluate("() => document.getElementById('orders').classList.contains('on')"),
            'switchView("orders") 后 #orders 视图被激活（.on）')
         ok(page.evaluate("() => Array.from(document.querySelectorAll('.nav a')).some(a=>a.dataset.v==='orders'&&a.classList.contains('on'))"),
-           'switchView("orders") 后侧栏「学习单」高亮')
-        ok(page.evaluate("() => document.getElementById('title').textContent") == '学习单',
-           '标题栏显示「学习单」')
-        ok(page.evaluate("() => document.getElementById('sub').textContent") == '学习单 · 可写（出单 / 交回执）',
+           'switchView("orders") 后侧栏「导学单」高亮')
+        ok(page.evaluate("() => document.getElementById('title').textContent") == '导学单',
+           '标题栏显示「导学单」')
+        ok(page.evaluate("() => document.getElementById('sub').textContent") == '导学单 · 可写（出单 / 交回执）',
            '副标题明示本页可写（不是「· 只读」）')
         ok('本页是本看板唯一的可写区域' in page.inner_text('#orders'),
            '页面说明区明写「本页是本看板唯一的可写区域」')
@@ -617,11 +617,11 @@ def main():
 
     print('\n通过 %d 项，失败 %d 项' % (PASS, FAIL))
     if FAIL:
-        print('\n❌ 网页看板「学习单」浏览器冒烟未通过')
+        print('\n❌ 网页看板「导学单」浏览器冒烟未通过')
         for m in FAILED_ITEMS:
             print('   · ' + m)
         return 1
-    print('\u2705 网页看板「学习单」浏览器冒烟全通过')
+    print('\u2705 网页看板「导学单」浏览器冒烟全通过')
     return 0
 
 

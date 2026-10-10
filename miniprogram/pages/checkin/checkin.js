@@ -4,7 +4,7 @@
  *  —— 周模式：本周（周一~周日）每天三科打卡状态
  *  —— 月模式：本月日历热力图，每天展示三科完成数（0/3 着色）
  *  注：实际「打卡」动作在首页（成长乐园）点图标完成，本页只做查看与回顾。
- *  AI 学习评价的统一入口在「打卡详情页（checkinDetail）」，本页仅只读展示对应科目的分析结果。
+ *  AI 导学评价的统一入口在「打卡详情页（checkinDetail）」，本页仅只读展示对应科目的分析结果。
  */
 const store = require('../../utils/store.js');
 const engine = require('../../utils/farmEngine.js');
@@ -99,7 +99,7 @@ Page({
       done: hw[s.key].done,
       minutes: hw[s.key].minutes,
       timeText: hw[s.key].doneAt ? formatTime(hw[s.key].doneAt) : '',
-      analysis: (hw[s.key] && hw[s.key].analysis) || ''   // 对应科目的 AI 学习评价（只读展示）
+      analysis: (hw[s.key] && hw[s.key].analysis) || ''   // 对应科目的 AI 导学评价（只读展示）
     }));
 
     /* ===== 周模式：本周每天打卡状态 ===== */

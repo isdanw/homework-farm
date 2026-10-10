@@ -505,7 +505,7 @@ const CLOUD_DEFAULTS = {
     mistakeId: '', subject: '', subjectName: '', topic: '', errorType: '',
     stage: 1, dueAt: 0, done: false, createdAt: 0, updatedAt: 0
   },
-  // 学习单：状态与事件是契约载体，**默认值只补缺失字段，绝不覆写云端值**
+  // 导学单：状态与事件是契约载体，**默认值只补缺失字段，绝不覆写云端值**
   orders: {
     orderNo: '', schema: 'order-v1', plan: null,
     intent: '', evidenceType: 'retest', subject: '', subjectName: '',
@@ -577,7 +577,7 @@ function mergeFromCloud(remote) {
     }
   });
 
-  /* ── 学习单：与上面三个集合规则**不同** —— 已存在时云端整条覆盖本地 ──
+  /* ── 导学单：与上面三个集合规则**不同** —— 已存在时云端整条覆盖本地 ──
    * 理由：status 与 events[] 是 O2（回执 1:1）/ O4（append-only）的载体，云端是唯一真相源。
    * 若沿用「本地优先」，本地那份旧快照（status=issued、无 receipt）就会盖掉云端的回执，
    * 表现为「换设备后回执没了」——沉默且不可逆。
@@ -666,8 +666,8 @@ function pushQueued() {
   });
 }
 
-/* ======================= 学习单（order-v1.1） =======================
- * 与另外四个集合的**关键差异**：学习单有状态机与审计流水，云端是唯一真相源。
+/* ======================= 导学单（order-v1.1） =======================
+ * 与另外四个集合的**关键差异**：导学单有状态机与审计流水，云端是唯一真相源。
  * 因此本节的读写规则是刻意不对称的：
  *   · 所有状态变更走云函数 `tutorOrder`（带 openid 上下文 + 与网页端共享同一份状态机）；
  *     **本地绝不推演状态**——本地推演必然与云端分叉，且没有任何人会发现。
@@ -677,7 +677,7 @@ function pushQueued() {
  *   · 判据（状态机、1:1、禁用词）全在 orderKit；页面不得自行判断合法跃迁。
  */
 
-/** 全部学习单（按出单时间倒序） */
+/** 全部导学单（按出单时间倒序） */
 function getOrders() {
   return readAll().orders.slice().sort((a, b) => (b.issuedAt || 0) - (a.issuedAt || 0));
 }
@@ -742,7 +742,7 @@ function saveOrderFromCloud(order) {
 }
 
 /**
- * 调一次学习单云函数（唯一写入口）。
+ * 调一次导学单云函数（唯一写入口）。
  * 成功时把返回的单（含 reissue 的 voided 单）落到本地缓存。
  * @returns {Promise<{ok:boolean, code?:string, msg?:string, order?:Object}>} 永不 reject
  */

@@ -65,11 +65,11 @@
       <view class="muted task-tip" wx:if="{{selIsToday}}">想打卡？回到首页「成长乐园」点学科图标即可</view>
     </view>
 
-    <!-- 当日各科目 AI 学习评价（只读展示，分析入口在打卡详情页 checkinDetail） -->
+    <!-- 当日各科目 AI 导学评价（只读展示，分析入口在打卡详情页 checkinDetail） -->
     <view class="ai-readouts">
       <block wx:for="{{cards}}" wx:key="key" wx:for-item="c">
         <view wx:if="{{c.analysis}}" class="ai-readout">
-          <view class="ai-readout-head"><text class="ai-readout-emoji">🤖</text><text class="ai-readout-title">{{c.name}} · 学习评价</text></view>
+          <view class="ai-readout-head"><text class="ai-readout-emoji">🤖</text><text class="ai-readout-title">{{c.name}} · 导学评价</text></view>
           <view class="ai-readout-body">{{c.analysis}}</view>
         </view>
       </block>

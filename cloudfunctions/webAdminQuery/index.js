@@ -293,7 +293,7 @@ async function profile(openid) {
  * 与 tutor/profile 不同：不过滤字段、不限 100 条，透传全部业务字段（含 messages/stage/done），
  * 保证本地 家庭学习库 md 可被完整重建。仍受 token 鉴权与 openid 作用域约束（per-user 或 admin）。
  * 出参：{ profile:{nickname,grade,learner,subjectProfiles,studyPlans,updatedAt}, sessions, mistakes, evidence, reviews, exams }
- *   studyPlans = 成长计划（供工作台/网页构造学习单 O1 锚点，见下）
+ *   studyPlans = 成长计划（供工作台/网页构造导学单 O1 锚点，见下）
  *   exams = exam_resources 全字段（含 markdown/rawText/answers），F-B 起纳入下拉，供 papers md 重建。
  */
 async function sync(openid) {
@@ -324,7 +324,7 @@ async function sync(openid) {
       // startDate,createdAt,updatedAt,stages:[{name,weeks,goal,tasks:[{name,days,done,doneAt}]}]}）。
       // 与 profile 模块同源同字段，不改形状、不做归一化。
       //
-      // 为什么必须下发（2026-09-28 补）：学习单的 O1 硬契约要求「单必锚计划任务」，
+      // 为什么必须下发（2026-09-28 补）：导学单的 O1 硬契约要求「单必锚计划任务」，
       // 锚点必须与小程序侧 studyPlan.getCurrentTask(key) 同源（同一份 stages[].tasks[] 下标）。
       // 工作台此前拿不到 studyPlans，就无法构造合法锚点 —— 一旦在端上「就近取材」
       // （用 flows / recommend 的知识点凑一个锚点），出的单会挂在一份并不存在的计划任务上，
@@ -370,7 +370,7 @@ async function exams(openid) {
 }
 
 /**
- * orders 模块 —— 家长看板「学习单」**读**视图（决策 3：网页看板打开 orders 权限，该权限**含写**）
+ * orders 模块 —— 家长看板「导学单」**读**视图（决策 3：网页看板打开 orders 权限，该权限**含写**）
  *
  * ⚠️ 本模块**只负责读**。网页看板的写动作（出单 / 交回执）走 `webAdminWrite` 的 `orders` 通道，
  * 不在这里 —— 本云函数保持纯读，不引入任何写路径（写边界见 `docs/orderProtocol.md` §6.2）。

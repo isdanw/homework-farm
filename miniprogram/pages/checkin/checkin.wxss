@@ -237,7 +237,7 @@
   padding: 6rpx 0 12rpx;
 }
 
-/* ===== 当日 AI 学习评价（只读展示，分析入口在打卡详情页） ===== */
+/* ===== 当日 AI 导学评价（只读展示，分析入口在打卡详情页） ===== */
 .ai-readouts { margin-top: 18rpx; }
 .ai-readout {
   background: #F7FAF4; border: 1rpx solid #DDEBDD; border-radius: 18rpx;

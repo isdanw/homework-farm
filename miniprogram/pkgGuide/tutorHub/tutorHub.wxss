@@ -1,5 +1,5 @@
 /**
- * tutorHub.wxss —— 导学中心（学习主线聚合页，沿用全局马卡龙规范）
+ * tutorHub.wxss —— 导学中心（导学主线聚合页，沿用全局马卡龙规范）
  */
 
 page { background: var(--c-cream); }

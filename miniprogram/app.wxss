@@ -240,7 +240,7 @@ page {
 /* 空状态 */
 .empty { text-align: center; padding: 60rpx 0; color: var(--c-sub); font-size: 28rpx; }
 
-/* ================= 学习模块通用：子导航 / 选项 / 网格 ================= */
+/* ================= 导学模块通用：子导航 / 选项 / 网格 ================= */
 .lnav { display: flex; gap: 12rpx; margin-bottom: 18rpx; }
 .lnav .pill {
   flex: 1; text-align: center; padding: 14rpx 4rpx; border-radius: 20rpx;

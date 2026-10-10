@@ -55,7 +55,7 @@ exports.main = async (event) => {
   const userPrompt =
     `学生${childName ? '（' + childName + '）' : ''}年级：${grade || '未填写'}\n` +
     `分析范围：${scopeLabel || '当前周期'}\n\n` +
-    `以下是该周期的打卡与学习数据，请严格以上面的「角色提示词」所定义的身份与方法来分析：\n\n` +
+    `以下是该周期的打卡与导学数据，请严格以上面的「角色提示词」所定义的身份与方法来分析：\n\n` +
     content;
 
   let app;

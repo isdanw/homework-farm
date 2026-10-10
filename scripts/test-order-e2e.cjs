@@ -497,7 +497,7 @@ function makeEl(id) {
       toggle(c, f) { if (f === undefined) { this._s.has(c) ? this._s.delete(c) : this._s.add(c); } else { f ? this._s.add(c) : this._s.delete(c); } },
     },
     addEventListener() {}, removeEventListener() {},
-    querySelectorAll() { return []; }, querySelector() { return null; },
+    querySelectorAll() { return []; }, querySelector() { return makeEl(); },
     scrollIntoView() {}, appendChild() {}, setAttribute() {}, getAttribute() { return null; },
     focus() {}, click() {}, remove() {}, getContext() { return null; },
   };
@@ -513,7 +513,7 @@ function bootWeb(world, opts) {
   const store = new Map();
   const document = {
     getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); },
-    querySelectorAll() { return []; }, querySelector() { return null; },
+    querySelectorAll() { return []; }, querySelector() { return makeEl(); },
     createElement(tag) { return makeEl(tag); },
     addEventListener() {}, body: makeEl('body'), documentElement: makeEl('html'),
   };

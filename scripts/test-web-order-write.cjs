@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 网页看板「学习单」写路径功能测试（T21-b）—— **跑真实源码，不打桩业务逻辑**
+ * 网页看板「导学单」写路径功能测试（T21-b）—— **跑真实源码，不打桩业务逻辑**
  *
  * 为什么要有这个脚本：
  *   `scripts/check-web-orders.cjs` 是**静态**校验（正则 / 切片 / 计数），它能证明
@@ -73,7 +73,7 @@ function makeEl(id) {
       },
     },
     addEventListener() {}, removeEventListener() {},
-    querySelectorAll() { return []; }, querySelector() { return null; },
+    querySelectorAll() { return []; }, querySelector() { return makeEl(); },
     scrollIntoView() {}, appendChild() {}, setAttribute() {}, getAttribute() { return null; },
     focus() {}, click() {}, remove() {},
   };
@@ -101,7 +101,7 @@ function boot(cfg) {
   const document = {
     getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); },
     querySelectorAll() { return []; },
-    querySelector() { return null; },
+    querySelector() { return makeEl(); },
     createElement(tag) { return makeEl(tag); },
     addEventListener() {},
     body: makeEl('body'),
@@ -647,7 +647,7 @@ async function twoStep() {
   const allSub = orders.map((o) => Object.assign({}, o, { status: 'submitted' }));
   const h2 = boot({ token: 'tok', profile: makeProfile(), orders: makeOrdersData(allSub) });
   html = h2.T.receiptPanelHtml(makeProfile().accounts[0], h2.T.DATA.orders.plans, allSub);
-  ok(/没有「待回执」的学习单/.test(html), '无待回执单时给出整体空态（不显示空的选单界面）');
+  ok(/没有「待回执」的导学单/.test(html), '无待回执单时给出整体空态（不显示空的选单界面）');
 }
 
 /* ================================================================== *
@@ -665,7 +665,7 @@ async function issuePanel() {
 
   const noPlan = boot({ token: 'tok', profile: makeProfile({ math: makePlan({ startDate: '' }) }) });
   html = noPlan.T.issuePanelHtml(makeProfile({ math: makePlan({ startDate: '' }) }).accounts[0]);
-  ok(/还没有可以出单的学习计划/.test(html), '无计划时给出明确空态');
+  ok(/还没有可以出单的成长计划/.test(html), '无计划时给出明确空态');
   ok(/不支持无计划自由出单/.test(html), '明写决策 4（不支持无计划自由出单）');
   ok(!/data-oi-do="issue"/.test(html), '无计划时不渲染出单按钮（不给能点但必失败的表单）');
 }
@@ -705,7 +705,7 @@ async function robustness() {
 section('11. 加载态：入口必须在数据到达前就存在（owner 报「没找到交回执的入口」的根因）');
 async function loadingEntry() {
   /* 规格：从过门到云数据到达之间（refreshAll 的 Promise.all 期间，实测约 8 秒），
-     学习单页**必须**已经看得到「出单 / 交回执」两个页签。
+     导学单页**必须**已经看得到「出单 / 交回执」两个页签。
      原实现里 `renderOrders()` 只在 Promise.all 之后调用一次，这段是全空的
      （#ordersWrite 与 #ordersContent 双空），用户会直接判定「网页端没有这个功能」。
      真机复现：用真实口令登录 moodlife.xyz，4.5 秒时读到的写区 innerHTML 为空字符串。 */
@@ -718,9 +718,9 @@ async function loadingEntry() {
     ok(!!w && w.innerHTML.length > 0, '加载态下写区**不是空的**（不再被静默清空）');
     ok(/data-ow-tab="issue"/.test(w.innerHTML), '加载态下「出单」页签已经在');
     ok(/data-ow-tab="receipt"/.test(w.innerHTML), '加载态下「交回执」页签已经在');
-    ok(/学习单数据加载中/.test(w.innerHTML), '加载态下面板给出明确「加载中」占位');
+    ok(/导学单数据加载中/.test(w.innerHTML), '加载态下面板给出明确「加载中」占位');
     const c = h.els.get('ordersContent');
-    ok(!!c && /学习单数据加载中/.test(c.innerHTML), '加载态下内容区也给出明确提示（不是留白）');
+    ok(!!c && /导学单数据加载中/.test(c.innerHTML), '加载态下内容区也给出明确提示（不是留白）');
   }
 
   // ② profile 已到 / orders 未到 —— 出单只依赖 profile.studyPlans，不该被 orders 拖住
@@ -738,7 +738,7 @@ async function loadingEntry() {
     // 切到「交回执」：这个面板确实需要 orders，才该给占位
     h.T.setWriteTab('receipt');
     h.T.renderOrders();
-    ok(/学习单数据加载中/.test(h.els.get('ordersWrite').innerHTML),
+    ok(/导学单数据加载中/.test(h.els.get('ordersWrite').innerHTML),
       'orders 未到时切到「交回执」给加载占位（该面板必须等 orders）');
     ok(!/data-oi-do="issue"/.test(h.els.get('ordersWrite').innerHTML),
       '回执占位态下不残留出单按钮（不给出会误操作的按钮）');
@@ -749,7 +749,7 @@ async function loadingEntry() {
     const h = boot({ token: 'tok', profile: makeProfile(), orders: makeOrdersData([makeOrder()]) });
     h.T.renderOrders();
     const w = h.els.get('ordersWrite');
-    ok(!/学习单数据加载中/.test(w.innerHTML), '数据齐全时不再显示「加载中」（证明该文案只在加载态出现）');
+    ok(!/导学单数据加载中/.test(w.innerHTML), '数据齐全时不再显示「加载中」（证明该文案只在加载态出现）');
     ok(/data-ow-tab="receipt"/.test(w.innerHTML), '数据齐全时「交回执」页签仍在');
     ok(/data-oi-do="issue"/.test(w.innerHTML), '数据齐全时出单面板正常');
   }
@@ -758,7 +758,7 @@ async function loadingEntry() {
 /** 内容区是否给出了加载态提示 */
 function output_shows_loading(h) {
   const c = h.els.get('ordersContent');
-  return !!c && /学习单数据加载中/.test(c.innerHTML) && /重新拉取/.test(c.innerHTML);
+  return !!c && /导学单数据加载中/.test(c.innerHTML) && /重新拉取/.test(c.innerHTML);
 }
 
 
@@ -801,7 +801,7 @@ process.on('unhandledRejection', (e) => {
   }
 
   console.log('\n通过 ' + passes + ' 项，失败 ' + fails + ' 项');
-  if (fails) { console.error('\n❌ 网页看板「学习单」写路径测试未通过'); process.exit(1); }
-  console.log('✅ 网页看板「学习单」写路径测试全通过');
+  if (fails) { console.error('\n❌ 网页看板「导学单」写路径测试未通过'); process.exit(1); }
+  console.log('✅ 网页看板「导学单」写路径测试全通过');
   process.exit(0);
 })();

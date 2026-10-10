@@ -3,7 +3,7 @@
  *
  * 职责（不可破坏的红线）：
  *   · 写。但只写「导学镜像」四类集合（tutor_sessions/mistakes/evidence/reviews）+「试卷库」
- *     （exam_resources）+ 孩子切片（learner / subjectProfiles / nickname / grade）+「学习单」
+ *     （exam_resources）+ 孩子切片（learner / subjectProfiles / nickname / grade）+「导学单」
  *     （tutor_orders，见下方 orders 专用通道）；
  *     绝不触碰 homework/checkin/schedule/农场等小程序权威数据，避免镜像写回污染主链路。
  *   · 身份解析：复用 webAdminQuery 的 token→openid 机制（web_portal_bindings），不接收微信上下文。
@@ -17,7 +17,7 @@
  *   · 入参 `event.orders` 是**对象** { action, ...payload }，不是数组；传数组一律拒绝。
  *   · 业务规则零实现 —— 全部转发给 orderActions（canonical 副本，与 tutorOrder 逐字节相同），
  *     由哈希锁（scripts/test-order-kit-sync.cjs）保证两端不会漂移。
- *   · 学习单的 status / events 承载 O2（回执 1:1）/O4（append-only）两条硬契约，
+ *   · 导学单的 status / events 承载 O2（回执 1:1）/O4（append-only）两条硬契约，
  *     因此**只允许走动作层**，永不允许「批量覆盖写」。
  *
  * 入参：
@@ -411,7 +411,7 @@ async function writeProfile(openid, profile) {
  * 权限：仅管理员口令（WEB_DASHBOARD_TOKEN + WEB_ADMIN_ALLOW_WRITE=1）可触发；per-user 绑定令牌一律拒绝。
  *
  * 【T24 补 tutor_orders】2026-09-29：
- *   学习单上线时（T14）**漏了**把 tutor_orders 加进白名单 —— 于是学习单 E2E 的残留
+ *   导学单上线时（T14）**漏了**把 tutor_orders 加进白名单 —— 于是导学单 E2E 的残留
  *   只能靠人去控制台手工删（开发计划 T24 卡里把这条记成了「项目已知坑」，
  *   与 tutor_sessions 同款问题）。清理动作按 clientId 前缀工作、与具体集合无关，
  *   把 tutor_orders 加进来即可，无需新增任何权限或接口。
@@ -478,11 +478,11 @@ exports.main = async (event) => {
     return { ok: false, code: 'init', msg: '云函数初始化失败：' + ((e && e.message) || e) };
   }
 
-  /* ---------- 学习单（tutor_orders）专用通道 ----------
+  /* ---------- 导学单（tutor_orders）专用通道 ----------
    * 网页看板 / 工作台是本单的**第二写入口**（第一个是小程序 tutorOrder）。
    * 关键是：两者必须共用同一份状态机与同一套硬契约，否则 O1–O4 必然分叉。
    * 做法：orders 传**对象** { action, ...payload }，直接路由到 orderActions（canonical 副本，
-   * 与 tutorOrder 逐字节相同）；本文件不实现任何学习单业务规则。
+   * 与 tutorOrder 逐字节相同）；本文件不实现任何导学单业务规则。
    *
    * ⚠️ 传数组一律拒绝：数组形态意味着「批量覆盖」，而 orders 的 status / events 是
    *    O2/O4 的载体，绝不允许被批量覆盖（这正是 tutorSync.push 对 orders 只补写不合并的同一条理由）。
@@ -498,7 +498,7 @@ exports.main = async (event) => {
     const req = event.orders;
     const act = String(req.action || '');
     if (orderActions.ACTIONS.indexOf(act) < 0) {
-      return { ok: false, code: 'bad_action', msg: '未知学习单 action: ' + (act || '(空)') };
+      return { ok: false, code: 'bad_action', msg: '未知导学单 action: ' + (act || '(空)') };
     }
     try {
       const deps = makeDeps(app2, openid, { collection: COLLS.orders });
@@ -508,7 +508,7 @@ exports.main = async (event) => {
       }
       return res;
     } catch (e) {
-      return { ok: false, code: 'order_error', msg: '学习单操作失败：' + ((e && e.message) || e) };
+      return { ok: false, code: 'order_error', msg: '导学单操作失败：' + ((e && e.message) || e) };
     }
   }
 

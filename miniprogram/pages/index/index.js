@@ -123,7 +123,7 @@ Page({
     });
   },
 
-  /* 点击打卡图标 → 进入打卡详情页（写学习情况 + AI 分析后完成打卡） */
+  /* 点击打卡图标 → 进入打卡详情页（写打卡情况 + AI 分析后完成打卡） */
   openCheckin(e) {
     const key = e.currentTarget.dataset.key;
     wx.navigateTo({ url: '/pkgTools/checkinDetail/checkinDetail?key=' + key });

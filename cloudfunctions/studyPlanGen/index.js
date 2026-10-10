@@ -1,5 +1,5 @@
 /**
- * 云函数 studyPlanGen —— 成长计划（阶段学习计划）生成
+ * 云函数 studyPlanGen —— 成长计划（阶段成长计划）生成
  *
  * 入参：{
  *   subject:    string,  // 科目名（如 语文）

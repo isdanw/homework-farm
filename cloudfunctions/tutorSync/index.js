@@ -38,7 +38,7 @@
  *   · 全部按 openid 隔离；openid 为空直接拒绝（不产生无主数据）
  *   · 纯数据搬运，不调用 AI、不做任何「掌握」判定
  *   · 试卷是**资源库条目**：不产生 evidence、不参与学情统计（§试卷登记入库规则）
- *   · 学习单（tutor_orders）不是证据集合：本函数回传的 orders 不得写入 tutor_evidence
+ *   · 导学单（tutor_orders）不是证据集合：本函数回传的 orders 不得写入 tutor_evidence
  */
 const tcb = require('@cloudbase/node-sdk');
 
@@ -243,7 +243,7 @@ async function push(app, openid, input) {
         exist = (res && res.data) || [];
       } catch (e) { exist = []; }
 
-      /* ── 学习单（orders）：只补写、绝不合并（分工契约，见 docs/orderProtocol.md §6）──
+      /* ── 导学单（orders）：只补写、绝不合并（分工契约，见 docs/orderProtocol.md §6）──
        * tutorOrder 是**唯一**带状态机的写入口；本函数对已存在的单必须原样放过。
        * 理由：orders 的 status 与 events[] 是 O2/O4 两条硬契约的载体，一旦被本地副本
        * 覆盖，就会出现「回执被抹掉」「事件流水断链」——审计能力直接报废。

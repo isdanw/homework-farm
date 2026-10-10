@@ -1,8 +1,8 @@
 /**
- * orderActions —— 学习单业务动作层（纯逻辑，零 I/O、零环境假设）
+ * orderActions —— 导学单业务动作层（纯逻辑，零 I/O、零环境假设）
  * ============================================================
  * 为什么存在：
- *   学习单的「出单 / 回执 / 作废 / 重开」既要从**小程序**（tutorOrder 云函数，openid 上下文）
+ *   导学单的「出单 / 回执 / 作废 / 重开」既要从**小程序**（tutorOrder 云函数，openid 上下文）
  *   走，也要从**网页看板 / 工作台**（webAdminWrite 云函数，口令→openid）走。
  *   若两边各写一套状态机，O1–O4 四条硬契约必然分叉 —— 这正是要防的事。
  *   于是把全部业务判定收敛到本文件（纯函数 + 注入式 deps），
@@ -80,7 +80,7 @@
       var orderNo = s(params.orderNo, 40);
       if (!orderNo) return fail('bad_param', '缺少 orderNo');
       var doc = await deps.find({ orderNo: orderNo });
-      if (!doc) return fail('not_found', '学习单不存在：' + orderNo);
+      if (!doc) return fail('not_found', '导学单不存在：' + orderNo);
       return { ok: true, order: pick(doc) };
     }
 
@@ -109,7 +109,7 @@
       var p = params || {};
       var order = K.makeOrder(p.planTask, p.opts || {});
       if (!order) {
-        return fail('no_anchor', '出单必须锚定学习计划里的具体任务（学科 key / 阶段 si / 任务 ti / 任务名 缺一不可）');
+        return fail('no_anchor', '出单必须锚定成长计划里的具体任务（学科 key / 阶段 si / 任务 ti / 任务名 缺一不可）');
       }
       var dup = await deps.find({ clientId: order.clientId });
       if (dup) return { ok: true, order: pick(dup), deduped: true };
@@ -129,7 +129,7 @@
       var orderNo = s(params.orderNo, 40);
       if (!orderNo) return fail('bad_param', '缺少 orderNo');
       var doc = await deps.find({ orderNo: orderNo });
-      if (!doc) return fail('not_found', '学习单不存在：' + orderNo);
+      if (!doc) return fail('not_found', '导学单不存在：' + orderNo);
       var next = clone(doc);
       // ⚠️ appendEvent 返回 **boolean**（是否真的写入），并**原地**追加到 order.events。
       //    不是「返回新对象」——早期误当对象用，events 直接变 undefined。
@@ -159,7 +159,7 @@
       if (!planId) return fail('bad_param', '回执必须先选计划再选出单：缺少 planId');
 
       var doc = await deps.find({ orderNo: orderNo });
-      if (!doc) return fail('not_found', '学习单不存在：' + orderNo);
+      if (!doc) return fail('not_found', '导学单不存在：' + orderNo);
 
       // ② 计划对位：所选计划必须与出单锚点完全一致
       var anchorPlanId = (doc.plan && doc.plan.planId) || '';
@@ -271,7 +271,7 @@
       var orderNo = s(p.orderNo, 40);
       if (!orderNo) return fail('bad_param', '缺少 orderNo');
       var doc = await deps.find({ orderNo: orderNo });
-      if (!doc) return fail('not_found', '学习单不存在：' + orderNo);
+      if (!doc) return fail('not_found', '导学单不存在：' + orderNo);
       if (doc.status === 'cancelled' || doc.status === 'voided') {
         return fail('bad_transition', '已作废/已取消的单不能勾选计划任务', { status: doc.status });
       }
@@ -299,7 +299,7 @@
 
     /* ---------------- 关闭（归档） ---------------- */
     async function close(params, deps) {
-      return transition(params, deps, 'closed', 'closedAt', '归档关闭本次学习单');
+      return transition(params, deps, 'closed', 'closedAt', '归档关闭本次导学单');
     }
 
     /* ---------------- 取消 ---------------- */
@@ -321,7 +321,7 @@
       var orderNo = s(p.orderNo, 40);
       if (!orderNo) return fail('bad_param', '缺少 orderNo');
       var doc = await deps.find({ orderNo: orderNo });
-      if (!doc) return fail('not_found', '学习单不存在：' + orderNo);
+      if (!doc) return fail('not_found', '导学单不存在：' + orderNo);
 
       var reason = s(p.reason, REASON_MAX);
       if ((to === 'voided' || to === 'cancelled') && !reason) {
@@ -371,7 +371,7 @@
       var orderNo = s(p.orderNo, 40);
       if (!orderNo) return fail('bad_param', '缺少 orderNo');
       var doc = await deps.find({ orderNo: orderNo });
-      if (!doc) return fail('not_found', '学习单不存在：' + orderNo);
+      if (!doc) return fail('not_found', '导学单不存在：' + orderNo);
 
       var reason = s(p.reason, REASON_MAX);
       if (!reason) return fail('bad_param', '重开必须填写原因（说明为什么要作废原单）');
