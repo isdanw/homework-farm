@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小小农场成长记 · 系统功能架构图与流程图</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#172033; --line:#334155;
+    --txt:#e2e8f0; --sub:#94a3b8; --accent:#38bdf8;
+    --client:#3b82f6; --cloud:#a855f7; --data:#14b8a6; --contract:#f59e0b;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+    line-height:1.6;padding:28px;}
+  h1{font-size:24px;margin:0 0 4px;color:#fff;}
+  h2{font-size:18px;margin:36px 0 10px;color:var(--accent);
+    border-left:4px solid var(--accent);padding-left:10px;}
+  p.note{color:var(--sub);font-size:13px;margin:4px 0 16px;}
+  .card{background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:16px 20px;margin:14px 0;
+    box-shadow:0 2px 10px rgba(0,0,0,.25);}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin:10px 0;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  svg{width:100%;height:auto;display:block;}
+  .cap{color:var(--sub);font-size:12px;margin:6px 2px 0;}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:var(--accent);}
+  code{background:#0b1220;padding:1px 5px;border-radius:4px;color:#fca5a5;font-size:12px;}
+</style>
+</head>
+<body>
+
+<h1>小小农场成长记（homework-farm）· 全局系统架构与流程图</h1>
+<p class="note">
+环境：CloudBase <code>workbuddy-d2gsgtfvmde5c9adf</code> ｜ AppID <code>wx57969d0453d14966</code> ｜ 类目「工具-实用工具」<br>
+四方架构：<b>小程序为主写入口</b> · <b>云函数为唯一权威逻辑</b> · <b>网页看板/工作台为受限视图</b> · <b>order-kit 为跨端共享 canonical</b>。
+</p>
+
+<div class="legend">
+  <span><i class="dot" style="background:var(--client)"></i>客户端层</span>
+  <span><i class="dot" style="background:var(--cloud)"></i>云端逻辑层（云函数）</span>
+  <span><i class="dot" style="background:var(--data)"></i>数据层（集合）</span>
+  <span><i class="dot" style="background:var(--contract)"></i>跨端契约/一致性</span>
+</div>
+
+<!-- ============ 架构图 ============ -->
+<h2>一、全局系统功能架构图</h2>
+<div class="card">
+<svg viewBox="0 0 1240 960" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,PingFang SC,Microsoft YaHei,sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/>
+    </marker>
+    <marker id="arrC" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/>
+    </marker>
+    <style>
+      .layer{fill:#1e293b;stroke:#334155;stroke-width:1.5;rx:12;}
+      .lbl{fill:#e2e8f0;font-size:15px;font-weight:700;}
+      .grp{fill:#172033;stroke:#334155;stroke-width:1;}
+      .gtitle{fill:#38bdf8;font-size:12px;font-weight:700;}
+      .box{fill:#0f1b30;stroke:#475569;stroke-width:1;rx:6;}
+      .bt{fill:#e2e8f0;font-size:11px;}
+      .bs{fill:#94a3b8;font-size:9.5px;}
+      .tagc{fill:#3b82f6;}.tagp{fill:#a855f7;}.tagt{fill:#14b8a6;}.taga{fill:#f59e0b;}
+    </style>
+  </defs>
+
+  <!-- ===== Layer 1: 客户端 ===== -->
+  <rect class="layer" x="20" y="56" width="1200" height="296" rx="12"/>
+  <text class="lbl" x="36" y="82">① 客户端层 / Client</text>
+
+  <!-- 小程序 -->
+  <rect class="grp" x="36" y="96" width="724" height="244"/>
+  <text class="gtitle" x="48" y="116">微信小程序 homework-farm（家庭端 · 主写入口）</text>
+  <rect class="box" x="48" y="124" width="700" height="30"/>
+  <text class="bt" x="56" y="144">tabBar（4）：index 成长乐园 · checkin 打卡 · farm 我的农场 · mine 我的</text>
+  <rect class="box" x="48" y="160" width="335" height="46"/>
+  <text class="bt" x="56" y="178">主包页</text>
+  <text class="bs" x="56" y="194">schedule 课表 · checkinDetail 打卡详情+AI分析</text>
+  <rect class="box" x="397" y="160" width="351" height="46"/>
+  <text class="bt" x="405" y="178">分包 pkgGuide（导学/学习单）</text>
+  <text class="bs" x="405" y="194">tutor · tutorHub · report · retest · learnerProfile · typeProfile · examGallery · order</text>
+  <rect class="box" x="48" y="212" width="700" height="40"/>
+  <text class="bt" x="56" y="230">分包 pkgTools：plan 成长计划 · mistakes(+confirm) · webportal 网页口令 · typeManage 打卡类型</text>
+  <rect class="box" x="48" y="258" width="700" height="74"/>
+  <text class="bt" x="56" y="276">核心模块（utils/）</text>
+  <text class="bs" x="56" y="292">store.js（R1-R7 数据契约）· tutorStore.js（导学+学习单本地层）· farmEngine.js（农场引擎）</text>
+  <text class="bs" x="56" y="308">studyPlan.js · scheduleEngine.js · config.js · orderKit.js（canonical 副本）· rolePresets.js · tutorGate.js · mistakeRules.js（E1-E9）</text>
+
+  <!-- 网页看板 -->
+  <rect class="grp" x="776" y="96" width="208" height="244"/>
+  <text class="gtitle" x="788" y="116">网页看板 web/index.html</text>
+  <rect class="box" x="788" y="124" width="184" height="56"/>
+  <text class="bt" x="796" y="144">只读代理</text>
+  <text class="bs" x="796" y="160">webAdminQuery（token 通道）</text>
+  <rect class="box" x="788" y="188" width="184" height="56"/>
+  <text class="bt" x="796" y="208">唯一写边界</text>
+  <text class="bs" x="796" y="224">仅 orders 一路可写</text>
+  <rect class="box" x="788" y="252" width="184" height="40"/>
+  <text class="bs" x="796" y="270">WEB_DASHBOARD_TOKEN 门禁</text>
+  <text class="bs" x="796" y="285">家长看板 · 全字段只读</text>
+  <rect class="box" x="788" y="298" width="184" height="34"/>
+  <text class="bs" x="796" y="318">callWrite() 单一出口（双层拦截）</text>
+
+  <!-- 工作台 -->
+  <rect class="grp" x="1000" y="96" width="200" height="244"/>
+  <text class="gtitle" x="1012" y="116">全科导学工作台</text>
+  <rect class="box" x="1012" y="124" width="176" height="46"/>
+  <text class="bs" x="1020" y="142">独立 git 仓库</text>
+  <text class="bs" x="1020" y="158">Vite+TS · 云端直连只读</text>
+  <rect class="box" x="1012" y="178" width="176" height="46"/>
+  <text class="bs" x="1020" y="196">复用同一云端</text>
+  <text class="bs" x="1020" y="212">+ order-kit（ESM 副本）</text>
+  <rect class="box" x="1012" y="232" width="176" height="46"/>
+  <text class="bs" x="1020" y="250">T1/T2 同步桥</text>
+  <text class="bs" x="1020" y="266">cloud→md 镜像（家庭学习库）</text>
+  <rect class="box" x="1012" y="286" width="176" height="46"/>
+  <text class="bs" x="1020" y="304">写经 webAdminWrite</text>
+  <text class="bs" x="1020" y="320">（T5 三路合并）</text>
+
+  <!-- ===== Layer 2: 云端逻辑 ===== -->
+  <rect class="layer" x="20" y="372" width="1200" height="244" rx="12"/>
+  <text class="lbl" x="36" y="398">② 云端逻辑层 / CloudBase 云函数（唯一权威逻辑）</text>
+
+  <rect class="grp" x="36" y="412" width="232" height="190"/>
+  <text class="gtitle" x="48" y="432">主数据 sync</text>
+  <rect class="box" x="48" y="440" width="208" height="40"/><text class="bt" x="56" y="464">syncData</text><text class="bs" x="56" y="476">整镜像 + F10 CAS</text>
+  <rect class="box" x="48" y="488" width="208" height="40"/><text class="bt" x="56" y="512">dailyReset</text><text class="bs" x="56" y="524">定时兜底 F11 CAS</text>
+  <rect class="box" x="48" y="536" width="208" height="50"/><text class="bt" x="56" y="556">initDB</text><text class="bs" x="56" y="570">集合初始化</text>
+
+  <rect class="grp" x="284" y="412" width="330" height="190"/>
+  <text class="gtitle" x="296" y="432">导学数据</text>
+  <rect class="box" x="296" y="440" width="306" height="40"/><text class="bt" x="304" y="464">tutorSync</text><text class="bs" x="304" y="476">pull/push 增量 · clientId 去重</text>
+  <rect class="box" x="296" y="488" width="306" height="40"/><text class="bt" x="304" y="512">tutorChat</text><text class="bs" x="304" y="524">导学对话+诊断 E1-E9</text>
+  <rect class="box" x="296" y="536" width="306" height="56"/><text class="bt" x="304" y="556">tutorRetest</text><text class="bs" x="304" y="570">复测生成+证据契约(≥5题 ≥80%)</text>
+
+  <rect class="grp" x="630" y="412" width="300" height="190"/>
+  <text class="gtitle" x="642" y="432">管理代理（token 通道）</text>
+  <rect class="box" x="642" y="440" width="276" height="40"/><text class="bt" x="650" y="464">webAdminQuery</text><text class="bs" x="650" y="476">D1 只读 · overview/farm/tutor/sync/orders</text>
+  <rect class="box" x="642" y="488" width="276" height="50"/><text class="bt" x="650" y="508">webAdminWrite</text><text class="bs" x="650" y="522">T5 三路合并 · 唯一写边界</text><text class="bs" x="650" y="534">含 .orders 写通道</text>
+  <rect class="box" x="642" y="546" width="276" height="44"/><text class="bt" x="650" y="566">tutorOrder</text><text class="bs" x="650" y="580">学习单写入口①（openid 通道）</text>
+
+  <rect class="grp" x="946" y="412" width="262" height="190"/>
+  <text class="gtitle" x="958" y="432">AI / 视觉 / 口令</text>
+  <rect class="box" x="958" y="440" width="238" height="40"/><text class="bt" x="966" y="464">ocrSchedule</text><text class="bs" x="966" y="476">课表/错题 视觉识别</text>
+  <rect class="box" x="958" y="488" width="238" height="40"/><text class="bt" x="966" y="512">webVisionConfig</text><text class="bs" x="966" y="524">视觉模型配置代理</text>
+  <rect class="box" x="958" y="536" width="238" height="40"/><text class="bt" x="966" y="560">studyPlanGen</text><text class="bs" x="966" y="572">成长计划生成</text>
+  <rect class="box" x="958" y="582" width="238" height="24"/><text class="bs" x="966" y="598">analyzeComment · aiRoleAnalyze · webPortalBind</text>
+
+  <!-- ===== Layer 3: 数据层 ===== -->
+  <rect class="layer" x="20" y="636" width="1200" height="172" rx="12"/>
+  <text class="lbl" x="36" y="662">③ 数据层 / CloudBase 集合（唯一真相源）</text>
+
+  <rect class="grp" x="36" y="676" width="300" height="120"/>
+  <text class="gtitle" x="48" y="696">主数据</text>
+  <text class="bt" x="48" y="718">hw_farm_user（整镜像）</text>
+  <text class="bs" x="48" y="736">hw_checkin_log · hw_farm_settle</text>
+  <text class="bs" x="48" y="752">hw_farm_events</text>
+
+  <rect class="grp" x="352" y="676" width="430" height="120"/>
+  <text class="gtitle" x="364" y="696">导学数据</text>
+  <text class="bt" x="364" y="718">tutor_sessions · tutor_mistakes（E1-E9）</text>
+  <text class="bs" x="364" y="736">tutor_reviews（艾宾浩斯窗口）· tutor_evidence</text>
+  <text class="bs" x="364" y="752">exam_resources（试卷库）</text>
+
+  <rect class="grp" x="798" y="676" width="160" height="120"/>
+  <text class="gtitle" x="810" y="696">学习单</text>
+  <text class="bt" x="810" y="720">tutor_orders</text>
+  <text class="bs" x="810" y="738">状态机推进</text>
+  <text class="bs" x="810" y="754">events[] append-only</text>
+
+  <rect class="grp" x="974" y="676" width="234" height="120"/>
+  <text class="gtitle" x="986" y="696">配置 / 观测</text>
+  <text class="bt" x="986" y="718">web_portal_bindings</text>
+  <text class="bs" x="986" y="736">vision_config</text>
+  <text class="bs" x="986" y="752">ocr_debug（7天）</text>
+
+  <!-- ===== Layer 4: 契约 ===== -->
+  <rect x="20" y="828" width="1200" height="104" rx="12" fill="#2a1d05" stroke="#f59e0b" stroke-width="1.5"/>
+  <text class="lbl" x="36" y="854" fill="#f59e0b">④ 跨端共享契约 &amp; 一致性机制</text>
+  <rect class="box" x="36" y="864" width="280" height="54"/><text class="bt" x="44" y="884">order-kit（canonical）</text><text class="bs" x="44" y="900">6 副本 · sha256 区段锁 · sync-order-kit.mjs</text>
+  <rect class="box" x="332" y="864" width="280" height="54"/><text class="bt" x="340" y="884">本地存储键（openid 命名空间）</text><text class="bs" x="340" y="900">v2 主数据 · v1 导学 · sync_tag 节流</text>
+  <rect class="box" x="628" y="864" width="280" height="54"/><text class="bt" x="636" y="884">门禁 &amp; 合并</text><text class="bs" x="636" y="900">token/OPENID 信任根 · CAS · T5 三路合并</text>
+  <rect class="box" x="924" y="864" width="280" height="54"/><text class="bt" x="932" y="884">静态取证（反证）</text><text class="bs" x="932" y="900">check-web-orders(137) · check-order-page(167)</text>
+
+  <!-- 连接箭头 -->
+  <line x1="400" y1="352" x2="400" y2="372" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="880" y1="352" x2="880" y2="372" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="1100" y1="352" x2="1100" y2="372" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="600" y1="616" x2="600" y2="636" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="100" y1="352" x2="100" y2="372" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="600" y1="808" x2="600" y2="828" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrC)"/>
+  <text x="610" y="822" fill="#f59e0b" font-size="10">共享契约贯穿全栈</text>
+</svg>
+<div class="cap">图 1 · 四方分层架构：客户端经云函数读写，云函数落 CloudBase 集合；order-kit 与一致性机制跨端贯穿。</div>
+</div>
+
+<!-- ============ 导学闭环流程图 ============ -->
+<h2>二、核心流程图</h2>
+
+<h3 style="color:var(--txt);font-size:15px;margin:18px 0 6px;">2.1 导学主闭环（画像 → 计划 → 打卡 → 导学 → 错题 → 复习 → 复测 → 报告 → 学习单）</h3>
+<div class="card">
+<svg viewBox="0 0 1040 560" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,PingFang SC,Microsoft YaHei,sans-serif">
+  <defs>
+    <marker id="f" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/></marker>
+    <style>
+      .st{fill:#0f1b30;stroke:#475569;stroke-width:1.2;rx:8;}
+      .t{fill:#e2e8f0;font-size:12px;font-weight:600;}
+      .s{fill:#94a3b8;font-size:10px;}
+      .dm{fill:#1e3a5f;stroke:#38bdf8;}
+    </style>
+  </defs>
+  <!-- nodes -->
+  <rect class="st" x="20" y="20" width="180" height="54"/><text class="t" x="34" y="44">① 儿童画像</text><text class="s" x="34" y="62">learnerProfile · 年级推导</text>
+  <rect class="st" x="20" y="110" width="180" height="54"/><text class="t" x="34" y="134">② 成长计划</text><text class="s" x="34" y="152">studyPlanGen→plan · 阶段任务</text>
+  <rect class="st" x="20" y="200" width="180" height="54"/><text class="t" x="34" y="224">③ 每日打卡</text><text class="s" x="34" y="242">checkinDetail · 落 planTask</text>
+  <rect class="st dm" x="20" y="290" width="180" height="54"/><text class="t" x="34" y="314">④ AI 导学</text><text class="s" x="34" y="332">tutorChat · taskContext 回写</text>
+  <rect class="st" x="20" y="380" width="180" height="54"/><text class="t" x="34" y="404">⑤ 错题归因</text><text class="s" x="34" y="422">E1-E9 → tutor_mistakes</text>
+  <rect class="st" x="20" y="470" width="180" height="54"/><text class="t" x="34" y="494">⑥ 复习窗口</text><text class="s" x="34" y="512">tutor_reviews [1,2,4,7,15]</text>
+
+  <rect class="st dm" x="420" y="290" width="200" height="54"/><text class="t" x="434" y="314">⑦ 复测证据</text><text class="s" x="434" y="332">tutorRetest ≥5题 ≥80%</text>
+  <rect class="st" x="420" y="380" width="200" height="54"/><text class="t" x="434" y="404">⑧ 导学报告</text><text class="s" x="434" y="422">report · 错因分布</text>
+  <rect class="st" x="420" y="470" width="200" height="54"/><text class="t" x="434" y="494">⑨ 学习单闭环</text><text class="s" x="434" y="512">order · 出单→回执→评语</text>
+
+  <!-- arrows -->
+  <line x1="110" y1="74" x2="110" y2="108" stroke="#64748b" stroke-width="1.5" marker-end="url(#f)"/>
+  <line x1="110" y1="164" x2="110" y2="198" stroke="#64748b" stroke-width="1.5" marker-end="url(#f)"/>
+  <line x1="110" y1="254" x2="110" y2="288" stroke="#64748b" stroke-width="1.5" marker-end="url(#f)"/>
+  <line x1="110" y1="344" x2="110" y2="378" stroke="#64748b" stroke-width="1.5" marker-end="url(#f)"/>
+  <line x1="110" y1="434" x2="110" y2="468" stroke="#64748b" stroke-width="1.5" marker-end="url(#f)"/>
+  <!-- ④→⑦ across -->
+  <path d="M200,317 C320,317 320,317 420,317" fill="none" stroke="#38bdf8" stroke-width="1.6" marker-end="url(#f)"/>
+  <text x="300" y="308" fill="#38bdf8" font-size="10">回执≠证据（O3）</text>
+  <!-- ⑦→⑧→⑨ -->
+  <line x1="520" y1="344" x2="520" y2="378" stroke="#64748b" stroke-width="1.5" marker-end="url(#f)"/>
+  <line x1="520" y1="434" x2="520" y2="468" stroke="#64748b" stroke-width="1.5" marker-end="url(#f)"/>
+  <!-- feedback loops -->
+  <path d="M620,317 C720,317 720,150 200,150 C140,150 140,110 130,108" fill="none" stroke="#14b8a6" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#f)"/>
+  <text x="700" y="200" fill="#14b8a6" font-size="10">⑧ 报告→计划反哺</text>
+  <path d="M620,494 C760,494 760,40 220,40 C200,40 200,60 200,72" fill="none" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#f)"/>
+  <text x="700" y="470" fill="#f59e0b" font-size="10">⑨ 学习单锚定计划(O1)</text>
+</svg>
+<div class="cap">图 2 · 导学主闭环：蓝色为「写云端/产证据」关键节点；绿色虚线=报告反哺计划，橙色虚线=学习单锚定计划的跨端约束。</div>
+</div>
+
+<!-- ============ 学习单状态机 ============ -->
+<h3 style="color:var(--txt);font-size:15px;margin:18px 0 6px;">2.2 学习单状态机（order-v1.1 · 唯一权威 <code>canTransition</code>）</h3>
+<div class="card">
+<svg viewBox="0 0 1040 360" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,PingFang SC,Microsoft YaHei,sans-serif">
+  <defs>
+    <marker id="g" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+    <marker id="r" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f87171"/></marker>
+    <style>
+      .state{fill:#0f1b30;stroke:#475569;stroke-width:1.4;rx:26;}
+      .st{fill:#e2e8f0;font-size:13px;font-weight:700;}
+      .ss{fill:#94a3b8;font-size:9.5px;}
+      .start{fill:#334155;}
+    </style>
+  </defs>
+  <circle class="start" cx="60" cy="180" r="10"/>
+  <line x1="70" y1="180" x2="118" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#g)"/>
+
+  <rect class="state" x="120" y="148" width="180" height="64" rx="10"/><text class="st" x="150" y="178">issued 待回执</text><text class="ss" x="150" y="196">出单锚定计划(O1)</text>
+
+  <rect class="state" x="400" y="148" width="180" height="64" rx="10"/><text class="st" x="430" y="178">submitted 已回执</text><text class="ss" x="430" y="196">两步1:1(O2) · 回执≠证据(O3)</text>
+
+  <rect class="state" x="680" y="148" width="180" height="64" rx="10"/><text class="st" x="710" y="178">closed 已闭环</text><text class="ss" x="710" y="196">评语汇总 · 可追溯(O4)</text>
+
+  <line x1="300" y1="180" x2="398" y2="180" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#g)"/>
+  <text x="320" y="170" fill="#cbd5e1" font-size="11">submit 回执</text>
+  <line x1="580" y1="180" x2="678" y2="180" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#g)"/>
+  <text x="592" y="170" fill="#cbd5e1" font-size="11">close 闭环</text>
+
+  <!-- cancelled / voided -->
+  <rect class="state" x="400" y="270" width="180" height="56" rx="10" stroke="#f87171"/><text class="st" x="430" y="296" fill="#fca5a5">cancelled / voided</text><text class="ss" x="430" y="314">作废/取消（终态）</text>
+  <path d="M300,210 C300,250 360,270 400,278" fill="none" stroke="#f87171" stroke-width="1.5" marker-end="url(#r)"/>
+  <text x="240" y="255" fill="#fca5a5" font-size="10">cancel / void</text>
+
+  <!-- reissue -->
+  <rect class="state" x="680" y="270" width="180" height="56" rx="10" stroke="#f59e0b"/><text class="st" x="700" y="296" fill="#fcd34d">reissue 重开</text><text class="ss" x="700" y="314">void→新单(reissueOf)</text>
+  <path d="M580,210 C580,250 700,270 760,278" fill="none" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#r)"/>
+  <text x="600" y="255" fill="#fcd34d" font-size="10">reissue</text>
+  <path d="M860,298 C900,298 900,180 858,180" fill="none" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#r)"/>
+  <text x="880" y="245" fill="#fcd34d" font-size="10">新单回到 issued</text>
+
+  <text x="120" y="340" fill="#64748b" font-size="11">5×5 仅 6 条合法跃迁；非法一律 <code>bad_transition</code>。修正唯一路径 = void → reissueOf 新单，无原地覆盖。</text>
+</svg>
+<div class="cap">图 3 · 学习单状态机：唯一裁决来自 <code>K.canTransition</code>；回执不产证据（O3），闭环后 events[] 只追加（O4）。</div>
+</div>
+
+<!-- ============ 主数据同步 CAS ============ -->
+<h3 style="color:var(--txt);font-size:15px;margin:18px 0 6px;">2.3 主数据同步（syncData · F10 CAS 乐观锁）</h3>
+<div class="card">
+<svg viewBox="0 0 1040 420" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,PingFang SC,Microsoft YaHei,sans-serif">
+  <defs>
+    <marker id="b" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#38bdf8"/></marker>
+    <marker id="x" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f87171"/></marker>
+    <style>
+      .bx{fill:#0f1b30;stroke:#475569;stroke-width:1.2;rx:8;}
+      .tt{fill:#e2e8f0;font-size:12px;font-weight:600;}
+      .ss{fill:#94a3b8;font-size:10px;}
+    </style>
+  </defs>
+  <rect class="bx" x="20" y="40" width="220" height="60"/><text class="tt" x="34" y="66">小程序 store.js</text><text class="ss" x="34" y="86">本地 v2（openid 命名空间）</text>
+  <rect class="bx" x="410" y="40" width="220" height="60"/><text class="tt" x="424" y="66">syncData 云函数</text><text class="ss" x="424" y="86">upload / download / whoami</text>
+  <rect class="bx" x="800" y="40" width="220" height="60"/><text class="tt" x="814" y="66">hw_farm_user 集合</text><text class="ss" x="814" y="86">唯一真相源 · 整镜像</text>
+
+  <!-- up -->
+  <line x1="140" y1="100" x2="500" y2="100" stroke="#38bdf8" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="270" y="92" fill="#38bdf8" font-size="11">upload（带 base=本地 updatedAt）</text>
+  <path d="M620,70 C720,70 740,100 800,100" fill="none" stroke="#38bdf8" stroke-width="1.4" marker-end="url(#b)"/>
+  <text x="650" y="60" fill="#38bdf8" font-size="10">where(_id,updatedAt:base).update</text>
+
+  <!-- down -->
+  <path d="M800,100 C740,130 720,130 620,130" fill="none" stroke="#14b8a6" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="650" y="124" fill="#14b8a6" font-size="10">download → {data, cloudUpdatedAt}</text>
+  <line x1="500" y1="130" x2="140" y2="130" stroke="#14b8a6" stroke-width="1.6" marker-end="url(#b)"/>
+
+  <!-- conflict -->
+  <rect class="bx" x="410" y="180" width="220" height="56" stroke="#f87171"/><text class="tt" x="424" y="204" fill="#fca5a5">冲突判定</text><text class="ss" x="424" y="222">base ≠ 云端 updatedAt</text>
+  <line x1="620" y1="130" x2="620" y2="178" stroke="#f87171" stroke-width="1.4" marker-end="url(#x)"/>
+  <text x="630" y="160" fill="#f87171" font-size="10">服务端比对</text>
+
+  <rect class="bx" x="410" y="270" width="220" height="56"/><text class="tt" x="424" y="294">返回 conflict</text><text class="ss" x="424" y="312">客户端拉取最新后合并</text>
+  <line x1="520" y1="236" x2="520" y2="268" stroke="#f87171" stroke-width="1.4" marker-end="url(#x)"/>
+
+  <rect class="bx" x="410" y="350" width="220" height="50"/><text class="tt" x="424" y="372">R1-R7 契约守护</text><text class="ss" x="424" y="390">只增不改不删 · 默认值补 undefined</text>
+  <line x1="520" y1="326" x2="520" y2="348" stroke="#14b8a6" stroke-width="1.4" marker-end="url(#b)"/>
+
+  <!-- dailyReset -->
+  <rect class="bx" x="800" y="270" width="220" height="56"/><text class="tt" x="814" y="294">dailyReset（00:05）</text><text class="ss" x="814" y="312">F11 CAS 服务端兜底结算</text>
+  <line x1="910" y1="100" x2="910" y2="268" stroke="#a855f7" stroke-width="1.4" marker-end="url(#b)"/>
+  <text x="918" y="190" fill="#a855f7" font-size="10">定时兜底</text>
+</svg>
+<div class="cap">图 4 · 主数据同步：upload 带 base 时间戳，云端 CAS 比对，冲突返回 conflict 由客户端拉新合并；dailyReset 做服务端兜底，与前端按 settledDates 去重。</div>
+</div>
+
+<!-- ============ 三端一致性 ============ -->
+<h3 style="color:var(--txt);font-size:15px;margin:18px 0 6px;">2.4 三端一致性机制（学习单 / 文案 / 写边界）</h3>
+<div class="card">
+<table>
+  <tr><th>维度</th><th>小程序端</th><th>网页看板</th><th>云端 / 工作台</th><th>守护脚本</th></tr>
+  <tr><td>状态机逻辑</td><td><code>utils/orderKit.js</code></td><td>仅提交 rawText / fields</td><td><code>tutorOrder</code> + <code>webAdminWrite.orders</code> + 工作台 ESM</td><td>sync-order-kit.mjs（sha256 区段锁）+ test-order-kit-sync.cjs（反证）</td></tr>
+  <tr><td>聚合口径</td><td><code>tutorStore.planOrderAggregate()</code></td><td><code>webAdminQuery.orders</code> 转发</td><td><code>logic/orders.aggregateByPlan()</code> 薄包装</td><td>test-order-plan-aggregate.cjs（52 项 + 进程内反证）</td></tr>
+  <tr><td>文案三表</td><td><code>STATUS_LABEL/EVENT_LABEL/fmtBy</code></td><td><code>ORDER_STATUS_TEXT</code> 等三表</td><td><code>ORDER_STATUS_LABEL</code> 等</td><td>check-web-orders.cjs §5 逐字锁死（"待回执"≠"待回收"反证）</td></tr>
+  <tr><td>写边界</td><td>本地绝不推演状态</td><td>仅 <code>orders</code> 一路可写；callWrite() 单一出口 + 双层键拦截</td><td><code>webAdminWrite</code> 须对象（数组→bad_param）</td><td>check-web-orders.cjs §4（137 项）+ test-web-order-write.cjs（126 项）</td></tr>
+  <tr><td>禁用词门禁</td><td>—</td><td><code>findBannedWords</code> 两组 O3 禁用词</td><td>同 canonical</td><td>check-web-orders.cjs §6</td></tr>
+</table>
+<div class="cap">表 1 · 三端一致性：任何一端不得长出第二套聚合/解析/verdict；关键契约由静态取证脚本 + 反证守护。</div>
+</div>
+
+<h2>三、关键契约速查</h2>
+<div class="card">
+<table>
+  <tr><th>契约</th><th>范围</th><th>要点</th></tr>
+  <tr><td>store R1-R7</td><td>主数据持久化</td><td>落盘与上云解耦；上云不可静默放弃（脏标记+退避）；下拉只补缺；字段只增不改不删；默认值只补 undefined；版本判据用 ms 时间戳；共享数据只挂 root</td></tr>
+  <tr><td>order O1-O4</td><td>学习单闭环</td><td>O1 单必锚计划 · O2 回执先选计划再选出单（严格1:1）· O3 回执≠证据（不改掌握度）· O4 全程可追溯（events[] 只追加）</td></tr>
+  <tr><td>syncData F10 / dailyReset F11</td><td>主数据 CAS</td><td>乐观锁：upload 带 base，云端 where(updatedAt:base).update；失败重读重算最多3轮</td></tr>
+  <tr><td>webAdminWrite T5</td><td>导学写合并</td><td>三路合并 base/mine/theirs，theirs&gt;base 才接受，冲突不静默覆盖；PUBLISH_FIELDS 白名单</td></tr>
+  <tr><td>webAdminQuery D1</td><td>只读代理</td><td>token 校验；仅 require orderKit（无 orderActions/orderCloudDeps，无写路径）</td></tr>
+</table>
+</div>
+
+<p class="note" style="margin-top:24px;">
+资料来源：项目根目录 <code>overview.md</code> / <code>数据持久化审计报告_2026-09-18.md</code> / <code>学习单闭环设计_出单-回执.md</code> / <code>docs/orderProtocol.md</code> / <code>T1/T2 映射规范</code> 及 miniprogram、cloudfunctions、order-kit、scripts 全部源码。
+</p>
+
+</body>
+</html>
