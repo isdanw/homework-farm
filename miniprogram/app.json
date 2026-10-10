@@ -17,6 +17,7 @@
         "learnerProfile/learnerProfile",
         "typeProfile/typeProfile",
         "examGallery/examGallery",
+        "speakstep/speakstep",
         "order/order"
       ]
     },
@@ -30,7 +31,8 @@
         "plan/plan",
         "webportal/webportal",
         "typeManage/typeManage",
-        "checkinDetail/checkinDetail"
+        "checkinDetail/checkinDetail",
+        "unitSummary/unitSummary"
       ]
     }
   ],

@@ -38,7 +38,8 @@ Page({
     taskContext: null,     // 成长计划任务上下文 { key, si, ti, task, stage, goal }
     mistakeContext: null,  // 错题订正上下文 { key, topic, errorType }
     locked: false,         // 门禁（2026-09-22）：未添加孩子或未建计划时禁用导学
-    lockReason: ''
+    lockReason: '',
+    checkinNote: ''         // 打卡详情进入时携带的打卡内容（用于预填导学输入框）
   },
 
   onLoad(options) {
@@ -54,8 +55,10 @@ Page({
     let initSubject = 'math';
     let taskContext = null;
     let mistakeContext = null;
+    let checkinNote = '';
     if (options) {
       if (options.key || options.subject) initSubject = options.key || options.subject;
+      if (options.checkinNote) checkinNote = decodeURIComponent(options.checkinNote || '');
       if (options.task) {
         taskContext = {
           key: initSubject,
@@ -76,12 +79,14 @@ Page({
     }
     if (!TUTOR_SUBJECTS.some(s => s.key === initSubject)) initSubject = 'math';
 
-    this.setData({ taskContext: taskContext, mistakeContext: mistakeContext });
+    this.setData({ taskContext: taskContext, mistakeContext: mistakeContext, checkinNote: checkinNote });
     this.switchSubject(initSubject);
 
-    // 从计划任务 / 错题订正进入：自动发起第一轮导学（围绕目标引导，不直接给答案）
-    if (taskContext || mistakeContext) {
-      setTimeout(() => this._sendContent(this.buildOpenContent()), 400);
+    // 从打卡 / 计划任务 / 错题订正进入：把建议开场语预填进输入框，
+    // 由用户确认后点「发送」才真正发起对话（不再自动发送，避免进入即消耗 AI 调用、打断用户节奏）。
+    // 2026-10-06 调整。
+    if (taskContext || mistakeContext || checkinNote) {
+      this.setData({ input: this.buildOpenContent() });
     }
   },
 
@@ -97,8 +102,8 @@ Page({
   pickSubject(e) {
     const key = e.currentTarget.dataset.key;
     if (key === this.data.subject) return;
-    // 手动切学科：任务 / 订正上下文不再适用，取消
-    this.setData({ taskContext: null, mistakeContext: null });
+    // 手动切学科：任务 / 订正 / 打卡上下文不再适用，取消
+    this.setData({ taskContext: null, mistakeContext: null, checkinNote: '' });
     this.switchSubject(key);
   },
 
@@ -125,9 +130,24 @@ Page({
     setTimeout(() => this.setData({ scrollTo: 'msg-bottom' }), 30);
   },
 
-  /** 构造开场导学请求（计划任务 / 错题订正两种上下文） */
+  /** 构造开场导学预填内容（打卡内容 / 计划任务 / 错题订正三种上下文） */
   buildOpenContent() {
+    const c = this.data.checkinNote;
     const t = this.data.taskContext;
+    const m = this.data.mistakeContext;
+    // 打卡内容优先：把用户写的打卡记录作为导学开场，结合计划任务上下文
+    if (c) {
+      let s = '我今天的打卡记录是：「' + c + '」';
+      if (t) {
+        const parts = [];
+        if (t.stage) parts.push('阶段「' + t.stage + '」');
+        if (t.task) parts.push('任务「' + t.task + '」');
+        s += '，我想完成 ' + parts.join(' 里的 ') + '，请帮我看看这里哪里还有问题，一步步引导我理解，不要直接给答案。';
+      } else {
+        s += '，请帮我看看这里哪里还有卡点，引导我弄明白，不要直接给答案。';
+      }
+      return s;
+    }
     if (t) {
       const parts = [];
       if (t.stage) parts.push('阶段「' + t.stage + '」');
@@ -136,7 +156,6 @@ Page({
       return '我想完成 ' + parts.join(' 里的 ') +
         '，请一步步引导我学习：先看看我哪里不会，不要直接给答案。';
     }
-    const m = this.data.mistakeContext;
     if (m) {
       return '我想订正这个知识点：' + m.topic +
         (m.errorType ? '（之前的错因是 ' + m.errorType + '）' : '') +

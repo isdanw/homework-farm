@@ -1,0 +1,277 @@
+<!-- 英语练习 · SpeakStep 听说练习台（导学中心入口） -->
+<view class="ss-page">
+
+  <!-- ===== 顶栏 ===== -->
+  <view class="ss-top">
+    <view class="ss-logo">🔤</view>
+    <view class="ss-top-txt">
+      <view class="ss-h1">英语练习</view>
+      <view class="ss-sub">一分钟生成练习单，复制到豆包，让孩子马上开口</view>
+    </view>
+    <view class="ss-quickbtn" bindtap="openQuick">快速开练</view>
+  </view>
+
+  <!-- 步骤条 -->
+  <view class="ss-steps">
+    <view class="ss-step"><text class="ss-b">1</text><text>填孩子水平</text></view>
+    <view class="ss-step"><text class="ss-b">2</text><text>选今天练什么</text></view>
+    <view class="ss-step"><text class="ss-b">3</text><text>定重点与时长</text></view>
+    <view class="ss-step"><text class="ss-b">4</text><text>复制到豆包开练</text></view>
+  </view>
+
+  <!-- ===== 左列：设置 ===== -->
+  <view class="ss-left">
+
+    <!-- 英语档案联动 -->
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">英语档案联动</text><text class="ss-h2-sub">默认带入导学档案（英语），可手动调整</text></view>
+      <view class="ss-frow">
+        <text class="ss-label">带入状态</text>
+        <text class="ss-mut">{{profileInfo}}</text>
+      </view>
+      <view class="ss-frow">
+        <view class="ss-btn ss-btn-ghost ss-btn-sm" bindtap="pullProfile">↺ 带入 / 刷新英语档案</view>
+      </view>
+    </view>
+
+    <!-- 怎么开始 -->
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">怎么开始</text><text class="ss-h2-sub">快速开练适合马上开口；按教材练适合结合课本</text></view>
+      <view class="ss-frow">
+        <view class="seg">
+          <view class="seg-btn {{state.mode==='quick'?'on':''}}" data-k="quick" bindtap="setMode">快速开练</view>
+          <view class="seg-btn {{state.mode==='school'?'on':''}}" data-k="school" bindtap="setMode">按教材练</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 输出什么 -->
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">输出什么</text><text class="ss-h2-sub">听说练习单练对话；新词听读卡练本单元生词</text></view>
+      <view class="ss-frow">
+        <view class="seg">
+          <view class="seg-btn {{state.kind==='practice'?'on':''}}" data-k="practice" bindtap="setKind">听说练习单</view>
+          <view class="seg-btn {{state.kind==='cards'?'on':''}}" data-k="cards" bindtap="setKind">新词听读卡</view>
+        </view>
+      </view>
+      <view class="ss-hint">围绕教材坐标，生成 8-15 张单词听读卡：每个词给例句、跟读提示和一个小应用问题，帮孩子快速记住本单元新词。</view>
+    </view>
+
+    <!-- 在哪里练 -->
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">在哪里练</text><text class="ss-h2-sub">云电脑带技能；手机通话为自包含单</text></view>
+      <view class="ss-frow">
+        <view class="seg">
+          <view class="seg-btn {{state.device==='cloud'?'on':''}}" data-k="cloud" bindtap="setDevice">电脑云电脑 · 带技能</view>
+          <view class="seg-btn {{state.device==='phone'?'on':''}}" data-k="phone" bindtap="setDevice">手机语音通话 · 自包含单</view>
+        </view>
+      </view>
+      <view class="ss-hint">电脑工作任务云电脑加载技能，教学规则由技能自动处理，练习单保持精简。</view>
+    </view>
+
+    <!-- 谁来练 -->
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">谁来练</text><text class="ss-h2-sub">不填称呼也可以，默认叫"同学"</text></view>
+      <view class="ss-frow">
+        <text class="ss-label">年级</text>
+        <picker class="ss-picker" range="{{gradeQuickOptions}}" value="{{giQuick}}" bindchange="onGradeQuick">
+          <view class="ss-pick">{{gradeQuickOptions[giQuick]}}<text class="ss-caret">▾</text></view>
+        </picker>
+      </view>
+      <view class="ss-frow">
+        <text class="ss-label">称呼</text>
+        <input class="ss-input" value="{{state.name}}" placeholder="选填：孩子的小名或昵称" maxlength="12" bindinput="onName" />
+      </view>
+      <view class="ss-frow">
+        <text class="ss-label">表达情况</text>
+        <view class="ss-chips">
+          <view class="ss-chip {{state.self===item?'on':''}}" wx:for="{{selfOptions}}" wx:key="*this" data-self="{{item}}" bindtap="setSelf">{{item}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快速开练：内容来源 -->
+    <view class="ss-card" wx:if="{{state.mode==='quick'}}">
+      <view class="ss-card-h"><text class="ss-h2">今天用什么内容练</text><text class="ss-h2-sub">兴趣让开口更容易</text></view>
+      <view class="ss-frow">
+        <text class="ss-label">来源</text>
+        <view class="ss-chips">
+          <view class="ss-chip {{state.src===item.k?'on':''}}" wx:for="{{srcOptions}}" wx:key="k" data-src="{{item.k}}" bindtap="setSrc">{{item.t}}</view>
+        </view>
+      </view>
+      <view class="ss-frow" wx:if="{{state.src!=='free'}}">
+        <text class="ss-label">主题</text>
+        <view class="ss-chips">
+          <view class="ss-chip {{state.topic===item?'on':''}}" wx:for="{{topicOptions}}" wx:key="*this" data-topic="{{item}}" bindtap="onTopicTap">{{item}}</view>
+        </view>
+      </view>
+      <view class="ss-frow" wx:if="{{state.src==='free'}}">
+        <text class="ss-label">主题</text>
+        <input class="ss-input" value="{{state.topic}}" placeholder="孩子想聊什么？如：恐龙、我的学校" bindinput="onFreeTopic" />
+      </view>
+      <view class="ss-hint">选主题后，教练按孩子水平自动适配难度与表达。</view>
+    </view>
+
+    <!-- 按教材练：教材轨道 -->
+    <view class="ss-card" wx:if="{{state.mode==='school'}}">
+      <view class="ss-card-h"><text class="ss-h2">教材与考试</text><text class="ss-h2-sub">结合课本或备考内容</text></view>
+      <view class="ss-frow">
+        <text class="ss-label">来源</text>
+        <view class="seg">
+          <view class="seg-btn {{state.track==='school'?'on':''}}" data-k="school" bindtap="setTrack">校内同步</view>
+          <view class="seg-btn {{state.track==='exam'?'on':''}}" data-k="exam" bindtap="setTrack">剑桥考试</view>
+        </view>
+      </view>
+
+      <!-- 校内同步 -->
+      <block wx:if="{{state.track==='school'}}">
+        <view class="ss-frow">
+          <text class="ss-label">学段</text>
+          <view class="seg">
+            <view class="seg-btn {{state.stage==='primary'?'on':''}}" data-k="primary" bindtap="setStage">小学</view>
+            <view class="seg-btn {{state.stage==='junior'?'on':''}}" data-k="junior" bindtap="setStage">初中</view>
+          </view>
+        </view>
+        <view class="ss-frow">
+          <text class="ss-label">年级</text>
+          <picker class="ss-picker" range="{{gradeOptions}}" value="{{giSchool}}" bindchange="onGrade">
+            <view class="ss-pick">{{gradeOptions[giSchool]}}<text class="ss-caret">▾</text></view>
+          </picker>
+        </view>
+        <view class="ss-frow">
+          <text class="ss-label">教材</text>
+          <picker class="ss-picker" range="{{bookOptions}}" range-key="label" value="{{bi}}" bindchange="onBook">
+            <view class="ss-pick">{{bookOptions[bi].label}}<text class="ss-caret">▾</text></view>
+          </picker>
+        </view>
+        <view class="ss-frow">
+          <text class="ss-label">册</text>
+          <picker class="ss-picker" range="{{termOptions}}" value="{{ti}}" bindchange="onTerm">
+            <view class="ss-pick">{{termOptions[ti]}}<text class="ss-caret">▾</text></view>
+          </picker>
+        </view>
+        <view class="ss-frow">
+          <text class="ss-label">单元</text>
+          <picker class="ss-picker" range="{{unitOptions}}" value="{{ui}}" bindchange="onUnit">
+            <view class="ss-pick">{{unitOptions[ui]}}<text class="ss-caret">▾</text></view>
+          </picker>
+          <text class="ss-label ss-label-sm">课时</text>
+          <picker class="ss-picker" range="{{lessonOptions}}" value="{{li}}" bindchange="onLesson">
+            <view class="ss-pick">{{lessonOptions[li]}}<text class="ss-caret">▾</text></view>
+          </picker>
+        </view>
+        <view class="ss-hint">围绕当前导学单元生成同主题、同难度的听说练习。如需严格同步课本，请在豆包对话中提供课本页面或关键词。</view>
+      </block>
+
+      <!-- 剑桥考试 -->
+      <block wx:if="{{state.track==='exam'}}">
+        <view class="ss-frow">
+          <text class="ss-label">级别</text>
+          <picker class="ss-picker" range="{{examOptions}}" value="{{ei}}" bindchange="onExam">
+            <view class="ss-pick">{{examOptions[ei]}}<text class="ss-caret">▾</text></view>
+          </picker>
+        </view>
+        <view class="ss-frow">
+          <text class="ss-label">模块</text>
+          <view class="ss-chips">
+            <view class="ss-chip {{state.mod===item?'on':''}}" wx:for="{{modOptions}}" wx:key="*this" data-mod="{{item}}" bindtap="setMod">{{item}}</view>
+          </view>
+        </view>
+        <view class="ss-frow" wx:if="{{partOptions.length>0}}">
+          <text class="ss-label">Part</text>
+          <picker class="ss-picker" range="{{partOptions}}" range-key="label" value="{{pi}}" bindchange="onPart">
+            <view class="ss-pick">{{partOptions[pi].label}}<text class="ss-caret">▾</text></view>
+          </picker>
+        </view>
+        <view class="ss-hint">按真实考试结构与官方词表组题，适合备考。</view>
+      </block>
+    </view>
+
+    <!-- 今天重点练什么 -->
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">今天重点练什么</text><text class="ss-h2-sub">一次只练一个重点</text></view>
+      <view class="ss-chips">
+        <view class="ss-chip {{state.focus===item?'on':''}}" wx:for="{{focusOptions}}" wx:key="*this" data-focus="{{item}}" bindtap="setFocus">{{item}}</view>
+      </view>
+    </view>
+
+    <!-- 练多久 -->
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">练多久</text><text class="ss-h2-sub">短时高频，比一次练很久更有效</text></view>
+      <view class="ss-chips">
+        <view class="ss-chip {{state.minutes===item?'on':''}}" wx:for="{{timeOptions}}" wx:key="*this" data-min="{{item}}" bindtap="setTime">{{item}} 分钟</view>
+      </view>
+    </view>
+
+    <!-- 高级设置 -->
+    <view class="ss-card">
+      <view class="ss-adv-h" bindtap="toggleAdv">{{advOpen?'▾':'▸'}} 高级设置</view>
+      <view wx:if="{{advOpen}}">
+        <view class="ss-frow">
+          <text class="ss-label">反馈语言</text>
+          <view class="ss-chips">
+            <view class="ss-chip {{state.langMode===item?'on':''}}" wx:for="{{langOptions}}" wx:key="*this" data-lang="{{item}}" bindtap="setLang">{{item === 'auto' ? '自动（随水平）' : item}}</view>
+          </view>
+        </view>
+        <view class="ss-frow">
+          <text class="ss-label">跟读练习</text>
+          <view class="ss-chips">
+            <view class="ss-chip {{state.pronCheck?'on':''}}" data-p="1" bindtap="setPron">加入一句跟读</view>
+            <view class="ss-chip {{!state.pronCheck?'on':''}}" data-p="0" bindtap="setPron">不需要</view>
+          </view>
+        </view>
+        <view class="ss-frow">
+          <text class="ss-label">结束小结</text>
+          <view class="ss-chips">
+            <view class="ss-chip {{state.summary?'on':''}}" data-s="1" bindtap="setSum">生成简短小结</view>
+            <view class="ss-chip {{!state.summary?'on':''}}" data-s="0" bindtap="setSum">不需要</view>
+          </view>
+        </view>
+        <view class="ss-frow">
+          <text class="ss-label">本课词句</text>
+          <input class="ss-input" value="{{state.goal}}" placeholder="选填：想练的句子，如 I like ... because ..." bindinput="onGoal" />
+        </view>
+        <view class="ss-hint ss-hint-indent">此内容会作为「本课词句」写进练习单</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 右列：预览 + 提示词 ===== -->
+  <view class="ss-right">
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">今天的练习</text><text class="ss-h2-sub">随选择实时更新</text></view>
+      <view class="ss-pv">
+        <view class="ss-pv-row"><text class="ss-pv-k">内容</text><text class="ss-pv-v">{{preview.coord}}</text></view>
+        <view class="ss-pv-row"><text class="ss-pv-k">重点</text><text class="ss-pv-v">{{preview.focus}}</text></view>
+        <view class="ss-pv-row"><text class="ss-pv-k">时长</text><text class="ss-pv-v">{{preview.time}}</text></view>
+      </view>
+    </view>
+
+    <view class="ss-card">
+      <view class="ss-card-h"><text class="ss-h2">{{state.kind==='cards' ? '新词听读卡' : '听说练习单'}}</text><text class="ss-h2-sub">复制后粘贴到豆包对话</text></view>
+      <view class="ss-prompt">{{prompt}}</view>
+      <view class="ss-btn-row">
+        <view class="ss-btn ss-btn-primary" bindtap="copyPrompt">复制提示词</view>
+        <view class="ss-btn ss-btn-ghost" bindtap="onSample">换个示例</view>
+      </view>
+      <view class="ss-how">
+        <view class="ss-how-ic">🗣️</view>
+        <text class="ss-how-txt">粘贴到豆包对话发送即可。教练会一次只给一个任务，先让孩子回答再反馈，结束后给出简短小结。</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 快速开练抽屉 ===== -->
+  <view class="ss-mask" wx:if="{{quickOpen}}" bindtap="closeQuick">
+    <view class="ss-drawer" catchtap="noop">
+      <view class="ss-close" bindtap="closeQuick">×</view>
+      <view class="ss-h2">快速开练</view>
+      <view class="ss-sub">选一个方案，设置自动填好；仍可在下方修改。</view>
+      <view class="ss-qp" wx:for="{{quickPlans}}" wx:key="n" data-i="{{index}}" bindtap="pickQuick">
+        <view class="ss-qp-b">{{item.n}}</view>
+        <view class="ss-qp-s">{{item.d}}</view>
+      </view>
+    </view>
+  </view>
+
+</view>

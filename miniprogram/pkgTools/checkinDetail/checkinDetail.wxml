@@ -30,10 +30,18 @@
     <view class="dc-sub">完成时间 {{doneAtText}} · 继续补充下面的记录也可以保存</view>
   </view>
 
-  <!-- ===== 学习情况描述 ===== -->
+  <!-- ===== 打卡情况描述 ===== -->
   <view class="card">
     <view class="card-title"><view class="dot" style="background:{{type.colorDeep}}"></view>今天学了什么？</view>
     <view class="muted cd-tip">简单写几句当天的情况，系统会据此给出评价和建议</view>
+
+    <view class="cd-photo-row">
+      <view class="cd-photo-btn {{isToday ? '' : 'disabled'}} {{scanning ? 'disabled' : ''}}" bindtap="photoAdd">
+        📷 拍一下练习内容
+      </view>
+      <view wx:if="{{scanning}}" class="cd-scanning">识别中…</view>
+    </view>
+    <view class="muted cd-tip2">拍练习纸 / 笔记，自动总结并填入下方记录；若识别出错题，会先让你确认再收录到对应学科错题库</view>
 
     <textarea class="textarea cd-textarea"
       placeholder="比如：今天做了口算练习，错了 2 道，已经订正；读课文很流畅～"
@@ -52,11 +60,11 @@
 
   <!-- ===== AI 分析 ===== -->
   <view class="card">
-    <view class="card-title"><view class="dot"></view>学习评价
+    <view class="card-title"><view class="dot"></view>导学评价
       <text wx:if="{{roleName}}" class="role-tag">{{roleName}}</text>
       <text class="tp-link" bindtap="goTypeProfile">学科画像 ›</text>
     </view>
-    <view class="muted cd-tip">{{ roleName ? '已固定为「' + roleName + '」角色进行分析' : '基于上面的描述，让系统给出评价与改进建议' }}</view>
+    <view class="muted cd-tip">{{ roleName ? '已固定为「' + roleName + '」角色分析；会综合你写的记录与拍照识别的题目（含错题与错因）' : '系统会综合你写的记录 + 拍照识别到的题目（含错题与错因），给出评价与改进建议' }}</view>
 
     <view wx:if="{{isToday}}" class="btn btn-line btn-block {{analyzing ? 'disabled' : ''}}" bindtap="analyze">
       {{analyzing ? '分析中…' : (result ? '重新分析' : '让系统分析一下')}}
@@ -72,6 +80,16 @@
     <view wx:elif="{{analysis}}" class="ai-result">
       <view class="ai-plain">{{analysis}}</view>
     </view>
+
+    <!-- 错因聚类小结卡片（系统按 E1-E9 统计，独立于模型文字） -->
+    <view wx:if="{{errorCluster && errorCluster.has}}" class="cd-cluster">
+      <view class="cd-cluster-h">🧩 错因聚类小结（共 {{errorCluster.totalWrong}} 道错题）</view>
+      <view class="cd-cluster-tags">
+        <view wx:for="{{errorCluster.groups}}" wx:key="code" class="cd-cluster-tag" style="color:{{item.color}};background:{{item.bg}}">{{item.code}} {{item.name}} ×{{item.count}}</view>
+        <view wx:if="{{errorCluster.unclassified}}" class="cd-cluster-tag cd-cluster-tag-mut">未归类 ×{{errorCluster.unclassified}}</view>
+      </view>
+      <view wx:if="{{errorCluster.topName}}" class="cd-cluster-top">最集中：{{errorCluster.topName}}（{{errorCluster.topCount}} 道）—— 优先攻克这类</view>
+    </view>
   </view>
 
   <!-- ===== 底部操作 ===== -->
@@ -83,4 +101,19 @@
     </view>
   </view>
 
+</view>
+
+<!-- ===== 错题识别确认弹窗（根级：必须放在 .page-wrap 外！
+     app.wxss 的 .page-wrap > view:not(.scene) 会以更高特异性把
+     position:fixed 覆盖成 relative，导致弹窗贴底不全屏） ===== -->
+<view wx:if="{{showMistakeModal}}" class="cd-mask" catchtap="cancelAddMistakes">
+  <view class="cd-modal" catchtap="noop">
+    <view class="cd-modal-emoji">📷</view>
+    <view class="cd-modal-title">识别到 {{mistakeCount}} 道错题</view>
+    <view class="cd-modal-body">是否添加到「错题库」？添加后可在错题库中复习、订正。</view>
+    <view class="cd-modal-acts">
+      <view class="cd-modal-btn cd-modal-cancel" catchtap="cancelAddMistakes">取消</view>
+      <view class="cd-modal-btn cd-modal-ok" catchtap="confirmAddMistakes">确定添加</view>
+    </view>
+  </view>
 </view>

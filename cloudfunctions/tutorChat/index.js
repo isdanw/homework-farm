@@ -8,7 +8,7 @@
  *   subject:  'math' | 'chinese' | 'english'（学科 key）
  *   content:  string 本轮孩子输入（题目 / 回答 / 提问）
  *   history:  Array<{role:'user'|'assistant', content:string}>  最近若干轮（不含本轮）
- *   learner:  { grade, teachStyle, expectations[] } 学习者画像（可空）
+ *   learner:  { grade, teachStyle, expectations[] } 导学画像（可空）
  *   learnerCtx: string 近期卡点快照（前端从本地 tutorStore 组装，≤1500 字，可空）
  *   出参：{ ok:true, reply:string } | { ok:false, code, msg }
  *
@@ -141,7 +141,7 @@ function buildMessages(subject, content, history, learner, learnerCtx) {
     });
   }
 
-  // 学习者画像（简短注入，帮导学贴合「先提示后讲解」等偏好）
+  // 导学画像（简短注入，帮导学贴合「先提示后讲解」等偏好）
   const parts = [];
   if (learner && learner.grade) parts.push('年级：' + str(learner.grade, 20));
   if (learner && learner.teachStyle) parts.push('讲解偏好：' + str(learner.teachStyle, 20));
@@ -159,7 +159,7 @@ function buildMessages(subject, content, history, learner, learnerCtx) {
   }
 
   let user = str(content, 2000);
-  if (parts.length) user = '【学习者画像】' + parts.join('；') + '\n\n' + user;
+  if (parts.length) user = '【导学画像】' + parts.join('；') + '\n\n' + user;
   messages.push({ role: 'user', content: user });
   return messages;
 }
@@ -198,12 +198,12 @@ async function chat(app, input) {
   return { ok: true, reply: text };
 }
 
-/* ---------------- 学习诊断（E1-E9 错因归因） ---------------- */
+/* ---------------- 导学诊断（E1-E9 错因归因） ---------------- */
 const DIAG_PROMPT =
-  '你是「学习诊断」模块，负责根据一段导学对话，判断孩子本次学习的卡点与错因。\n' +
+  '你是「导学诊断」模块，负责根据一段导学对话，判断孩子本次导学的卡点与错因。\n' +
   '只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块，第一个字符必须是 {。\n\n' +
   '输出格式：\n' +
-  '{"topic":"本次学习的知识点/题目（一句话）","stuck":true或false,"errorType":"E1"到"E9"或空字符串,"errorDesc":"孩子可观察到的错误行为（只说做了什么，不评价人）","suggestion":"建议的订正/训练动作（一句话）","done":true或false}\n\n' +
+  '{"topic":"本次导学的知识点/题目（一句话）","stuck":true或false,"errorType":"E1"到"E9"或空字符串,"errorDesc":"孩子可观察到的错误行为（只说做了什么，不评价人）","suggestion":"建议的订正/训练动作（一句话）","done":true或false}\n\n' +
   '错因编号定义：\n' +
   'E1 审题信息（漏看限定/条件误识别/隐含条件忽略）\n' +
   'E2 概念知识（术语混淆/规则边界不清/反例未建立）\n' +
@@ -326,6 +326,91 @@ function parseDiagQ(text) {
     errorDesc: str(it && it.errorDesc, 120),
     suggestion: str(it && it.suggestion, 120)
   }));
+}
+
+/* ---------------- 单元总结（action='unitSummary'） ----------------
+ * 输入：阶段（≈单元）名称/目标/任务完成情况 + 本学科错题 + 日常打卡记录摘选。
+ * 输出 JSON：{ summary, advice[≤3], branches[6-8]{title 2-6字, points 2-4条≤18字, color} }
+ * branches 直接驱动前端 Canvas「仿黑板知识树」；文字总结与建议独立展示。
+ * 丰富度对齐老师黑板板书样例：分支按知识点拆细、要点带具体例子（算式/符号/口诀）。
+ * 合规：提示词明确禁用「已掌握/已精通」等绝对化掌握度表述；知识框架可按年级学科教材
+ *       通用内容拆解（公开常识），但孩子表现/掌握情况的表述只依据输入的真实数据。
+ */
+const UNITSUM_PROMPT =
+  '你是「单元总结」模块，擅长像有经验的老师那样画「整理与复习」黑板知识树。' +
+  '下面是一个导学阶段（单元）的名称、目标、任务完成情况，以及相关错题与日常记录。\n' +
+  '只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块，第一个字符必须是 {。\n\n' +
+  '输出格式：\n' +
+  '{"summary":"250字以内一段话：这个单元学了哪些知识、整体表现如何、哪里还需巩固；' +
+  '不使用「已掌握/已精通/学会了」等绝对化表述，改用「达成较好/还需巩固/可以加强」",' +
+  '"advice":["复习建议1（一句话）","建议2","建议3"],' +
+  '"branches":[{"title":"分支名（2-6字）","points":["要点（不超过18字，带具体例子）","要点","要点"],"color":"yellow|pink|blue|green 之一"}]}\n\n' +
+  '规则：\n' +
+  '1. branches 给 6-8 个，按知识点把单元拆细（如「比大小」「分与合」「加法」「减法」「0的认识」「几和第几」），不要把多个大块塞进同一分支。\n' +
+  '2. 每个分支 2-4 条要点，像黑板板书：写具体内容和小例子——算式（如「2+3=5」「5-3=2」）、符号（如「＞＜＝」）、词语、口诀；不要写「认识了加法」这类空话。\n' +
+  '3. 知识框架可按「年级+学科+单元名」对应的通用教材内容拆分支和要点（教材知识是公开常识）；涉及孩子表现/掌握情况的表述只依据下面输入的真实数据，不编造。\n' +
+  '4. 做得好的和薄弱的都要体现；错题要落到对应分支的要点里（如「进位易错」「默写需巩固」），做对的部分也写进去。\n' +
+  '5. color 在 yellow/pink/blue/green 四色粉笔里选，相邻分支颜色不同。\n' +
+  '6. 要点里不要出现 E1-E9 这类错因编号，错因用通俗中文短词（如「运算失误」「审题不细」）。';
+
+/** E 码 → 黑板可读的通俗错因名（与 DIAG_PROMPT 的 E1-E9 口径一致，取短词） */
+const ERROR_SHORT = {
+  E1: '审题不细', E2: '概念不清', E3: '符号误读', E4: '方法选错',
+  E5: '前提不符', E6: '推理跳跃', E7: '运算失误', E8: '表述不清', E9: '不检验'
+};
+
+/** 单元总结（失败抛错，由调用方统一兜底） */
+async function unitSummary(app, input) {
+  const lines = [];
+  lines.push('单元名称：' + str(input.unitName, 60));
+  if (input.unitGoal) lines.push('单元目标：' + str(input.unitGoal, 200));
+  const tasks = (Array.isArray(input.tasks) ? input.tasks : []).slice(0, 30);
+  lines.push('任务清单：\n' + (tasks.length
+    ? tasks.map(t => '- ' + str(t.name, 60) +
+        (t.done ? ('（已完成' + (t.checkinDays ? '，用时' + t.checkinDays + '天' : '') + '）') : '（未完成）')).join('\n')
+    : '-（暂无任务记录）'));
+  const mistakes = (Array.isArray(input.mistakes) ? input.mistakes : []).slice(0, 20);
+  if (mistakes.length) {
+    lines.push('相关错题（知识点 + 错因）：\n' +
+      mistakes.map(m => '- ' + str(m.topic, 40) +
+        (m.errorType ? ('（' + (ERROR_SHORT[m.errorType] || m.errorType) + '）') : '')).join('\n'));
+  }
+  const notes = (Array.isArray(input.notes) ? input.notes : []).slice(0, 20);
+  if (notes.length) {
+    lines.push('日常记录摘选：\n' + notes.map(n => '- ' + str(n, 80)).join('\n'));
+  }
+  const grade = input.learner && input.learner.grade ? str(input.learner.grade, 20) : '';
+  const head = '年级：' + (grade || '一年级') +
+    (input.subjectName ? ('；学科：' + str(input.subjectName, 10)) : '') + '\n\n';
+  const ai = app.ai();
+  const model = ai.createModel('cloudbase');
+  const result = await model.generateText({
+    model: 'hy3',
+    messages: [
+      { role: 'system', content: UNITSUM_PROMPT },
+      { role: 'user', content: head + lines.join('\n\n') }
+    ]
+  });
+  return parseUnitSum((result && result.text) || '');
+}
+
+/** 解析单元总结 JSON，解析失败返回 null */
+function parseUnitSum(text) {
+  const obj = extractJson(text);
+  if (!obj) return null;
+  const branches = (Array.isArray(obj.branches) ? obj.branches : []).slice(0, 8)
+    .map(b => ({
+      title: str(b && b.title, 12),
+      points: (Array.isArray(b && b.points) ? b.points : []).slice(0, 4).map(p => str(p, 20)),
+      color: /^(yellow|pink|blue|green)$/.test((b && b.color) || '') ? b.color : ''
+    }))
+    .filter(b => b.title);
+  if (!branches.length) return null;
+  return {
+    summary: str(obj.summary, 320),
+    advice: (Array.isArray(obj.advice) ? obj.advice : []).slice(0, 3).map(a => str(a, 60)),
+    branches: branches
+  };
 }
 
 /* ---------------- archive（会话归档 + 错因诊断 + 错题落库 + 复习窗口派生） ---------------- */
@@ -463,11 +548,19 @@ exports.main = async (event) => {
     learnerCtx: str(event.learnerCtx, 1500),
     sessionClientId: str(event.sessionClientId, 60),
     mistakeClientId: str(event.mistakeClientId, 60),
-    reviewClientId: str(event.reviewClientId, 60)
+    reviewClientId: str(event.reviewClientId, 60),
+    /* 单元总结（action='unitSummary'）专用字段 */
+    unitName: str(event.unitName, 60),
+    unitGoal: str(event.unitGoal, 200),
+    subjectName: str(event.subjectName, 10),
+    tasks: Array.isArray(event.tasks) ? event.tasks.slice(0, 30) : [],
+    mistakes: Array.isArray(event.mistakes) ? event.mistakes.slice(0, 20) : [],
+    notes: Array.isArray(event.notes) ? event.notes.slice(0, 20) : []
   };
 
   const action = event.action === 'archive' ? 'archive'
     : event.action === 'diagnoseQuestions' ? 'diagnoseQuestions'
+    : event.action === 'unitSummary' ? 'unitSummary'
     : 'chat';
 
   if (action === 'chat') {
@@ -501,6 +594,21 @@ exports.main = async (event) => {
         return { ok: false, code: 'no_pack', msg: 'AI 资源包未开通：请在云开发控制台购买「Token Credits 资源包」后重试' };
       }
       return { ok: false, code: 'ai_error', msg: '诊断失败：' + msg };
+    }
+  }
+
+  if (action === 'unitSummary') {
+    if (!input.unitName) return { ok: false, code: 'empty', msg: '缺少单元名称' };
+    try {
+      const data = await unitSummary(app, input);
+      if (!data) return { ok: false, code: 'parse', msg: '总结生成失败，请重试' };
+      return { ok: true, data: data };
+    } catch (e) {
+      const msg = (e && e.message) || String(e);
+      if (/token|tokencredit|resource|pack|quota|余额|额度|开通|403|404|未购买|模型|model|not found|不存在|unauthorized|forbidden/i.test(msg)) {
+        return { ok: false, code: 'no_pack', msg: 'AI 资源包未开通：请在云开发控制台购买「Token Credits 资源包」后重试' };
+      }
+      return { ok: false, code: 'ai_error', msg: '总结生成失败：' + msg };
     }
   }
 

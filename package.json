@@ -10,6 +10,7 @@
     "test:tutor-sync": "node scripts/test-tutor-sync-dedupe.cjs",
     "test:cloud-cas": "node scripts/test-cloud-cas.cjs",
     "test:plan-feedback": "node scripts/test-report-plan-feedback.cjs",
+    "test:plan-task-elapsed": "node scripts/test-plan-task-elapsed.js",
     "test:waq-exams": "node scripts/test-webadminquery-exams.cjs",
     "check:order-page": "node scripts/check-order-page.cjs",
     "check:web-orders": "node scripts/check-web-orders.cjs",

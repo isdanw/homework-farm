@@ -12,7 +12,7 @@
       <view wx:if="{{item.icon === 'check'}}" class="ic ic-check">
         <view class="tick"></view>
       </view>
-      <!-- 学习乐园：蓝书 + 金星 -->
+      <!-- 成长乐园：蓝书 + 金星 -->
       <view wx:elif="{{item.icon === 'learn'}}" class="ic ic-learn">
         <view class="bb"></view><view class="pg"></view><view class="st"></view>
       </view>

@@ -1,4 +1,4 @@
-<!-- 学习单页：出单 / 回执（两步选择）/ 我的单 -->
+<!-- 导学单页：出单 / 回执（两步选择）/ 我的单 -->
 <view class="or-page">
 
   <!-- ══════════ 页签 ══════════ -->
@@ -17,8 +17,8 @@
   <block wx:elif="{{tab === 'issue'}}">
     <view wx:if="{{!plans.length}}" class="or-state">
       <view class="or-state-emoji">📘</view>
-      <view class="or-state-title">还没有可以出单的学习计划</view>
-      <view class="or-state-sub">学习单必须锚定计划里的具体任务。先去「我的 → 成长计划」生成一份计划，再回来出单。</view>
+      <view class="or-state-title">还没有可以出单的成长计划</view>
+      <view class="or-state-sub">导学单必须锚定计划里的具体任务。先去「我的 → 成长计划」生成一份计划，再回来出单。</view>
       <view class="or-btn or-btn--ghost" bindtap="switchTab" data-tab="mine">先看看我的单</view>
     </view>
 
@@ -90,7 +90,7 @@
       <view wx:if="{{!rPlans.length}}" class="or-state">
         <view class="or-state-emoji">🎉</view>
         <view class="or-state-title">没有待回执的出单</view>
-        <view class="or-state-sub">所有计划下的学习单都已经回执过了。先去「出单」开一张新单吧。</view>
+        <view class="or-state-sub">所有计划下的导学单都已经回执过了。先去「出单」开一张新单吧。</view>
       </view>
       <block wx:else>
         <view class="or-hint">先选「属于哪一份计划」，再从该计划下选出具体出单。这样回执不会被挂到错的计划上。</view>
@@ -216,7 +216,7 @@
 
     <view wx:if="{{!orders.length}}" class="or-state">
       <view class="or-state-emoji">🗂️</view>
-      <view class="or-state-title">还没有学习单</view>
+      <view class="or-state-title">还没有导学单</view>
       <view class="or-state-sub">去「出单」开一张。</view>
     </view>
 
@@ -235,7 +235,7 @@
         </view>
       </view>
 
-      <view class="or-sec-title">全部学习单</view>
+      <view class="or-sec-title">全部导学单</view>
       <view wx:for="{{orders}}" wx:key="orderNo"
             class="or-row or-row--tap" data-no="{{item.orderNo}}" bindtap="openDetail">
         <view class="or-row-main">
@@ -261,6 +261,7 @@
         <view class="or-drow"><text class="or-dk">状态</text><text class="or-dv">{{detail.statusText}}</text></view>
         <view class="or-drow"><text class="or-dk">学科/类型</text><text class="or-dv">{{detail.subjectName}} · {{detail.kindLabel}} · {{detail.minutes}} 分钟</text></view>
         <view class="or-drow"><text class="or-dk">计划任务</text><text class="or-dv">{{detail.planStage}} · {{detail.planTask}}</text></view>
+        <view class="or-drow"><text class="or-dk">计划天数</text><text class="or-dv">{{detail.planDays}} 天<block wx:if="{{detail.hasActual}}"> → 实际 {{detail.actualDays}} 天</block><block wx:else> · 实际耗时待任务完成后记录</block></text></view>
       </view>
 
       <view class="or-dsec">
@@ -297,7 +298,7 @@
         <view wx:if="{{detail.status !== 'voided' && detail.status !== 'cancelled'}}"
               class="or-btn or-btn--danger" bindtap="doReissue">作废重开</view>
       </view>
-      <view class="or-foot">回执不是学习证据，「达标」只描述本次表现；掌握度只能由复测证据（≥5 题且 ≥80%）产生。</view>
+      <view class="or-foot">回执不是导学证据，「达标」只描述本次表现；掌握度只能由复测证据（≥5 题且 ≥80%）产生。</view>
     </scroll-view>
   </view>
 

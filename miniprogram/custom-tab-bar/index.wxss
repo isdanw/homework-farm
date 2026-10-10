@@ -35,7 +35,7 @@
 .ic-farm .leaf.r { right: 8rpx; border-radius: 0 12rpx 0 12rpx; }
 .tab.on .ic-farm .leaf { background: #6FCF7C; }
 
-/* —— 学习乐园：蓝书 + 金星 —— */
+/* —— 成长乐园：蓝书 + 金星 —— */
 .ic-learn { background: linear-gradient(135deg,#7FD4FF,#2BB0F0); border-radius: 12rpx; }
 .ic-learn .bb { position: absolute; left: 9rpx; right: 9rpx; top: 13rpx; bottom: 11rpx; border-radius: 6rpx 12rpx 12rpx 6rpx; background: #fff; }
 .ic-learn .pg { position: absolute; left: 25rpx; top: 13rpx; bottom: 11rpx; width: 4rpx; background: #2BB0F0; }

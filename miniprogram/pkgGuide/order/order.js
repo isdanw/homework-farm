@@ -1,5 +1,5 @@
 /**
- * 学习单页（全科导学 · 出单 → 豆包执行 → 回执 → 评语与汇总）
+ * 导学单页（全科导学 · 出单 → 豆包执行 → 回执 → 评语与汇总）
  * ==========================================================
  * 三个页签，一条闭环：
  *   · 出单   —— 选计划 → 选任务 → 选类型与时长 → 出单（同时落库 + 复制到执行端）
@@ -263,11 +263,11 @@ Page({
   doIssue() {
     const self = this;
     const p = this.data.plans[this.data.planIdx];
-    if (!p) { wx.showToast({ title: '该学科还没有学习计划', icon: 'none' }); return; }
+    if (!p) { wx.showToast({ title: '该学科还没有成长计划', icon: 'none' }); return; }
     const t = this.data.tasks[this.data.taskIdx];
     if (!t) { wx.showToast({ title: '没有可出单的任务', icon: 'none' }); return; }
     const plan = studyPlan.getPlan(p.key);
-    if (!plan) { wx.showToast({ title: '学习计划已不存在，请重新生成', icon: 'none' }); return; }
+    if (!plan) { wx.showToast({ title: '成长计划已不存在，请重新生成', icon: 'none' }); return; }
     if (this.data.issuing) return;
 
     const kind = this.data.kinds[this.data.kindIdx];
@@ -527,6 +527,22 @@ Page({
     const ev = (order.events || []).slice().sort((a, b) => (a.at || 0) - (b.at || 0));
     const comment = (order.evaluation && order.evaluation.comment) || '';
     const commentSource = (order.evaluation && order.evaluation.commentSource) || '';
+    /* 计划天数 vs 实际耗时：
+       · 计划天数 = 出单时锁定的 canonical `order.plan.days`（不随计划重生成漂移）；
+       · 实际耗时 = 实时读当前计划对应 si/ti 任务的 checkinDays（仅任务已勾选完成时存在）。
+         用 planCreatedAt 对齐：计划重生成过（createdAt 变更）则该任务指针已失效，
+         不强行显示实际耗时，避免把新计划里别的任务的耗时嫁接到这张老单上。 */
+    const pt = order.plan || {};
+    const planDays = (typeof pt.days === 'number' && pt.days > 0) ? pt.days : 1;
+    let actualDays = null;   // null = 暂不可比（任务未完成 / 计划已重生成）
+    if (pt.key && typeof pt.si === 'number' && typeof pt.ti === 'number') {
+      const live = studyPlan.getPlan(pt.key);
+      if (live && live.createdAt === pt.planCreatedAt
+          && live.stages[pt.si] && live.stages[pt.si].tasks[pt.ti]) {
+        const task = live.stages[pt.si].tasks[pt.ti];
+        if (task.done) actualDays = task.checkinDays || 0;
+      }
+    }
     this.setData({
       detailNo: no,
       detail: {
@@ -540,6 +556,9 @@ Page({
         planStage: (order.plan && order.plan.stageName) || '',
         planTask: (order.plan && order.plan.taskName) || '',
         planId: (order.plan && order.plan.planId) || '',
+        planDays: planDays,
+        hasActual: actualDays !== null,
+        actualDays: actualDays,
         issuedAtText: fmtTime(order.issuedAt),
         issuedByText: fmtBy(order.issuedBy),
         submittedAtText: order.submittedAt ? fmtTime(order.submittedAt) : '尚未回执',
@@ -648,7 +667,7 @@ Page({
     if (!d) return;
     wx.showModal({
       title: '标记本任务完成',
-      content: '将在学习计划里勾选「' + (d.planTask || '该任务') + '」，并记录一条 ticked 留痕。',
+      content: '将在成长计划里勾选「' + (d.planTask || '该任务') + '」，并记录一条 ticked 留痕。',
       success(r) {
         if (!r.confirm) return;
         self.setData({ busy: true });
@@ -747,7 +766,7 @@ function rejectText(res) {
     already_submitted: '这张单已经提交过回执了。一个出单只能对应一个回执；如需修正，请在单详情里「作废重开」。',
     bad_transition: '当前状态不允许这个操作，请下拉刷新后重试。',
     bad_param: '还有必填项没填。',
-    no_anchor: '出单必须锚定学习计划的任务。',
+    no_anchor: '出单必须锚定成长计划的任务。',
     bad_receipt: '回执内容无法识别，请检查是否粘贴了完整的回执。'
   };
   return (m[c] || ('提交失败：' + ((res && res.msg) || '未知原因'))) +

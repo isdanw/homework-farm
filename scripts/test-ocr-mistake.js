@@ -312,6 +312,20 @@ function loadTestVision(httpsStub) {
   assert('E: PROBE_PNG_B64 为合法 PNG 签名', m && m[1].length > 100 && sig === '89504e470d0a1a0a', sig);
 }
 
+// 契约：mistake 转录必须输出 studyNote（供打卡 note 自动回填），且 doOcrMistake 两处 return 均回传
+{
+  const src = fs.readFileSync(path.join(ROOT, 'cloudfunctions/ocrSchedule/index.js'), 'utf8');
+  assert('studyNote 契约：system prompt 要求输出 studyNote 字段', src.indexOf('"studyNote"') > 0 && src.indexOf('studyNote：') > 0);
+  assert('studyNote 契约：doOcrMistake 两处 return 均带 studyNote', (src.match(/studyNote:/g) || []).length >= 2);
+}
+
+// 契约：mistake 转录必须输出 wrong（自动判定孩子是否答错），且 normalizeItems 透传 wrong
+{
+  const src = fs.readFileSync(path.join(ROOT, 'cloudfunctions/ocrSchedule/index.js'), 'utf8');
+  assert('wrong 契约：system prompt 要求输出 wrong 字段', src.indexOf('"wrong"') > 0 && src.indexOf('wrong：') > 0);
+  assert('wrong 契约：normalizeItems 透传 wrong 字段', src.indexOf('wrong: normWrong(raw.wrong)') > 0);
+}
+
 })().catch(e => { assert('T6 执行异常: ' + e.message, false, e.stack); }).then(() => {
 console.log('\n========================================');
 console.log('通过 ' + NODE.pass + ' / 失败 ' + NODE.fail);

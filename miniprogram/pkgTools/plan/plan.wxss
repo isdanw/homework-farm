@@ -92,6 +92,14 @@
 .stage-card { margin-bottom: 20rpx; }
 .stage-head { display: flex; align-items: center; justify-content: space-between; }
 .stage-name { font-size: 32rpx; font-weight: 600; }
+/* 「单元总结」入口：阶段任务全部勾完时高亮（任何时候都可点） */
+.stage-sum {
+  flex-shrink: 0; margin-left: 12rpx;
+  font-size: 22rpx; font-weight: 700; color: #8A8A8A;
+  background: #F2F2F2; border-radius: 999rpx; padding: 8rpx 18rpx;
+}
+.stage-sum.on { color: #fff; background: #F5A623; }
+.stage-sum:active { opacity: .75; }
 .stage-stat { font-size: 26rpx; font-weight: 600; }
 .stage-meta { margin-top: 4rpx; }
 

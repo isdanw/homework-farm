@@ -50,7 +50,7 @@
 
   <!-- 消息区 -->
   <scroll-view class="msg-scroll" scroll-y scroll-into-view="{{scrollTo}}" scroll-with-animation>
-    <view wx:if="{{!messages.length}}" class="welcome">
+    <view wx:if="{{!messages.length && !input}}" class="welcome">
       <view class="welcome-emoji">{{subjectEmoji}}</view>
       <view class="welcome-title">开始{{subjectName}}导学吧</view>
       <view class="welcome-sub">把不会的题、或者你的想法发给我，我会一步步引导你想出来，不会直接给答案哦～</view>
@@ -69,6 +69,9 @@
 
     <view id="msg-bottom" style="height:4rpx"></view>
   </scroll-view>
+
+  <!-- 语音输入引导：不录音，用系统键盘麦克风（文字直接进输入框） -->
+  <view class="voice-hint">🎤 想用语音？点输入框后用键盘上的麦克风说就行 · 本应用不录音</view>
 
   <!-- 底部输入区 -->
   <view class="input-bar">

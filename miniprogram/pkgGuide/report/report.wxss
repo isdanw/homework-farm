@@ -1,5 +1,5 @@
 /**
- * report.wxss —— 学习报告页（沿用全局马卡龙规范）
+ * report.wxss —— 导学报告页（沿用全局马卡龙规范）
  */
 
 page { background: var(--c-cream); }

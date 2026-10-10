@@ -89,11 +89,12 @@ Page({
     if (plan && prog) {
       let cum = 0;
       const horizon = prog.started ? Math.min(prog.elapsed, prog.plannedDays) : 0;
+      const curCheckin = studyPlan.countCheckinDays(key, plan);   // 实时打卡天数（绑定每日打卡），所有任务共用
       stageList = plan.stages.map((st, si) => {
         const stat = prog.stages[si] || {};
         const tasks = st.tasks.map((task, ti) => {
-          cum += task.days;
-          let cls = 'todo', tag = '预计 ' + task.days + ' 天';
+          cum += task.days;                                       // days 仅用于内部排期（应完成日 / 超前滞后）
+          let cls = 'todo', tag = '待开始';
           if (task.done) { cls = 'done'; tag = '✓ 已完成' + (task.doneAt ? '（' + util.cnDate(task.doneAt) + '）' : ''); }
           else if (prog.started && cum <= horizon) {
             const late = prog.elapsed - cum;
@@ -101,13 +102,20 @@ Page({
             tag = late > 0 ? '已逾期 ' + late + ' 天' : '今天应完成';
           } else if (prog.started && cum <= horizon + 1) { cls = 'due'; tag = '即将到期'; }
           return {
-            name: task.name, days: task.days, done: task.done, cls: cls, tag: tag,
+            name: task.name,
+            done: task.done,
+            planDays: task.days,                                  // 预期天数（用于「计划 vs 实际」对比）
+            // 已完成 = 保存的真实任务耗时；未完成 = 实时绑定每日打卡的累计天数
+            checkinDays: task.done ? (task.checkinDays || 0) : curCheckin,
+            cls: cls, tag: tag,
             si: si, ti: ti, id: 'task-' + si + '-' + ti,
             hl: this._focusKey === (si + '-' + ti)      // 从打卡记录回链过来时高亮该任务
           };
         });
         return {
           name: st.name, weeks: st.weeks, goal: st.goal,
+          si: si,
+          allDone: tasks.length > 0 && tasks.every(t => t.done),
           stat: stat, tasks: tasks,
           barStyle: 'width:' + (stat.percent || 0) + '%',
           statColor: (STATUS_STYLE[stat.statusText === '超前' ? 'ahead' : stat.statusText === '滞后' ? 'lag' : stat.statusText === '已完成' ? 'ahead' : 'notstarted'] || STATUS_STYLE.notstarted).color
@@ -270,6 +278,14 @@ Page({
     const done = e.currentTarget.dataset.done !== 'true';
     studyPlan.setTaskDone(this.data.key, si, ti, done);
     this.render();
+  },
+
+  /** 跳转单元总结页（以计划阶段为单元，一键生成知识树总结） */
+  goUnitSummary(e) {
+    const si = e.currentTarget.dataset.si;
+    wx.navigateTo({
+      url: '/pkgTools/unitSummary/unitSummary?typeKey=' + this.data.key + '&si=' + si
+    });
   },
 
   /** 从计划任务跳转 AI 导学（带任务上下文，导学结束可回写本任务完成状态） */

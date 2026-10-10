@@ -104,14 +104,14 @@
       <view class="dot" style="background:#3FA9F5"></view><text class="section-title">儿童画像</text>
       <view class="entry-go">去设置 ›</view>
     </view>
-    <view class="muted tools-desc">{{learnerSummary || '定义孩子的学段、学习时长、讲解偏好与期望，让评价更贴合'}}</view>
+    <view class="muted tools-desc">{{learnerSummary || '定义孩子的学段、导学时长、讲解偏好与期望，让评价更贴合'}}</view>
   </view>
 
-  <!-- ===== 导学中心（学习主线聚合：AI 导学 / 错题本 / 导学报告） ===== -->
+  <!-- ===== 导学中心（导学主线聚合：AI 导学 / 错题本 / 导学报告） ===== -->
   <view class="card tools-card {{tutorLocked ? 'locked' : ''}}" bindtap="goTutorHub">
     <view class="section-head">
       <view class="dot" style="background:#9B7BF0"></view><text class="section-title">导学中心</text>
-      <view class="entry-go">{{tutorLocked ? '未启用' : '去学习 ›'}}</view>
+      <view class="entry-go">{{tutorLocked ? '未启用' : '去导学 ›'}}</view>
     </view>
     <view class="muted tools-desc">{{tutorLocked ? (tutorLockReason === 'no-bind' ? '🔒 本地模式不可用，请先绑定微信再开启导学功能' : (tutorLockReason === 'no-child' ? '🔒 请先在上方添加孩子，再开启导学功能' : '🔒 请先为孩子建立「成长计划」，再开启导学功能')) : hubInfo}}</view>
   </view>
@@ -143,13 +143,13 @@
     <view class="muted tools-desc">在语数英之外，增加阅读、运动、练琴等自定义打卡项，每种类型对应一种作物。</view>
   </view>
 
-  <!-- ===== 网页看板（生成与微信绑定的网页访问口令；电脑端除「学习单」外只读） ===== -->
+  <!-- ===== 网页看板（生成与微信绑定的网页访问口令；电脑端除「导学单」外只读） ===== -->
   <view class="card tools-card" bindtap="goWebPortal">
     <view class="section-head">
       <view class="dot" style="background:#00A3A3"></view><text class="section-title">网页看板</text>
       <view class="entry-go">去生成 ›</view>
     </view>
-    <view class="muted tools-desc">生成与微信绑定的网页口令，用电脑浏览器查看孩子的打卡与导学数据；「学习单」可在电脑上出单与交回执。</view>
+    <view class="muted tools-desc">生成与微信绑定的网页口令，用电脑浏览器查看孩子的打卡与导学数据；「导学单」可在电脑上出单与交回执。</view>
   </view>
 
   <!-- ===== 家长工具（数据备份 / 体验数据，放页面最底部） ===== -->

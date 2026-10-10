@@ -50,6 +50,43 @@
 
 .cd-tip { margin-bottom: 14rpx; }
 
+/* 拍照识别导学内容 */
+.cd-photo-row { display: flex; align-items: center; gap: 16rpx; margin-bottom: 12rpx; }
+.cd-photo-btn {
+  display: inline-flex; align-items: center;
+  font-size: 27rpx; font-weight: 700; color: #fff;
+  background: var(--c-blue); border-radius: 999rpx;
+  padding: 14rpx 26rpx;
+}
+.cd-photo-btn:active { opacity: .8; }
+.cd-photo-btn.disabled { background: #C9D6E2; }
+.cd-scanning { font-size: 24rpx; color: var(--c-sub); }
+.cd-tip2 { font-size: 22rpx; color: var(--c-sub); line-height: 1.5; margin-bottom: 14rpx; }
+
+/* 错题识别确认弹窗（wxml 中放在 .page-wrap 外的根级，避免被
+   app.wxss 的 .page-wrap > view:not(.scene) 覆盖 position:fixed） */
+.cd-mask {
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.45); z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+}
+.cd-modal {
+  width: 560rpx; background: #fff; border-radius: 28rpx;
+  padding: 44rpx 40rpx 32rpx; box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.18);
+}
+.cd-modal-emoji { font-size: 64rpx; text-align: center; line-height: 1; }
+.cd-modal-title { font-size: 38rpx; font-weight: 800; color: var(--c-text); text-align: center; margin-top: 16rpx; }
+.cd-modal-body { font-size: 27rpx; color: #5A5A5A; line-height: 1.6; text-align: center; margin: 18rpx 0 30rpx; }
+.cd-modal-acts { display: flex; gap: 24rpx; }
+.cd-modal-btn {
+  flex: 1; text-align: center; font-size: 30rpx; font-weight: 700;
+  padding: 22rpx 0; border-radius: 999rpx;
+}
+.cd-modal-cancel { color: #8A8A8A; background: #F2F2F2; }
+.cd-modal-cancel:active { background: #E8E8E8; }
+.cd-modal-ok { color: #fff; background: var(--c-blue); }
+.cd-modal-ok:active { opacity: .82; }
+
 /* AI 分析卡片内「当前角色」标签（语文固定显示） */
 .role-tag {
   display: inline-block;
@@ -76,6 +113,20 @@
   line-height: 56rpx;
   padding: 20rpx 24rpx;
 }
+
+/* 错因聚类小结卡片 */
+.cd-cluster {
+  margin-top: 22rpx; background: #FFF7E8; border: 2rpx solid #FFD9A8;
+  border-radius: 20rpx; padding: 22rpx 24rpx;
+}
+.cd-cluster-h { font-size: 27rpx; font-weight: 800; color: #B3621B; margin-bottom: 14rpx; }
+.cd-cluster-tags { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.cd-cluster-tag {
+  font-size: 24rpx; font-weight: 700; border-radius: 999rpx;
+  padding: 8rpx 18rpx; line-height: 1.2;
+}
+.cd-cluster-tag-mut { color: #8A8A8A; background: #F2F2F2; }
+.cd-cluster-top { font-size: 24rpx; color: #8A6A3A; margin-top: 14rpx; line-height: 1.5; }
 
 /* AI 分析结果 */
 .ai-result { margin-top: 22rpx; }

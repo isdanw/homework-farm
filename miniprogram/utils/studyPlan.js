@@ -19,7 +19,7 @@
  *      grade, term, textbook, subjectName,
  *      startDate: '' | 'YYYY-MM-DD',        // 点「开始计划」当天起算排期
  *      createdAt, updatedAt,
- *      stages: [{ name, weeks, goal, tasks: [{ name, days, done, doneAt }] }]
+ *      stages: [{ name, weeks, goal, tasks: [{ name, days, done, doneAt, checkinDays, startedAt }]  // startedAt=任务首次开始日；checkinDays=实际完成天数(完成日−开始日+1) }]
  *    }
  *  计划提示词：subjectProfiles[typeKey].planPrompt（学科画像页配置）
  * ============================================================================
@@ -120,7 +120,7 @@ function normalizePlan(raw, meta) {
       .map(t => {
         if (!t || typeof t.name !== 'string' || !t.name.trim()) return null;
         const days = Math.max(1, Math.min(10, Number(t.days) || 1));
-        return { name: t.name.trim().slice(0, 40), days: days, done: false, doneAt: '' };
+        return { name: t.name.trim().slice(0, 40), days: days, done: false, doneAt: '', checkinDays: 0, startedAt: '' };
       })
       .filter(Boolean)
       .slice(0, 12);
@@ -267,8 +267,29 @@ function setTaskDone(key, stageIdx, taskIdx, done) {
   if (!plan || !plan.stages[stageIdx] || !plan.stages[stageIdx].tasks[taskIdx]) return false;
   const t = plan.stages[stageIdx].tasks[taskIdx];
   t.done = !!done;
-  t.doneAt = done ? util.today() : '';
+  if (done) {
+    t.doneAt = util.today();
+    // 实际完成天数 = 完成日 − 任务开始日（首次打卡关联日；回退计划开始日）；含首尾 +1
+    const base = t.startedAt || plan.startDate || '';
+    t.checkinDays = base ? (util.diffDays(t.doneAt, base) + 1) : 0;
+  } else {
+    t.doneAt = '';
+    t.checkinDays = 0;
+    // startedAt 保留（记录任务曾开始），不清空
+  }
   savePlan(key, plan);
+  return true;
+}
+
+/** 记录任务首次开始日（首次被打卡带出时调用；不覆盖已有值） */
+function markTaskStarted(key, stageIdx, taskIdx, date) {
+  const plan = getPlan(key);
+  if (!plan || !plan.stages[stageIdx] || !plan.stages[stageIdx].tasks[taskIdx]) return false;
+  const t = plan.stages[stageIdx].tasks[taskIdx];
+  if (!t.startedAt && date) {
+    t.startedAt = date;
+    savePlan(key, plan);
+  }
   return true;
 }
 
@@ -312,7 +333,7 @@ function appendRemediationStage(key, taskNames) {
     .map(function (n) { return String(n == null ? '' : n).trim(); })
     .filter(Boolean)
     .slice(0, 6)
-    .map(function (n) { return { name: n.slice(0, 40), days: 1, done: false, doneAt: '' }; });
+    .map(function (n) { return { name: n.slice(0, 40), days: 1, done: false, doneAt: '', checkinDays: 0, startedAt: '' }; });
   if (!names.length) return null;
 
   const existing = getPlan(key);
@@ -351,5 +372,5 @@ module.exports = {
   defaultPrompt, getBuiltinRole, getPlan, savePlan, removePlan,
   getPrompt, getPromptLabel, getTerm, savePrompt,
   normalizePlan, totalDays, flatten, countCheckinDays,
-  getProgress, setTaskDone, startPlan, getCurrentTask, appendRemediationStage
+  getProgress, setTaskDone, markTaskStarted, startPlan, getCurrentTask, appendRemediationStage
 };

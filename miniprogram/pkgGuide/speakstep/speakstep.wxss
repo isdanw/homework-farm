@@ -1,0 +1,129 @@
+/* SpeakStep 听说练习台（小程序 · 复用看板视觉，单位转 rpx） */
+.ss-page {
+  --cream: #FFF6EC; --card: #FFF; --ink: #3B2E24; --ink-soft: #8A7A6D;
+  --orange: #F97316; --orange-deep: #EA580C; --teal: #14B8A6; --teal-deep: #0F766E;
+  --teal-soft: #E6F7F4; --green: #22C55E; --line: #F0E6D8;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 24rpx 24rpx 48rpx;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  line-height: 1.55;
+  box-sizing: border-box;
+}
+.ss-page, .ss-page view, .ss-page text, .ss-page input, .ss-page picker { box-sizing: border-box; }
+
+/* ===== 顶栏 ===== */
+.ss-top { display: flex; align-items: center; gap: 20rpx; margin-bottom: 22rpx; }
+.ss-logo {
+  width: 88rpx; height: 88rpx; border-radius: 24rpx; flex: none;
+  background: var(--teal); display: flex; align-items: center; justify-content: center;
+  font-size: 46rpx; box-shadow: 0 8rpx 20rpx rgba(190,140,70,.12);
+}
+.ss-top-txt { flex: 1; min-width: 0; }
+.ss-h1 { font-size: 40rpx; font-weight: 800; letter-spacing: 1rpx; }
+.ss-sub { font-size: 24rpx; color: var(--ink-soft); margin-top: 4rpx; }
+.ss-quickbtn {
+  flex: none; background: #fff; border: 1.5rpx solid var(--line); color: var(--ink);
+  font-size: 26rpx; font-weight: 600; padding: 16rpx 26rpx; border-radius: 999rpx;
+}
+
+/* ===== 步骤条 ===== */
+.ss-steps {
+  display: flex; gap: 14rpx; flex-wrap: wrap; background: var(--card);
+  border: 1rpx solid var(--line); border-radius: 22rpx; padding: 20rpx 24rpx; margin-bottom: 28rpx;
+}
+.ss-step { display: flex; align-items: center; gap: 12rpx; font-size: 26rpx; color: var(--ink-soft); }
+.ss-b {
+  width: 40rpx; height: 40rpx; border-radius: 50%; background: var(--teal); color: #fff; flex: none;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 24rpx;
+}
+.ss-step:not(:last-child)::after { content: ""; width: 44rpx; height: 2rpx; border-radius: 2rpx; background: var(--line); margin: 0 4rpx; }
+
+/* ===== 卡片 ===== */
+.ss-card { background: var(--card); border: 1rpx solid var(--line); border-radius: 24rpx; padding: 30rpx 32rpx; margin-bottom: 24rpx; }
+.ss-card-h { display: flex; align-items: baseline; gap: 14rpx; margin-bottom: 24rpx; flex-wrap: wrap; }
+.ss-h2 { font-size: 32rpx; font-weight: 700; }
+.ss-h2-sub { font-size: 24rpx; color: var(--ink-soft); }
+
+/* ===== 分段（seg） ===== */
+.seg { display: inline-flex; background: #F7EEE1; border-radius: 16rpx; padding: 6rpx; gap: 6rpx; }
+.seg-btn {
+  border: 0; background: transparent; padding: 14rpx 28rpx; border-radius: 12rpx; font-size: 28rpx;
+  color: var(--ink-soft); transition: all .15s;
+}
+.seg-btn.on { background: #fff; color: var(--ink); box-shadow: 0 2rpx 10rpx rgba(190,140,70,.15); font-weight: 600; }
+
+/* ===== 选择 chips ===== */
+.ss-chips { display: flex; gap: 14rpx; flex-wrap: wrap; }
+.ss-chip {
+  border: 1.5rpx solid var(--line); background: #fff; color: var(--ink-soft); border-radius: 999rpx;
+  padding: 12rpx 26rpx; font-size: 26rpx; transition: all .15s;
+}
+.ss-chip.on { border-color: var(--teal); background: var(--teal-soft); color: var(--teal-deep); font-weight: 600; }
+
+/* ===== 表单行 ===== */
+.ss-frow { display: flex; align-items: center; gap: 16rpx; margin-bottom: 20rpx; flex-wrap: wrap; }
+.ss-label { font-size: 27rpx; font-weight: 600; min-width: 120rpx; color: var(--ink); }
+.ss-label-sm { min-width: auto; }
+.ss-input {
+  border: 1.5rpx solid var(--line); border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 28rpx;
+  color: var(--ink); flex: 1; min-width: 220rpx; background: #fff;
+}
+.ss-picker { flex: 1; min-width: 220rpx; }
+.ss-pick {
+  border: 1.5rpx solid var(--line); background: #fff; border-radius: 12rpx; padding: 16rpx 60rpx 16rpx 20rpx;
+  font-size: 28rpx; color: var(--ink); position: relative;
+}
+.ss-caret { position: absolute; right: 20rpx; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-size: 22rpx; }
+.ss-mut { font-size: 26rpx; color: var(--ink-soft); }
+.ss-hint { font-size: 24rpx; color: var(--ink-soft); }
+.ss-hint-indent { margin: 4rpx 0 0 120rpx; }
+
+/* ===== 高级设置 ===== */
+.ss-adv-h { font-size: 27rpx; font-weight: 600; color: var(--ink-soft); user-select: none; }
+
+/* ===== 预览 ===== */
+.ss-pv { background: var(--teal-soft); border: 1rpx dashed var(--teal); border-radius: 18rpx; padding: 24rpx 28rpx; }
+.ss-pv-row { display: flex; gap: 16rpx; font-size: 27rpx; margin-bottom: 12rpx; }
+.ss-pv-row:last-child { margin-bottom: 0; }
+.ss-pv-k { color: var(--teal-deep); font-weight: 600; flex: none; min-width: 110rpx; }
+.ss-pv-v { color: var(--ink); }
+
+/* ===== 提示词 ===== */
+.ss-prompt {
+  background: #2E2620; border-radius: 18rpx; padding: 28rpx; color: #F5EBDD; font-size: 27rpx;
+  line-height: 1.8; white-space: pre-wrap; min-height: 380rpx;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+}
+.ss-btn {
+  border: 0; border-radius: 14rpx; padding: 22rpx 36rpx; font-size: 30rpx; font-weight: 600;
+  transition: all .15s; display: inline-flex; align-items: center; justify-content: center; gap: 10rpx;
+}
+.ss-btn-primary { background: var(--orange); color: #fff; }
+.ss-btn-ghost { background: #fff; border: 1.5rpx solid var(--line); color: var(--ink); }
+.ss-btn-sm { padding: 14rpx 26rpx; font-size: 26rpx; }
+.ss-btn-row { display: flex; gap: 20rpx; flex-wrap: wrap; margin-top: 24rpx; }
+
+/* ===== 说明 ===== */
+.ss-how { display: flex; gap: 16rpx; align-items: flex-start; font-size: 27rpx; color: var(--ink-soft); margin-top: 20rpx; padding-top: 20rpx; border-top: 1rpx dashed var(--line); }
+.ss-how-ic { width: 64rpx; height: 64rpx; border-radius: 16rpx; background: var(--teal-soft); flex: none; display: flex; align-items: center; justify-content: center; font-size: 36rpx; }
+.ss-how-txt { flex: 1; }
+
+/* ===== 快速开练抽屉 ===== */
+.ss-mask { position: fixed; inset: 0; background: rgba(59,46,36,.4); z-index: 50; }
+.ss-drawer {
+  position: fixed; top: 0; right: 0; width: 82vw; height: 100vh; z-index: 51;
+  background: var(--card); box-shadow: -10rpx 0 40rpx rgba(59,46,36,.18); padding: 40rpx 36rpx;
+  overflow-y: auto;
+}
+.ss-drawer .ss-h2 { font-size: 34rpx; margin-bottom: 8rpx; }
+.ss-drawer .ss-sub { font-size: 25rpx; color: var(--ink-soft); margin-bottom: 28rpx; }
+.ss-close {
+  position: absolute; top: 28rpx; right: 28rpx; width: 56rpx; height: 56rpx; border-radius: 50%;
+  background: #F7EEE1; color: var(--ink-soft); display: flex; align-items: center; justify-content: center;
+  font-size: 36rpx;
+}
+.ss-qp { display: block; width: 100%; text-align: left; border: 1.5rpx solid var(--line); background: #fff; border-radius: 18rpx; padding: 24rpx 28rpx; margin-bottom: 20rpx; }
+.ss-qp-b { display: block; font-size: 30rpx; color: var(--ink); font-weight: 600; margin-bottom: 6rpx; }
+.ss-qp-s { display: block; font-size: 24rpx; color: var(--ink-soft); }

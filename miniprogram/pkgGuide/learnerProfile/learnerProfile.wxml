@@ -31,7 +31,7 @@
 
     <!-- 每周可学习时间 -->
     <view class="opt-row">
-      <view class="opt-name">每周可学习时间</view>
+      <view class="opt-name">每周可练习时间</view>
       <view class="opt-input-wrap">
         <input class="opt-input-min" type="number" placeholder="如 300" placeholder-class="opt-ph"
                value="{{weeklyMinutes}}" bindinput="onMinutes" maxlength="4" />
@@ -49,7 +49,7 @@
 
   <view class="card">
     <view class="section-head">
-      <view class="dot" style="background:#F5B740"></view><text class="section-title">学习习惯与偏好</text>
+      <view class="dot" style="background:#F5B740"></view><text class="section-title">打卡习惯与偏好</text>
     </view>
 
     <!-- 常用时段 -->

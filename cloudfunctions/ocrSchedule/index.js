@@ -73,7 +73,7 @@ const USER_TEXT = '请识别这张课程表，并只输出一个 JSON 对象：�
 const MISTAKE_TYPES = ['calc', 'apply', 'fill', 'choice', 'judge', 'dictation', 'reading', 'writing', 'other'];
 
 const MISTAKE_SYSTEM_PROMPT = `你是练习题目转录助手。把图片里的题目逐题转换成严格 JSON，只输出 JSON，不要任何解释、不要 markdown 代码块、不要 HTML 表格。
-输出格式：{"subjectGuess":"math 或 chinese 或 english 或 unknown","items":[{"no":"题号","type":"题型","questionText":"题干","childAnswer":"孩子的作答","marked":null,"correctAnswer":""}]}
+输出格式：{"subjectGuess":"math 或 chinese 或 english 或 unknown","studyNote":"一段导学内容总结","items":[{"no":"题号","type":"题型","questionText":"题干","childAnswer":"孩子的作答","marked":null,"correctAnswer":"","wrong":null}]}
 题型 type 只能取：calc(计算/口算/竖式/比大小)、apply(应用题/解决问题)、fill(填空)、choice(选择)、judge(判断对错)、dictation(拼音/生字/单词默写)、reading(阅读理解)、writing(看图写话/写句子)、other。
 转录规则：
 1. 【最重要】只转录图片中真实可见、清晰可读的内容；看不清、不确定的一律填 ""，禁止根据常识推测补全。数学算式按图片原样转写（如 "3+5="）。
@@ -81,9 +81,11 @@ const MISTAKE_SYSTEM_PROMPT = `你是练习题目转录助手。把图片里的�
 3. correctAnswer 只在图片上能看到批改出的正确答案时填写，否则必须填 ""。
 4. 一图多题时逐题输出，按图片从上到下排序；孩子的作答（手写字）也照原样转写，写错了也照写。
 5. 图片是纯题目清单（没有作答）时 childAnswer 填 ""，照常转录。
-6. items 数量上限 30 题；超过只转录前 30 题。`;
+6. items 数量上限 30 题；超过只转录前 30 题。
+7. studyNote：用一整段自然语言（≤200 字）概括这张图片里孩子在「导/练什么」，例如「练习了两位数进位加法竖式，共 5 道题，其中 2 道做错」；若图片只是零散单题、看不出整体导学内容，可写该题的简短概要；禁止编造图片里没有的导学内容；没有可总结的内容填 ""。
+8. wrong：这题孩子是否「答错」（与 marked 不同，marked 只看图上有无批改符号）。判定方式：对可客观判定的题型（calc/fill/choice/judge/dictation）——你自己推导出正确答案，再和孩子的作答比较，不一致则 wrong=true、一致则 wrong=false；对无法客观判定的题型（apply/reading/writing/other）只看图上的批改符号（有叉×→wrong=true、有对勾√→wrong=false、无标记→null），禁止凭感觉猜。wrong 与 marked 独立输出，两者都可能为 true；wrong 只能取 true/false/null。`;
 
-const MISTAKE_USER_TEXT = '请识别这张图片里的题目，并只输出一个 JSON 对象：你的回答第一个字符必须是 { ，最后一个字符必须是 } 。\n格式：{"subjectGuess":"math","items":[{"no":"1","type":"calc","questionText":"3+5=","childAnswer":"9","marked":false,"correctAnswer":""}]}\ntype 只能取 calc/apply/fill/choice/judge/dictation/reading/writing/other；marked 只能取 true/false/null；看不清的内容填 ""，没有批改标记 marked 填 null。\n禁止输出 HTML 表格、Markdown 表格、解释、推理过程或任何非 JSON 文字。';
+const MISTAKE_USER_TEXT = '请识别这张图片里的题目，并只输出一个 JSON 对象：你的回答第一个字符必须是 { ，最后一个字符必须是 } 。\n格式：{"subjectGuess":"math","studyNote":"练习了两位数进位加法竖式，共 5 道题","items":[{"no":"1","type":"calc","questionText":"3+5=","childAnswer":"9","marked":false,"correctAnswer":"","wrong":true}]}\ntype 只能取 calc/apply/fill/choice/judge/dictation/reading/writing/other；marked 只能取 true/false/null，是图上的批改符号；wrong 只能取 true/false/null，是你对客观题型自己算答案对比孩子作答得出的「是否答错」，两者独立；看不清的内容填 ""，无批改标记 marked 填 null，无法判定 wrong 填 null；studyNote 用一段话概括学/练内容，没有可总结的填 ""。\n禁止输出 HTML 表格、Markdown 表格、解释、推理过程或任何非 JSON 文字。';
 
 /** 第二遍：带初稿逐项核对（仅多题图启用，重点核对题号-内容-批改标记对应关系） */
 function buildMistakeVerifyPrompt(draftJson) {
@@ -93,7 +95,7 @@ function buildMistakeVerifyPrompt(draftJson) {
 1. 只认图片中真实可见、清晰可读的内容：看不清的必须填 ""，禁止推测补全。
 2. 逐题核对：题号与题目内容是否对应（防止串题号、串行）、孩子的作答是否转写正确、批改标记是否张冠李戴。
 3. 初稿多写（图片里没有的题）→ 删除；初稿漏写（图片里还有清晰的题）→ 按顺序补在对应位置。
-4. marked：图上有对勾(√/✓)填 true，有叉(×/✗)填 false，没有批改标记必须 null；correctAnswer 图上不可见必须 ""。
+4. marked：图上有对勾(√/✓)填 true，有叉(×/✗)填 false，没有批改标记必须 null；correctAnswer 图上不可见必须 ""；wrong（孩子是否答错）保持初稿判定值，不要随意翻转。
 5. 两个原则冲突时（像是某题但看不清）：宁可填 ""，不要猜。
 
 题目识别初稿：
@@ -116,6 +118,13 @@ function normMarked(v) {
   return null;   // null / "null" / "无" / 其他 → 视为没有批改标记
 }
 
+/** wrong 归一化：模型主动判定的「孩子是否答错」（与 marked 不同，marked 只看图上批改符号） */
+function normWrong(v) {
+  if (v === true || v === 1) return true;
+  if (v === false || v === 0) return false;
+  return null;   // 仅 true/false 有效；其余（含 null/"null"/"无"）视为「未判定」
+}
+
 /**
  * 校验并清洗识别出的题目数组：
  *  - items 必须是非空数组，每题至少题干或作答有一项实质内容
@@ -133,7 +142,8 @@ function normalizeItems(items) {
       questionText: strField(raw.questionText, 500),
       childAnswer: strField(raw.childAnswer, 300),
       marked: normMarked(raw.marked),
-      correctAnswer: strField(raw.correctAnswer, 200)
+      correctAnswer: strField(raw.correctAnswer, 200),
+      wrong: normWrong(raw.wrong)
     };
     // 全空题（题干+作答+正确答案都空）视为无效
     if (!it.questionText && !it.childAnswer && !it.correctAnswer) continue;
@@ -732,7 +742,8 @@ async function doOcr(event, b64, app) {
  * 视觉模型只转录题干/作答/批改标记（结构见 MISTAKE_SYSTEM_PROMPT），不做错因诊断。
  * 诊断由前端调 tutorChat action='diagnoseQuestions'（文本模型 E1-E9 归因）完成。
  *
- * 出参：{ ok:true, subjectGuess, items:[{no,type,questionText,childAnswer,marked,correctAnswer}], verified }
+ * 出参：{ ok:true, subjectGuess, studyNote, items:[{no,type,questionText,childAnswer,marked,correctAnswer}], verified }
+ *   studyNote 为图片导学内容摘要（自然语言一段），供打卡 note 自动回填；无则空串。
  */
 async function doOcrMistake(event, b64, app) {
   const openid = (event.userInfo && event.userInfo.openId) || '';
@@ -781,6 +792,7 @@ async function doOcrMistake(event, b64, app) {
     return {
       ok: true,
       subjectGuess: strField(obj1.subjectGuess, 20),
+      studyNote: strField(obj1.studyNote, 500),
       items: items1,
       verified: false
     };
@@ -807,6 +819,7 @@ async function doOcrMistake(event, b64, app) {
   return {
     ok: true,
     subjectGuess: strField(finalObj.subjectGuess, 20),
+    studyNote: strField(finalObj.studyNote || obj1.studyNote, 500),
     items: finalItems,
     verified: verified
   };

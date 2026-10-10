@@ -91,6 +91,8 @@
     <view class="card stage-card" wx:for="{{stageList}}" wx:for-item="stage" wx:for-index="si" wx:key="si">
       <view class="stage-head">
         <view class="stage-name">{{stage.name}}</view>
+        <view class="stage-sum {{stage.allDone ? 'on' : ''}}" catchtap="goUnitSummary"
+              data-si="{{stage.si}}">📝 单元总结</view>
         <view class="stage-stat" style="color:{{stage.statColor}}">{{stage.stat.statusText}}</view>
       </view>
       <view class="stage-meta muted">
@@ -109,7 +111,10 @@
         <view class="task-tutor" catchtap="goTutor"
               data-si="{{task.si}}" data-ti="{{task.ti}}"
               data-task="{{task.name}}" data-stage="{{stage.name}}" data-goal="{{stage.goal}}">导学</view>
-        <view class="task-days">{{task.days}}天</view>
+        <view class="task-days">
+          <block wx:if="{{task.done}}">预计{{task.planDays}}天 → 实际{{task.checkinDays}}天</block>
+          <block wx:else>预计{{task.planDays}}天 · 打卡{{task.checkinDays}}天</block>
+        </view>
       </view>
     </view>
 

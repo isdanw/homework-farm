@@ -87,7 +87,7 @@ function defaultData() {
       equipped: { frame: '', skin: '' }
     },
 
-    /* 儿童全局画像（参考学习者画像：学段 / 每周可学习时间 / 常用时段 / 讲解偏好 / 期望 / 自我感受 / 学校进度）
+    /* 儿童全局画像（参考导学画像：学段 / 每周可学习时间 / 常用时段 / 讲解偏好 / 期望 / 自我感受 / 学校进度）
        年级(grade)沿用顶层字段，不在此重复；教材版本按学科存于 subjectProfiles */
     learner: {
       stage: '',                          // 学段：幼儿园/小学/初中/高中/其他
@@ -118,7 +118,7 @@ function defaultData() {
     /* 每日计划：{ 'YYYY-MM-DD': [ {id, subject, title, done} ] } */
     plans: {},
 
-    /* 学习乐园：累计获得的小星星（做题正确即 +1，用于首页展示与激励） */
+    /* 成长乐园：累计获得的小星星（做题正确即 +1，用于首页展示与激励） */
     learn: { stars: 0 },
 
     /* 老师评语分析记录：{ id, date, subject, comment, analysis, createdAt } */

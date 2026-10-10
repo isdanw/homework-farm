@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="3EMISQCWiN7tEH8b11NRmC">
 <title>家长数据看板 · 小小农场成长记</title>
 <!-- 家长数据看板：CloudBase 静态托管 + webAdminQuery 只读代理（token 校验）
-     ⚠️ 唯一写入边界（2026-09-28 决策 3 / T21）：**只有「学习单」一路可写**（webAdminWrite.orders），
+     ⚠️ 唯一写入边界（2026-09-28 决策 3 / T21）：**只有「导学单」一路可写**（webAdminWrite.orders），
      其余全部模块严格只读。改本文件前先读 scripts/check-web-orders.cjs §4 的写边界断言。 -->
 <style>
   :root{
@@ -151,7 +151,7 @@
   .report-sec{margin-bottom:14px}
   .report-sec h4{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:7px}
   .report-sec h4::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--gold)}
-  /* 学习单（T21）：状态徽章与锚点/回执小节。纯新增，不改动任何既有选择器 */
+  /* 导学单（T21）：状态徽章与锚点/回执小节。纯新增，不改动任何既有选择器 */
   .obadge{display:inline-block;padding:1px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
   .b-issued{background:var(--amber-soft);color:var(--amber)}
   .b-submitted{background:var(--blue-soft);color:var(--blue)}
@@ -166,7 +166,7 @@
   .obox .kv{font-size:12.5px;padding:3px 0;display:flex;gap:10px;align-items:flex-start}
   .obox .kv .k{color:var(--mut);flex:none;width:80px}
   .obox .kv .v{flex:1;white-space:pre-wrap;word-break:break-word;min-width:0}
-  /* ── 学习单写区（T21 · 本看板唯一可写区域）：出单 / 回执表单 ── */
+  /* ── 导学单写区（T21 · 本看板唯一可写区域）：出单 / 回执表单 ── */
   .owrite{margin-bottom:14px}
   .owrite .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
   .owrite .tabs button{border:1px solid var(--line);color:var(--ink2);background:#fff;border-radius:8px;padding:6px 16px;font-size:12.5px;cursor:pointer;font-weight:600}
@@ -216,13 +216,163 @@
     .tbl-card td::before{content:attr(data-l);color:var(--mut);font-weight:600;flex:none}
     .tbl-card td>*{text-align:right}
   }
+/* ===== SpeakStep 英语练习（作用域 #speakstep） ===== */
+
+#speakstep{
+  --cream:#FFF6EC; --card:#FFF; --ink:#3B2E24; --ink-soft:#8A7A6D;
+  --orange:#F97316; --orange-deep:#EA580C; --teal:#14B8A6; --teal-deep:#0F766E;
+  --teal-soft:#E6F7F4; --green:#22C55E; --line:#F0E6D8; --shadow:0 10px 30px rgba(190,140,70,.12);
+}
+#speakstep *{box-sizing:border-box;margin:0;padding:0}
+#speakstep{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--cream);color:var(--ink);line-height:1.55;
+}
+#speakstep .wrap{max-width:1180px;margin:0 auto;padding:20px 22px 40px}
+
+/* ===== 顶栏 ===== */
+#speakstep .top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+#speakstep .logo{width:52px;height:52px;border-radius:16px;flex:none;object-fit:cover;box-shadow:var(--shadow)}
+#speakstep .top h1{font-size:21px;letter-spacing:.5px}
+#speakstep .top p{font-size:13px;color:var(--ink-soft);margin-top:2px}
+#speakstep .quick-btn{margin-left:auto}
+#speakstep .steps{
+  display:flex;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:12px 16px;margin-bottom:18px;
+}
+#speakstep .step{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft)}
+#speakstep .step b{
+  width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;font-size:13px;
+}
+#speakstep .step:not(:last-child)::after{content:"";width:26px;height:2px;border-radius:2px;background:var(--line);margin:0 2px}
+
+/* ===== 卡片 ===== */
+#speakstep .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin-bottom:16px}
+#speakstep .card-h{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+#speakstep .card-h h2{font-size:16px}
+#speakstep .card-h span{font-size:12px;color:var(--ink-soft)}
+
+/* ===== 分段与选择 ===== */
+#speakstep .seg{display:inline-flex;background:#F7EEE1;border-radius:12px;padding:4px;gap:4px}
+#speakstep .seg button{
+  border:0;background:transparent;padding:8px 16px;border-radius:9px;font-size:14px;cursor:pointer;
+  color:var(--ink-soft);font-family:inherit;transition:all .15s;
+}
+#speakstep .seg button.on{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(190,140,70,.15);font-weight:600}
+#speakstep .chips{display:flex;gap:8px;flex-wrap:wrap}
+#speakstep .chip{
+  border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:999px;
+  padding:7px 15px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:all .15s;
+}
+#speakstep .chip:hover{border-color:var(--teal);color:var(--teal-deep)}
+#speakstep .chip.on{border-color:var(--teal);background:var(--teal-soft);color:var(--teal-deep);font-weight:600}
+
+/* ===== 表单 ===== */
+#speakstep .f-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+#speakstep .f-label{font-size:13.5px;font-weight:600;min-width:64px;color:var(--ink)}
+#speakstep select{
+  appearance:none;-webkit-appearance:none;border:1.5px solid var(--line);background:#fff;
+  border-radius:10px;padding:9px 34px 9px 12px;font-size:14px;color:var(--ink);cursor:pointer;
+  font-family:inherit;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A7A6D' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+#speakstep select:focus{outline:none;border-color:var(--teal)}
+#speakstep input[type=text]{
+  border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:14px;color:var(--ink);
+  font-family:inherit;flex:1;min-width:200px;background:#fff;
+}
+#speakstep input[type=text]:focus{outline:none;border-color:var(--teal)}
+#speakstep .hint{font-size:12px;color:var(--ink-soft)}
+
+/* ===== 面板切换 ===== */
+#speakstep .panel{display:none}
+#speakstep .panel.on{display:block;animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ===== 高级设置 ===== */
+#speakstep details.adv{border:1px dashed var(--line);border-radius:12px;padding:10px 14px}
+#speakstep details.adv summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink-soft);user-select:none}
+#speakstep details.adv[open] summary{margin-bottom:10px;color:var(--ink)}
+#speakstep details.adv .f-row{margin-bottom:10px}
+#speakstep details.adv .f-row:last-child{margin-bottom:0}
+
+/* ===== 预览 ===== */
+#speakstep .pv{background:var(--teal-soft);border:1px dashed var(--teal);border-radius:14px;padding:14px 16px}
+#speakstep .pv-row{display:flex;gap:8px;font-size:13.5px;margin-bottom:6px}
+#speakstep .pv-row:last-child{margin-bottom:0}
+#speakstep .pv-k{color:var(--teal-deep);font-weight:600;flex:none;min-width:58px}
+#speakstep .pv-v{color:var(--ink)}
+
+/* ===== 提示词 ===== */
+#speakstep .prompt-box{
+  background:#2E2620;border-radius:14px;padding:16px 18px;color:#F5EBDD;font-size:13.5px;
+  line-height:1.8;white-space:pre-wrap;min-height:210px;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+}
+#speakstep .btn{
+  border:0;border-radius:12px;padding:12px 22px;font-size:15px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:8px;
+}
+#speakstep .btn-primary{background:var(--orange);color:#fff}
+#speakstep .btn-primary:hover{background:var(--orange-deep)}
+#speakstep .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+#speakstep .btn-ghost:hover{border-color:var(--teal);color:var(--teal-deep)}
+#speakstep .btn-sm{padding:8px 14px;font-size:13px}
+#speakstep .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+#speakstep .copied{background:var(--green)!important}
+
+/* ===== 说明 ===== */
+#speakstep .how{display:flex;gap:12px;align-items:flex-start;font-size:13.5px;color:var(--ink-soft);margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+#speakstep .how img{width:44px;height:44px;border-radius:12px;object-fit:cover;flex:none}
+
+/* ===== 页脚 ===== */
+#speakstep .foot{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:22px;line-height:1.8}
+
+/* ===== 快速开练抽屉 ===== */
+#speakstep .mask{position:fixed;inset:0;background:rgba(59,46,36,.4);display:none;z-index:50}
+#speakstep .mask.on{display:block}
+#speakstep .drawer{
+  position:fixed;top:0;right:0;width:400px;max-width:92vw;height:100%;z-index:51;
+  background:var(--card);box-shadow:-10px 0 40px rgba(59,46,36,.18);padding:24px 22px;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .25s ease;overflow-y:auto;
+}
+#speakstep .drawer.on{opacity:1;visibility:visible;pointer-events:auto}
+#speakstep .drawer h2{font-size:17px;margin-bottom:4px}
+#speakstep .drawer .sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:16px}
+#speakstep .qp{
+  display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;
+  border-radius:14px;padding:14px 16px;margin-bottom:12px;cursor:pointer;font-family:inherit;transition:all .15s;
+}
+#speakstep .qp:hover{border-color:var(--teal)}
+#speakstep .qp b{display:block;font-size:14.5px;color:var(--ink);margin-bottom:3px}
+#speakstep .qp span{font-size:12.5px;color:var(--ink-soft)}
+#speakstep .qp small{display:block;font-size:11.5px;color:var(--teal-deep);margin-top:6px}
+#speakstep .close-x{position:absolute;top:18px;right:18px;border:0;background:#F7EEE1;border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;color:var(--ink-soft);font-family:inherit}
+
+/* ===== Toast ===== */
+#speakstep .toast{
+  position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);z-index:60;
+  background:#2E2620;color:#F5EBDD;font-size:13.5px;border-radius:12px;padding:12px 20px;
+  opacity:0;pointer-events:none;transition:all .25s ease;max-width:86vw;
+}
+#speakstep .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== 响应式 ===== */
+#speakstep .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;align-items:start}
+@media (max-width:960px){
+#speakstep .grid{grid-template-columns:1fr}
+#speakstep .wrap{padding:14px 14px 30px}
+#speakstep .top h1{font-size:18px}
+}
+
 </style>
 </head>
 <body data-page-node-id="Jrmcu78u5MhXmwYrf9Q4uY">
 <div class="app" data-page-node-id="WRrEwanBquqNC4qDwbxP8l">
   <div class="overlay" id="overlay" data-page-node-id="uegsf1WFMi18QcKF4taCwY"></div>
   <aside class="side" id="side" data-page-node-id="JmQEweAwTs6PfTDhVYiVdq">
-    <div class="brand" data-page-node-id="m0incgNmiqGXss4AnH53e2"><b data-page-node-id="XFluQgxcl0jmScVJTGuVNW">家长数据看板</b><span data-page-node-id="kb12vS1bHBDtnuXlUwHV0F">HW-FARM · 学习单可写</span></div>
+    <div class="brand" data-page-node-id="m0incgNmiqGXss4AnH53e2"><b data-page-node-id="XFluQgxcl0jmScVJTGuVNW">家长数据看板</b><span data-page-node-id="kb12vS1bHBDtnuXlUwHV0F">HW-FARM · 导学单可写</span></div>
     <div class="navgrp" data-page-node-id="ScueBVev8S19jsy4IjWDVf">总览</div>
     <nav class="nav" data-page-node-id="99JBTxNe8cj6iadAeDFyV9">
       <a class="on" data-v="overview" data-page-node-id="zDeoDl7fFDQGr91ksfNMkp"><svg viewBox="0 0 24 24" data-page-node-id="swBfEYXgfh7zZtcpPHgMNq"><rect x="3" y="3" width="7" height="9" rx="1.5" data-page-node-id="qJZXZFtrbYeTbSDFkIt1OR"/><rect x="14" y="3" width="7" height="5" rx="1.5" data-page-node-id="GSMxVokf4m2dbAcctTfKt5"/><rect x="14" y="11" width="7" height="10" rx="1.5" data-page-node-id="pXkU4HSrzoAzhVnMA8PcCL"/><rect x="3" y="15" width="7" height="6" rx="1.5" data-page-node-id="uOlmdAIzR9idK9A7s194Yh"/></svg>概览看板</a>
@@ -238,7 +388,8 @@
     <div class="navgrp" data-page-node-id="znRYigXddA1VH8iEf0ofmE">导学</div>
     <nav class="nav" data-page-node-id="yUJ4Mss5X7x7tDfdfTyRs0">
       <a data-v="tutor" data-page-node-id="M6EL1EhBCBHHwqjc5n08C7"><svg viewBox="0 0 24 24" data-page-node-id="IgUhu8A0F5KlwOYrx9TAEW"><path d="M4 5h16v11H7l-3 3Z" data-page-node-id="JoM1MVyZryEKeBJ9dlOS9d"/><path d="M8 9h8M8 12h5" data-page-node-id="kKy7AyL6TqMFet9xgNV949"/></svg>全科导学</a>
-      <a data-v="orders" data-page-node-id="ordersNavItem"><svg viewBox="0 0 24 24" data-page-node-id="ordersNavSvg"><path d="M6 3h9l4 4v14H6Z" data-page-node-id="ordersNavP1"/><path d="M15 3v4h4M9 12h6M9 16h4" data-page-node-id="ordersNavP2"/><path d="M9 8.5l1.4 1.4L13 7.3" data-page-node-id="ordersNavP3"/></svg>学习单</a>
+      <a data-v="orders" data-page-node-id="ordersNavItem"><svg viewBox="0 0 24 24" data-page-node-id="ordersNavSvg"><path d="M6 3h9l4 4v14H6Z" data-page-node-id="ordersNavP1"/><path d="M15 3v4h4M9 12h6M9 16h4" data-page-node-id="ordersNavP2"/><path d="M9 8.5l1.4 1.4L13 7.3" data-page-node-id="ordersNavP3"/></svg>导学单</a>
+      <a data-v="speakstep"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5z" stroke="currentColor" fill="none" stroke-width="1.7"/></svg>英语练习</a>
     </nav>
     <div class="navgrp" data-page-node-id="examsNavGrp">资源库</div>
     <nav class="nav" data-page-node-id="examsNav">
@@ -246,7 +397,7 @@
     </nav>
     <div class="navgrp" data-page-node-id="C8zr7gZm2TGs4r5MFjeD9a">档案</div>
     <nav class="nav" data-page-node-id="dEAvmCs8Hms3KI7TJNy6Np">
-      <a data-v="archive" data-page-node-id="kp73SgeXbEz7sdedLD4KBY"><svg viewBox="0 0 24 24" data-page-node-id="Rrw7ANjA3xjLQ3KwP1cvfT"><circle cx="12" cy="8" r="4" data-page-node-id="GNOBAWp8trHGNkLNBiBV5g"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" data-page-node-id="YDoHfrwU8NDPjLZccMn3yA"/></svg>学习者档案</a>
+      <a data-v="archive" data-page-node-id="kp73SgeXbEz7sdedLD4KBY"><svg viewBox="0 0 24 24" data-page-node-id="Rrw7ANjA3xjLQ3KwP1cvfT"><circle cx="12" cy="8" r="4" data-page-node-id="GNOBAWp8trHGNkLNBiBV5g"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" data-page-node-id="YDoHfrwU8NDPjLZccMn3yA"/></svg>导学档案</a>
     </nav>
     <div class="navgrp" data-page-node-id="7KY900hGIHf9LHyTwRb6Dq">任务</div>
     <nav class="nav" data-page-node-id="iuoDnfjJvaT9YpOH2s72Ky">
@@ -258,7 +409,7 @@
     </nav>
     <div class="navgrp" data-page-node-id="bza3N5NlrRH6mkIHFu2xtF">报告</div>
     <nav class="nav" data-page-node-id="q5OqHaGiHx8GFF94jShxon">
-      <a data-v="report" data-page-node-id="P0pSUnJi7ysjfTx7wFlRyr"><svg viewBox="0 0 24 24" data-page-node-id="Wt9LHiyx8ejyq3y7jgnTk0"><path d="M7 3h7l5 5v13H7Z" data-page-node-id="HbFZAW2swYxNzAsoh2zFMH"/><path d="M14 3v5h5M10 13h6M10 17h6" data-page-node-id="mYVQfyK9iLalkWKnzEbkYV"/></svg>学习报告</a>
+      <a data-v="report" data-page-node-id="P0pSUnJi7ysjfTx7wFlRyr"><svg viewBox="0 0 24 24" data-page-node-id="Wt9LHiyx8ejyq3y7jgnTk0"><path d="M7 3h7l5 5v13H7Z" data-page-node-id="HbFZAW2swYxNzAsoh2zFMH"/><path d="M14 3v5h5M10 13h6M10 17h6" data-page-node-id="mYVQfyK9iLalkWKnzEbkYV"/></svg>导学报告</a>
     </nav>
     <div class="navgrp" data-page-node-id="whaJt37oiQWtTWpCbr4mQQ">设置</div>
     <nav class="nav" data-page-node-id="alXjN7n2RuuSesxfFCcM6H">
@@ -301,7 +452,7 @@
         <div class="grid2" data-page-node-id="ab5JWVnO8aTSBaaL6QIa6Q">
           <div class="card" data-page-node-id="57c8q82ferEAFUcZLsh5BP"><h3 data-page-node-id="5iGjEmKCCnPNPgOHfXBmVm">打卡率趋势</h3>
             <svg id="trend" viewBox="0 0 520 180" width="100%" height="170" style="display:block" data-page-node-id="bbsPos4Eu889FwjAfNVWT2"></svg>
-            <div class="mut" style="margin-top:6px" data-page-node-id="D7KH9LnGCvJUYGWq4bfR2N">完成率按窗口内打卡明细聚合（学习数据非股市语义）</div>
+            <div class="mut" style="margin-top:6px" data-page-node-id="D7KH9LnGCvJUYGWq4bfR2N">完成率按窗口内打卡明细聚合（导学数据非股市语义）</div>
           </div>
           <div class="card" data-page-node-id="RCdmVwSr6hRSgZ4cDivICS"><h3 data-page-node-id="5c87KuSRauARrVIgHEXcbw">最近活动流</h3><div id="activity" data-page-node-id="J4jMIKAR5sF5T3xf5inDqw"></div></div>
         </div>
@@ -356,9 +507,9 @@
         <div id="examList" data-page-node-id="examList"></div>
       </section>
 
-      <!-- 学习者档案（对应小程序「学习者画像 / 错因画像」+ 工作台「档案」） -->
+      <!-- 导学档案（对应小程序「导学画像 / 错因画像」+ 工作台「档案」） -->
       <section class="view" id="archive" data-page-node-id="63deKDjknED7xPtaW83j8c">
-        <div class="note" data-page-node-id="Ikse2xo47e5YCQLaIqWHYc">「学习者档案」对应小程序学习者画像与错因画像页，聚合儿童全局画像、各学科画像（教材/进度/能力维度/错因）与 E1–E9 错因分布。</div>
+        <div class="note" data-page-node-id="Ikse2xo47e5YCQLaIqWHYc">「导学档案」对应小程序导学画像与错因画像页，聚合儿童全局画像、各学科画像（教材/进度/能力维度/错因）与 E1–E9 错因分布。</div>
         <div id="childChipsArc" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px" data-page-node-id="HvJEoDwd7LQQxhHO9cZ1lQ"></div>
         <div id="archiveContent" data-page-node-id="lurtcYFTHqNPfVkrCgFugL"></div>
       </section>
@@ -370,10 +521,10 @@
         <div id="tasksContent" data-page-node-id="MKli4prFFn8ujS7Wk1xDHs"></div>
       </section>
 
-      <!-- 学习单（T21）：出单 / 回执（两步选择）/ 计划下钻 / 时间线 ——「计划 → 出单 → 执行 → 回执 → 评语」闭环，
-           与小程序「学习单」页、工作台出单区**同一份云端数据、同一套状态机**。 -->
+      <!-- 导学单（T21）：出单 / 回执（两步选择）/ 计划下钻 / 时间线 ——「计划 → 出单 → 执行 → 回执 → 评语」闭环，
+           与小程序「导学单」页、工作台出单区**同一份云端数据、同一套状态机**。 -->
       <section class="view" id="orders" data-page-node-id="ordersView">
-        <div class="note" data-page-node-id="ordersNote">「学习单」是「计划 → 出单 → 执行 → 回执 → 评语」闭环的家长操作台：每张单都锚定到某份成长计划的某个任务（<code data-page-node-id="ordersNoteC1">planId</code> = 学科key@计划创建时间戳），从出单到回执到评语全程带时间戳（<code data-page-node-id="ordersNoteC2">events</code> 只追加不覆盖）。<b data-page-node-id="ordersNoteB1">本页是本看板唯一的可写区域</b>：可以在这里<b data-page-node-id="ordersNoteB3">出单</b>与<b data-page-node-id="ordersNoteB4">交回执</b>，其余模块（打卡 / 农场 / 试卷 / 档案）仍严格只读；状态推进一律由云端状态机裁决，本页不推导、不改写。<b data-page-node-id="ordersNoteB2">回执 ≠ 掌握证据</b>，掌握度只来自复测达标（tutor_evidence.passed=true）。</div>
+        <div class="note" data-page-node-id="ordersNote">「导学单」是「计划 → 出单 → 执行 → 回执 → 评语」闭环的家长操作台：每张单都锚定到某份成长计划的某个任务（<code data-page-node-id="ordersNoteC1">planId</code> = 学科key@计划创建时间戳），从出单到回执到评语全程带时间戳（<code data-page-node-id="ordersNoteC2">events</code> 只追加不覆盖）。<b data-page-node-id="ordersNoteB1">本页是本看板唯一的可写区域</b>：可以在这里<b data-page-node-id="ordersNoteB3">出单</b>与<b data-page-node-id="ordersNoteB4">交回执</b>，其余模块（打卡 / 农场 / 试卷 / 档案）仍严格只读；状态推进一律由云端状态机裁决，本页不推导、不改写。<b data-page-node-id="ordersNoteB2">回执 ≠ 掌握证据</b>，掌握度只来自复测达标（tutor_evidence.passed=true）。</div>
         <div id="childChipsOrders" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px" data-page-node-id="ordersChips"></div>
         <div id="ordersWrite" data-page-node-id="ordersWrite"></div>
         <div id="ordersContent" data-page-node-id="ordersContent"></div>
@@ -390,9 +541,9 @@
         <div class="card" style="margin-top:14px" data-page-node-id="A0cNOgbTEGoKTQKOfZLSqt"><h3 data-page-node-id="cQDkBFvDkk9zmKL4GUZQKR">错题生命周期（tutor_mistakes）</h3><div id="mistakeLife" class="tl" data-page-node-id="PidCJb1Vx9e2iPQ45clzYa"></div></div>
       </section>
 
-      <!-- 学习报告（对应工作台「报告」） -->
+      <!-- 导学报告（对应工作台「报告」） -->
       <section class="view" id="report" data-page-node-id="1nsc5cQuUsgnlwHUngouzt">
-        <div class="note" data-page-node-id="avP3hb9mmVn2iEHFE2jxSp">「学习报告」由看板各模块数据自动汇总：当日 / 周期表现、掌握闭环、薄弱学科与下一步建议。纯只读聚合，不生成判定结论。</div>
+        <div class="note" data-page-node-id="avP3hb9mmVn2iEHFE2jxSp">「导学报告」由看板各模块数据自动汇总：当日 / 周期表现、掌握闭环、薄弱学科与下一步建议。纯只读聚合，不生成判定结论。</div>
         <div id="reportContent" data-page-node-id="Aon3BlxH3a6jdD9dFdTgJq"></div>
       </section>
 
@@ -400,11 +551,11 @@
       <section class="view" id="set" data-page-node-id="V3AxUqXGXkiLc1wLpBtnNB">
         <div class="card" data-page-node-id="YYZ3ELWSWd9RRD4qiMe9F4"><h3 data-page-node-id="URkJdaIxxkCOXEX4HwDOSo">环境与口令</h3>
           <p style="font-size:13px;color:var(--ink2);line-height:1.9" data-page-node-id="kXvn2HqLUJVkod0pDtVOVN">
-            · 数据源：云开发同一环境云函数 <code data-page-node-id="SDuJi6hh8MlIGHNSqLB59k">webAdminQuery</code>（读 · 管理员权限，跨 openid 聚合）；学习单写入另走 <code data-page-node-id="ordersWriteFn">webAdminWrite</code> 的 <code>orders</code> 通道。<br data-page-node-id="HvKLxPd3ARwAGn6x1wPyTZ">
+            · 数据源：云开发同一环境云函数 <code data-page-node-id="SDuJi6hh8MlIGHNSqLB59k">webAdminQuery</code>（读 · 管理员权限，跨 openid 聚合）；导学单写入另走 <code data-page-node-id="ordersWriteFn">webAdminWrite</code> 的 <code>orders</code> 通道。<br data-page-node-id="HvKLxPd3ARwAGn6x1wPyTZ">
             · 环境 ID：<code id="envText" data-page-node-id="nbVAbhF6gcAfB81UHo4fqf">—</code><br data-page-node-id="YXuUppFHZhhD3DN9I9juez">
             · 访问口令：云端环境变量 <code data-page-node-id="vQFdtzuCkfIEUNb1R7pJLP">WEB_DASHBOARD_TOKEN</code>，前端本地存储带入；不符即拒绝。<br data-page-node-id="LX1pUB0aVTHnmeXtWDf7P8">
             · 当前口令：<code id="tokenMask" data-page-node-id="mbD32oMre96VKBRMNAztHQ">未设置</code><br data-page-node-id="oODKDJdzpwoxpjGDYHAEFZ">
-            · 写入边界：<b data-page-node-id="ordersScopeNote">仅「学习单」可写</b>（出单 / 交回执），其余模块严格只读，不写库、不调用 AI。状态与事件只由云端状态机推进，端上不推导。
+            · 写入边界：<b data-page-node-id="ordersScopeNote">仅「导学单」可写</b>（出单 / 交回执），其余模块严格只读，不写库、不调用 AI。状态与事件只由云端状态机推进，端上不推导。
           </p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px" data-page-node-id="qDJHUVlWz6cGOsBHXVTyEv">
             <button class="btn-refresh" id="changeToken" data-page-node-id="3ySDU66osbqdkDHlDWecVW">清除口令并重新输入</button>
@@ -447,6 +598,291 @@
       <a data-v="report" data-page-node-id="S96g0hg89SzyEJJc8NexXx"><svg viewBox="0 0 24 24" data-page-node-id="hOG9WCRSrTFIxVpsVfRPrl"><path d="M7 3h7l5 5v13H7Z" data-page-node-id="AsYPJxJvFhUDpXdvBgvFhr"/><path d="M14 3v5h5M10 13h6M10 17h6" data-page-node-id="CvFPyQwqk0mrFlrllHdiZx"/></svg>报告</a>
       <a data-v="set" data-page-node-id="X0IFdg72PLX4nIE6gQtSrj"><svg viewBox="0 0 24 24" data-page-node-id="88hZwzGFBB6EzdWzu5P11d"><circle cx="12" cy="12" r="3.2" data-page-node-id="sGBzxjk7FHTPX9csIIjcpo"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" data-page-node-id="Gbc1ftGfkwlrwNBn2NrIf1"/></svg>设置</a>
     </nav>
+<section class="view" id="speakstep">
+<div class="wrap">
+
+  <!-- ===== 顶栏 ===== -->
+  <header class="top">
+    <img class="logo" src="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%2314B8A6%27%2F%3E%3Ccircle%20cx%3D%2732%27%20cy%3D%2732%27%20r%3D%2716%27%20fill%3D%27%23FFF6EC%27%2F%3E%3Ccircle%20cx%3D%2732%27%20cy%3D%2732%27%20r%3D%275%27%20fill%3D%27%23F97316%27%2F%3E%3C%2Fsvg%3E" alt="SpeakStep 教练">
+    <div>
+      <h1>SpeakStep 听说练习台</h1>
+      <p>一分钟生成练习单，复制到豆包，让孩子马上开口</p>
+    </div>
+    <button class="btn btn-ghost btn-sm quick-btn" id="openQuick">快速开练</button>
+  </header>
+
+  <div class="steps">
+    <div class="step"><b>1</b><span>填孩子水平</span></div>
+    <div class="step"><b>2</b><span>选今天练什么</span></div>
+    <div class="step"><b>3</b><span>定重点与时长</span></div>
+    <div class="step"><b>4</b><span>复制到豆包开练</span></div>
+  </div>
+
+  <div class="grid">
+    <!-- ===== 左列：设置 ===== -->
+    <div>
+
+      <!-- 英语档案联动 -->
+      <section class="card" id="ssProfileCard">
+        <div class="card-h"><h2>英语档案联动</h2><span>默认带入导学档案（英语），可手动调整</span></div>
+        <div class="f-row">
+          <span class="f-label">带入状态</span>
+          <span id="ssProfileInfo" class="mut">未加载档案</span>
+        </div>
+        <div class="f-row">
+          <button class="btn btn-ghost btn-sm" id="ssPullProfile" type="button">↺ 带入 / 刷新英语档案</button>
+        </div>
+      </section>
+
+      <!-- 模式入口 -->
+      <section class="card">
+        <div class="card-h"><h2>怎么开始</h2><span>快速开练适合马上开口；按教材练适合结合课本</span></div>
+        <div class="f-row">
+          <div class="seg" id="modeSeg">
+            <button data-mode="quick" class="on">快速开练</button>
+            <button data-mode="school">按教材练</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 输出什么 -->
+      <section class="card">
+        <div class="card-h"><h2>输出什么</h2><span>听说练习单练对话；新词听读卡练本单元生词</span></div>
+        <div class="f-row">
+          <div class="seg" id="kindSeg">
+            <button data-kind="practice" class="on">听说练习单</button>
+            <button data-kind="cards">新词听读卡</button>
+          </div>
+        </div>
+        <p class="hint" id="kindHint">围绕教材坐标，生成 8-15 张单词听读卡：每个词给例句、跟读提示和一个小应用问题，帮孩子快速记住本单元新词。</p>
+      </section>
+
+      <!-- 使用方式 -->
+      <section class="card">
+        <div class="card-h"><h2>在哪里练</h2><span>云电脑带技能；手机通话为自包含单</span></div>
+        <div class="f-row">
+          <div class="seg" id="deviceSeg">
+            <button data-dev="cloud" class="on">电脑云电脑 · 带技能</button>
+            <button data-dev="phone">手机语音通话 · 自包含单</button>
+          </div>
+        </div>
+        <p class="hint" id="devHint">电脑工作任务云电脑加载技能，教学规则由技能自动处理，练习单保持精简。</p>
+      </section>
+
+      <!-- 谁来练 -->
+      <section class="card">
+        <div class="card-h"><h2>谁来练</h2><span>不填称呼也可以，默认叫"同学"</span></div>
+        <div class="f-row" id="quickGradeRow">
+          <span class="f-label">年级</span>
+          <select id="selGradeQuick"></select>
+        </div>
+        <div class="f-row">
+          <span class="f-label">称呼</span>
+          <input type="text" id="inName" placeholder="选填：孩子的小名或昵称" maxlength="12">
+        </div>
+        <div class="f-row">
+          <span class="f-label">表达情况</span>
+          <div class="chips" id="selfChips">
+            <button class="chip" data-self="刚开始，需要较多提示">刚开始</button>
+            <button class="chip on" data-self="能说简单句">能说简单句</button>
+            <button class="chip" data-self="能连续说几句">能说几句</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 快速开练：内容来源 -->
+      <section class="card panel on" id="panelQuick">
+        <div class="card-h"><h2>今天用什么内容练</h2><span>兴趣让开口更容易</span></div>
+        <div class="f-row">
+          <span class="f-label">来源</span>
+          <div class="chips" id="srcChips">
+            <button class="chip on" data-src="topic">兴趣主题</button>
+            <button class="chip" data-src="task">生活任务</button>
+            <button class="chip" data-src="world">世界见闻</button>
+            <button class="chip" data-src="free">自由主题</button>
+          </div>
+        </div>
+        <div class="f-row" id="topicRow">
+          <span class="f-label">主题</span>
+          <div class="chips" id="topicChips"></div>
+        </div>
+        <div class="f-row" id="freeRow" style="display:none">
+          <span class="f-label">主题</span>
+          <input type="text" id="inTopicFree" placeholder="孩子想聊什么？如：恐龙、我的学校">
+        </div>
+        <p class="hint">选主题后，教练按孩子水平自动适配难度与表达。</p>
+      </section>
+
+      <!-- 按教材练：教材轨道 -->
+      <section class="card panel" id="panelSchool">
+        <div class="card-h"><h2>教材与考试</h2><span>结合课本或备考内容</span></div>
+        <div class="f-row">
+          <span class="f-label">来源</span>
+          <div class="seg" id="trackSeg">
+            <button data-track="school" class="on">校内同步</button>
+            <button data-track="exam">剑桥考试</button>
+          </div>
+        </div>
+
+        <div class="panel on" id="panelSchoolInner">
+          <div class="f-row">
+            <span class="f-label">学段</span>
+            <div class="seg" id="stageSeg">
+              <button data-stage="primary" class="on">小学</button>
+              <button data-stage="junior">初中</button>
+            </div>
+          </div>
+          <div class="f-row">
+            <span class="f-label">年级</span>
+            <select id="selGrade"></select>
+          </div>
+          <div class="f-row">
+            <span class="f-label">教材</span>
+            <select id="selBook"></select>
+          </div>
+          <div class="f-row">
+            <span class="f-label">册</span>
+            <select id="selTerm">
+              <option value="上册">上册</option>
+              <option value="下册">下册</option>
+            </select>
+          </div>
+          <div class="f-row">
+            <span class="f-label">单元</span>
+            <select id="selUnit"></select>
+            <span class="f-label" style="min-width:auto">课时</span>
+            <select id="selLesson">
+              <option value="">不指定</option>
+              <option value="第1课时">第1课时</option>
+              <option value="第2课时">第2课时</option>
+              <option value="第3课时">第3课时</option>
+            </select>
+          </div>
+          <p class="hint">围绕当前导学单元生成同主题、同难度的听说练习。如需严格同步课本，请在豆包对话中提供课本页面或关键词。</p>
+        </div>
+
+        <div class="panel" id="panelExamInner">
+          <div class="f-row">
+            <span class="f-label">级别</span>
+            <select id="selExam"></select>
+          </div>
+          <div class="f-row">
+            <span class="f-label">模块</span>
+            <div class="chips" id="examMods">
+              <button class="chip" data-mod="听力">听力</button>
+              <button class="chip" data-mod="口语">口语</button>
+              <button class="chip on" data-mod="听力 + 口语">听力 + 口语</button>
+            </div>
+          </div>
+          <div class="f-row">
+            <span class="f-label">Part</span>
+            <select id="selPart"></select>
+          </div>
+          <p class="hint">按真实考试结构与官方词表组题，适合备考。</p>
+        </div>
+      </section>
+
+      <!-- 今天重点练什么 -->
+      <section class="card">
+        <div class="card-h"><h2>今天重点练什么</h2><span>一次只练一个重点</span></div>
+        <div class="chips" id="focusChips">
+          <button class="chip on" data-focus="听说综合">听说综合</button>
+          <button class="chip" data-focus="听懂关键信息">听懂关键信息</button>
+          <button class="chip" data-focus="开口完成对话">开口完成对话</button>
+          <button class="chip" data-focus="听完简单复述">听完简单复述</button>
+          <button class="chip" data-focus="表达自己的想法">表达自己的想法</button>
+        </div>
+      </section>
+
+      <!-- 练多久 -->
+      <section class="card">
+        <div class="card-h"><h2>练多久</h2><span>短时高频，比一次练很久更有效</span></div>
+        <div class="chips" id="timeChips">
+          <button class="chip" data-min="5">5 分钟</button>
+          <button class="chip on" data-min="10">10 分钟</button>
+          <button class="chip" data-min="15">15 分钟</button>
+        </div>
+      </section>
+
+      <!-- 高级设置 -->
+      <section class="card">
+        <details class="adv">
+          <summary>高级设置</summary>
+          <div class="f-row">
+            <span class="f-label">反馈语言</span>
+            <div class="chips" id="langChips">
+              <button class="chip on" data-lang="auto">自动（随水平）</button>
+              <button class="chip" data-lang="中英结合">中英结合</button>
+              <button class="chip" data-lang="英语为主">英语为主</button>
+              <button class="chip" data-lang="全英语为主">全英语</button>
+            </div>
+          </div>
+          <div class="f-row">
+            <span class="f-label">跟读练习</span>
+            <div class="chips" id="pronChips">
+              <button class="chip on" data-p="1">加入一句跟读</button>
+              <button class="chip" data-p="0">不需要</button>
+            </div>
+          </div>
+          <div class="f-row">
+            <span class="f-label">结束小结</span>
+            <div class="chips" id="sumChips">
+              <button class="chip on" data-s="1">生成简短小结</button>
+              <button class="chip" data-s="0">不需要</button>
+            </div>
+          </div>
+          <div class="f-row">
+            <span class="f-label">本课词句 / 目标表达</span>
+            <input type="text" id="inGoal" placeholder="选填：想练的句子，如 I like ... because ..." autocomplete="off">
+          </div>
+          <p class="hint" style="margin:2px 0 10px 76px">此内容会作为「本课词句」写进练习单</p>
+        </details>
+      </section>
+    </div>
+
+    <!-- ===== 右列：预览 + 提示词 ===== -->
+    <div>
+
+      <!-- 内容预览 -->
+      <section class="card">
+        <div class="card-h"><h2>今天的练习</h2><span>随选择实时更新</span></div>
+        <div class="pv" id="pvBox">
+          <div class="pv-row"><span class="pv-k">内容</span><span class="pv-v" id="pvCoord">兴趣主题 · 动物与自然</span></div>
+          <div class="pv-row"><span class="pv-k">重点</span><span class="pv-v" id="pvFocus">听说综合</span></div>
+          <div class="pv-row"><span class="pv-k">时长</span><span class="pv-v" id="pvTime">10 分钟</span></div>
+        </div>
+      </section>
+
+      <!-- 练习单 -->
+      <section class="card">
+        <div class="card-h"><h2>听说练习单</h2><span>复制后粘贴到豆包对话</span></div>
+        <div class="prompt-box" id="promptBox"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="copyBtn">复制提示词</button>
+          <button class="btn btn-ghost" id="sampleBtn">换个示例</button>
+        </div>
+        <div class="how">
+          <img src="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2048%2048%27%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2724%27%20r%3D%2724%27%20fill%3D%27%23E6F7F4%27%2F%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2719%27%20r%3D%278%27%20fill%3D%27%2314B8A6%27%2F%3E%3Cpath%20d%3D%27M9%2041c0-8%207-13%2015-13s15%205%2015%2013%27%20fill%3D%27%2314B8A6%27%2F%3E%3C%2Fsvg%3E" alt="孩子">
+          <span id="howText">粘贴到豆包对话发送即可。教练会一次只给一个任务，先让孩子回答再反馈，结束后给出简短小结。</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <p class="foot">SpeakStep 英语听说 · 活动不等于掌握：能听懂、能说出、换个场景还能用<br>不填称呼也能开练；技术规则由技能处理，练习单只负责"谁来练、练什么、练多久"</p>
+</div>
+
+<!-- ===== 快速开练抽屉 ===== -->
+<div class="mask" id="mask"></div>
+<div class="drawer" id="drawer">
+  <button class="close-x" id="closeQuick" aria-label="关闭">×</button>
+  <h2>快速开练</h2>
+  <p class="sub">选一个方案，设置自动填好；仍可在下方修改。</p>
+  <div id="quickBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+</section>
   </main>
 </div>
 
@@ -454,7 +890,7 @@
 <div class="gate" id="gate" data-page-node-id="OPZ39HXX642Tn1zWg3EidC">
   <div class="gatecard" data-page-node-id="SNrdq3DFkWK59nGzBXFCgl">
     <h2 data-page-node-id="uehgxWAO0El69bvdnow8oL">请输入访问口令</h2>
-    <p data-page-node-id="zHjLeIsjhZ9gVZqTHlJQc1">本看板读取小程序云数据；除「学习单」外全部只读。口令可在小程序「网页看板」一键生成（含深链/二维码），或使用部署者设置的管理员口令。口令仅保存在本机浏览器（localStorage），不上传第三方。</p>
+    <p data-page-node-id="zHjLeIsjhZ9gVZqTHlJQc1">本看板读取小程序云数据；除「导学单」外全部只读。口令可在小程序「网页看板」一键生成（含深链/二维码），或使用部署者设置的管理员口令。口令仅保存在本机浏览器（localStorage），不上传第三方。</p>
     <input id="tokenInput" type="password" placeholder="粘贴访问口令" autocomplete="off" data-page-node-id="QVRczjcRhWl0J1i2ipyuDi">
     <button id="tokenSave" data-page-node-id="JFBXrVaXoNRFVD1e3xlrSM">进入看板</button>
     <div class="hint" data-page-node-id="QQnk5dGOJo8dHHe7vTkgXK">小程序生成的口令与你的微信账户绑定，仅展示该账户数据；管理员口令可看全部。</div>
@@ -28392,7 +28828,7 @@ let TOKEN = localStorage.getItem(TOKEN_KEY) || '';
 let DATA = { overview:null, profile:null, tutor:null, farm:null, exams:null, orders:null };
 let currentRange = '7d';
 let selectedAccount = 0;
-let studyPlanTab = '';   // 学习计划当前标签（学科 key 或 'daily'），切换账号时自动校正
+let studyPlanTab = '';   // 成长计划当前标签（学科 key 或 'daily'），切换账号时自动校正
 
 /* ============ 状态条 ============ */
 function setStatus(msg, kind){
@@ -28424,7 +28860,7 @@ async function refreshAll(){
   catch(e){ setStatus('初始化失败：' + e.message, 'err'); return; }
   /* ⚠️ 先把视图切到「加载中」骨架，再开始拉数据。
      Promise.all 期间 DATA.* 全是 null，而全部渲染都在 Promise.all **之后**才发生 ——
-     也就是说从过门到数据到达这约 8 秒里，学习单页除了静态 note 外**什么都没有**。
+     也就是说从过门到数据到达这约 8 秒里，导学单页除了静态 note 外**什么都没有**。
      真实事故：owner 报「网页端没找到交回执的入口」，真机复现即为此态
      （#ordersWrite 与 #ordersContent 双空，连页签都没有）。
      入口必须在第一时间就在，数据晚到只该影响内容，不该影响「有没有这个功能」。 */
@@ -28435,7 +28871,7 @@ async function refreshAll(){
     tutor:    query('tutor'),
     farm:     query('farm'),
     exams:    query('exams'),
-    // 学习单：一次拉回本口令可见范围的全部单（管理员口令下 = 全部孩子的单），
+    // 导学单：一次拉回本口令可见范围的全部单（管理员口令下 = 全部孩子的单），
     // 端上按 openid 过滤到当前选中孩子 → 切换孩子 chip 无需重新请求。
     orders:   query('orders', { limit: 300 })
   };
@@ -28745,7 +29181,7 @@ function renderExams(){
     <div class="note" style="margin-top:8px">看板仅展示试卷目录元数据（名称 / 类型 / 单元 / 外链）；试卷正文与答案请在「小程序 · 试卷库」或「全科导学工作台」查看。此页只读，不写库。</div>`;
 }
 
-/* ============ 学习者档案 ============ */
+/* ============ 导学档案 ============ */
 function renderArchive(){
   const box = document.getElementById('childChipsArc');
   if(!DATA.profile || !DATA.profile.accounts || !DATA.profile.accounts.length){ box.innerHTML=''; document.getElementById('archiveContent').innerHTML='<div class="empty">暂无账号数据</div>'; return; }
@@ -28773,7 +29209,7 @@ function renderArchive(){
       `<div class="sub-h">教材 ${esc(p.textbook||'—')} · 进度 ${esc(p.progress||'—')} · 编号 ${esc(p.learnerNo||'—')}</div>`+
       (dims?`<div style="margin-bottom:8px">${dims}</div>`:'')+
       (errs?`<div>常见错因：${errs}</div>`:'')+`</div>`;
-  }).join('') : '<div class="empty">暂无学科画像（小程序学习者画像页录入）</div>';
+  }).join('') : '<div class="empty">暂无学科画像（小程序导学档案页录入）</div>';
 
   // 错因画像（E1–E9 聚合）
   const ed = (a.errorDist||[]).map(x=>({t:errLabel(x.n), v:x.v, c:errColor(x.n)}));
@@ -28795,7 +29231,7 @@ function renderTasks(){
   renderChips('childChipsTasks', ()=>{ renderTasks(); });
   const a = acc(); if(!a) return;
 
-  // —— 学习计划（按类型分标签）：成长计划按学科各一标签（studyPlans[学科]）；「每日计划」取 studyPlans 当前导学任务 ——
+  // —— 成长计划（按类型分标签）：成长计划按学科各一标签（studyPlans[学科]）；「每日计划」取 studyPlans 当前导学任务 ——
   const spObj = a.studyPlans || {};
   const spKeys = Object.keys(spObj);
 
@@ -28828,7 +29264,7 @@ function renderTasks(){
   if(!spKeys.includes(studyPlanTab)) studyPlanTab = spKeys[0] || '';
   const panels = spKeys.map(k=>`<div class="pt-panel" data-ptp="${k}" style="display:${studyPlanTab===k?'block':'none'}">${studyPanelOf(k)}</div>`).join('');
   const planCard = spKeys.length
-    ? `<div class="card" style="margin-bottom:14px"><h3>学习计划（studyPlans）</h3><div class="seg" style="margin:0 0 12px;flex-wrap:wrap">${tabs.join('')}</div>${panels}</div>`
+    ? `<div class="card" style="margin-bottom:14px"><h3>成长计划（studyPlans）</h3><div class="seg" style="margin:0 0 12px;flex-wrap:wrap">${tabs.join('')}</div>${panels}</div>`
     : '';
 
   // 课表网格（对齐小程序 scheduleEngine：行=第几节，列=周几，周一=0）
@@ -28859,7 +29295,7 @@ function renderTasks(){
     <div class="card" style="margin-bottom:14px"><h3>一周课表（schedule）</h3>${schedHtml}</div>
     <div class="card"><h3>可用打卡类型</h3>${typeHtml}</div>`;
 
-  // 学习计划标签切换
+  // 成长计划标签切换
   document.querySelectorAll('[data-pt]').forEach(b=>b.addEventListener('click',()=>{
     studyPlanTab = b.dataset.pt;
     document.querySelectorAll('[data-pt]').forEach(x=>x.classList.toggle('on', x.dataset.pt===studyPlanTab));
@@ -28867,7 +29303,7 @@ function renderTasks(){
   }));
 }
 
-/* ============ 学习单（T21：出单 / 回执 / 计划下钻 / 时间线） ============ */
+/* ============ 导学单（T21：出单 / 回执 / 计划下钻 / 时间线） ============ */
 /*
  * ⚠️⚠️ 本区块是全看板**唯一的可写区域**，也是「家长数据看板只读」这条既有约束的
  * **唯一例外**（2026-09-28 决策 3）。设计文档原文：
@@ -28915,10 +29351,10 @@ const ORDER_ERROR_TEXT  = {
   bad_receipt:'回执内容无法归一，请检查必填项后再提交。',
   already_submitted:'本单已提交过回执。一个出单只能对应一个回执；如需修正请作废重开。',
   plan_mismatch:'所选计划与这张单的出单锚点不一致，请重新选择。',
-  no_anchor:'出单必须锚定学习计划里的具体任务，缺一不可。',
-  not_found:'云端找不到这张学习单（可能是本机缓存里的旧单）。',
+  no_anchor:'出单必须锚定成长计划里的具体任务，缺一不可。',
+  not_found:'云端找不到这张导学单（可能是本机缓存里的旧单）。',
   evaluate_error:'证据审核失败，回执未落库；请核对回执内容。',
-  order_error:'云端学习单操作失败。',
+  order_error:'云端导学单操作失败。',
   network:'网络或环境不可达。'
 };
 /* 回执字段中文名。未知键**不丢弃**，回落成键名原样显示 —— 展示层宁可显示得难看，也不能悄悄吞字段 */
@@ -28957,7 +29393,7 @@ function orderErrText(code, msg){
 const ORDER_RESERVED_KEYS = ['status','events','openid','_openid','clientId'];
 
 /**
- * 学习单**唯一**写出口。`by` 固定 'web' —— 三端留痕口径统一（mp / web / workbench），
+ * 导学单**唯一**写出口。`by` 固定 'web' —— 三端留痕口径统一（mp / web / workbench），
  * 让「这张单是在哪出的、谁交的回执」在 events 时间线上永远可查（O4）。
  *
  * 读走 webAdminQuery、写走 webAdminWrite.orders：这两条通道的边界**就是**本看板的写边界。
@@ -28968,7 +29404,7 @@ async function callWrite(action, payload){
   const body = Object.assign({}, payload || {});
   for(const k of ORDER_RESERVED_KEYS){
     if(Object.prototype.hasOwnProperty.call(body, k)){
-      return { ok:false, code:'bad_param', msg:'学习单写入不接受端上直传「' + k + '」：状态与事件只能由云端状态机推进' };
+      return { ok:false, code:'bad_param', msg:'导学单写入不接受端上直传「' + k + '」：状态与事件只能由云端状态机推进' };
     }
   }
   if(!TOKEN) return { ok:false, code:'auth', msg:orderErrText('auth') };
@@ -29076,7 +29512,7 @@ function oMsgHtml(){
   return '<div class="omsg ' + esc(oMsg.kind) + '" data-order-msg="1">' + esc(oMsg.text) + '</div>';
 }
 
-/** 重查学习单并重绘（写成功后调用：状态与事件一律以云端回流为准） */
+/** 重查导学单并重绘（写成功后调用：状态与事件一律以云端回流为准） */
 async function refreshOrders(){
   try{ DATA.orders = await query('orders', { limit: 300 }); }
   catch(e){ /* 拉取失败保留旧数据，不把已渲染的页面清空 */ }
@@ -29087,7 +29523,7 @@ async function refreshOrders(){
 function issuePanelHtml(a){
   const list = issuablePlansOf(a);
   if(!list.length){
-    return '<div class="empty">还没有可以出单的学习计划。学习单必须锚定计划里的具体任务（O1）——'
+    return '<div class="empty">还没有可以出单的成长计划。导学单必须锚定计划里的具体任务（O1）——'
       + '请先在小程序「我的 → 成长计划」生成并「开始计划」，再回来看板出单。'
       + '本看板<b>不支持无计划自由出单</b>。</div>';
   }
@@ -29120,7 +29556,7 @@ function issuePanelHtml(a){
   }).join('');
 
   return '<div data-order-write="issue">'
-    + '<div class="hint">选计划 → 选任务 → 选类型与时长。<b>出单即落云端</b>，小程序的「学习单」页会立刻看到这张单；'
+    + '<div class="hint">选计划 → 选任务 → 选类型与时长。<b>出单即落云端</b>，小程序的「导学单」页会立刻看到这张单；'
     + '训练单全文在小程序端复制（本页不出全文，避免两端各生成一份口径不同的提示词）。</div>'
     + '<div class="ofrm">'
     +   '<div class="fr"><label>① 选择计划</label><div class="opick">' + planBtns + '</div></div>'
@@ -29141,7 +29577,7 @@ function issuePanelHtml(a){
 function receiptPanelHtml(a, plans, mine){
   const pending = mine.filter(function(o){ return o.status === 'issued'; });
   if(!pending.length){
-    return '<div class="empty">当前没有「待回执」的学习单。所有单都已回执过 —— 先去「出单」开一张新单吧。</div>';
+    return '<div class="empty">当前没有「待回执」的导学单。所有单都已回执过 —— 先去「出单」开一张新单吧。</div>';
   }
   /* 第一步的候选计划 = 有 issued 单的计划（与小程序 buildReceiptPlans 同口径） */
   const rPlans = plans.filter(function(p){ return (p.issued||0) > 0; });
@@ -29176,7 +29612,7 @@ function receiptPanelHtml(a, plans, mine){
   } else {
     const o = pending.filter(function(x){ return x.orderNo === oRcptOrder; })[0];
     if(!o){
-      body = '<div class="empty">所选学习单已不在待回执状态（可能刚被其它端回执过）。请返回上一步重新选择。</div>'
+      body = '<div class="empty">所选导学单已不在待回执状态（可能刚被其它端回执过）。请返回上一步重新选择。</div>'
         + '<div class="acts"><button class="obtn ghost" data-or-back="1">返回上一步</button></div>';
     } else {
       body = '<div class="hint">把豆包给出的<b>训练证据回执全文</b>整段粘贴进来。解析在<b>云端</b>用与小程序完全相同的那一份规则完成'
@@ -29222,7 +29658,7 @@ function renderOrdersWrite(a, plans, mine, loading){
      绝不因为「数据还没到」就把写区整块清空 —— 那正是 owner 报「没找到交回执的入口」的形态。 */
   const blocked = !a || (oWriteTab === 'receipt' && loading);
   const inner = blocked
-    ? '<div class="empty">学习单数据加载中…加载完成后即可在此出单 / 交回执。</div>'
+    ? '<div class="empty">导学单数据加载中…加载完成后即可在此出单 / 交回执。</div>'
     : ((oWriteTab === 'issue') ? issuePanelHtml(a) : receiptPanelHtml(a, plans, mine));
   wbox.innerHTML = '<div class="card owrite">' + tabs + inner + oMsgHtml() + '</div>';
 
@@ -29296,7 +29732,7 @@ async function doIssue(){
   oBusy = false;
   if(!res.ok){ oMsg = {kind:'err', text:'出单失败：' + res.msg}; renderOrders(); return; }
   oMsg = {kind:'ok', text:'出单成功：' + ((res.order && res.order.orderNo) || '') + '（' + (res.data && res.data.deduped ? '云端已有同单，未重复创建' : '已落云端') + '）'
-    + '。复制训练单全文请到小程序「学习单」页。'};
+    + '。复制训练单全文请到小程序「导学单」页。'};
   await refreshOrders();
 }
 
@@ -29307,7 +29743,7 @@ async function doSubmitReceipt(){
     return (!o.openid || o.openid === a.openid) && o.status === 'issued' && o.orderNo === oRcptOrder;
   });
   const o = pending[0];
-  if(!o){ oMsg = {kind:'err', text:'所选学习单已不在待回执状态，请返回重新选择。'}; oRcptStep = 2; renderOrders(); return; }
+  if(!o){ oMsg = {kind:'err', text:'所选导学单已不在待回执状态，请返回重新选择。'}; oRcptStep = 2; renderOrders(); return; }
   const rawText = String(oRcptPaste || '').trim();
   if(!rawText){ oMsg = {kind:'err', text:'请先粘贴回执原文。'}; renderOrders(); return; }
 
@@ -29462,7 +29898,7 @@ function renderOrders(){
   if(!DATA.profile){
     chips.innerHTML = '';
     renderOrdersWrite(null, [], [], true);
-    box.innerHTML = '<div class="card"><div class="empty">学习单数据加载中…</div></div>';
+    box.innerHTML = '<div class="card"><div class="empty">导学单数据加载中…</div></div>';
     return;
   }
   if(!DATA.profile.accounts || !DATA.profile.accounts.length){
@@ -29478,7 +29914,7 @@ function renderOrders(){
     /* 数据未到（仍在拉取中，或 orders 模块拉取失败）——
        **同样保留写区骨架**：出单只用 profile.studyPlans，清空写区会把出单入口一起弄没。 */
     renderOrdersWrite(a, [], [], true);
-    box.innerHTML = '<div class="card"><div class="empty">学习单数据加载中…若长时间没有数据，请点右上角「重新拉取」；若始终失败，最常见原因是 webAdminQuery 的 orders 模块未部署 —— 具体原因见顶部状态条。</div></div>';
+    box.innerHTML = '<div class="card"><div class="empty">导学单数据加载中…若长时间没有数据，请点右上角「重新拉取」；若始终失败，最常见原因是 webAdminQuery 的 orders 模块未部署 —— 具体原因见顶部状态条。</div></div>';
     return;
   }
 
@@ -29492,7 +29928,7 @@ function renderOrders(){
   const plans = (Array.isArray(DATA.orders.plans) ? DATA.orders.plans : []).filter(function(p){ return !p.openid || p.openid === a.openid; });
 
   /* ⚠️ 写区必须在**任何早退之前**渲染：新账号一张单都没有，若把写区放在下面
-     「该账号还没有学习单」的分支之后，就永远出不了第一张单（出单入口被自己挡住）。 */
+     「该账号还没有导学单」的分支之后，就永远出不了第一张单（出单入口被自己挡住）。 */
   renderOrdersWrite(a, plans, mine);
 
   const cnt = { issued:0, submitted:0, closed:0, cancelled:0, voided:0 };
@@ -29501,7 +29937,7 @@ function renderOrders(){
   const view = ordersPlanFilter ? mine.filter(function(o){ return o.plan && o.plan.planId === ordersPlanFilter; }) : mine;
 
   let html = '<div class="sumrow" data-page-node-id="ordersSum">'
-    + '<b>学习单闭环</b>'
+    + '<b>导学单闭环</b>'
     + '<span class="pill">待回执 '+cnt.issued+'</span>'
     + '<span class="pill">已回执 '+cnt.submitted+'</span>'
     + '<span class="pill">已归档 '+cnt.closed+'</span>'
@@ -29513,7 +29949,7 @@ function renderOrders(){
   if(unowned) html += '<div class="note">有 '+unowned+' 张单缺少账号归属（云端 openid 为空），已一并显示在每位孩子的列表里。这属于历史数据异常，建议核对 tutor_orders 的 openid 字段。</div>';
 
   if(!mine.length){
-    html += '<div class="card"><div class="empty">该账号还没有学习单。学习单在小程序「学习单」页或工作台出单页创建 —— 出单必须锚定到一份已开始的成长计划任务，不支持无计划自由出单。</div></div>';
+    html += '<div class="card"><div class="empty">该账号还没有导学单。导学单在小程序「导学单」页或工作台出单页创建 —— 出单必须锚定到一份已开始的成长计划任务，不支持无计划自由出单。</div></div>';
     box.innerHTML = html; return;
   }
 
@@ -29562,7 +29998,7 @@ function renderOrders(){
     + btns
     + (view.length
         ? '<div class="sched"><table><tr><th>单号</th><th>学科 · 锚定任务</th><th>类型</th><th>状态</th><th>出单</th><th>回执</th><th>本次表现</th></tr>'+rows+'</table></div>'
-        : '<div class="empty">该计划下暂无学习单</div>')
+        : '<div class="empty">该计划下暂无导学单</div>')
     + '</div>';
 
   /* —— 单详情（选中后展开）—— */
@@ -29618,7 +30054,7 @@ function renderTimeline(){
   }).join('') : '<div class="empty">暂无错题</div>';
 }
 
-/* ============ 学习报告 ============ */
+/* ============ 导学报告 ============ */
 function renderReport(){
   const o = DATA.overview, p = DATA.profile, t = DATA.tutor;
   const box = document.getElementById('reportContent');
@@ -29658,14 +30094,15 @@ function renderReport(){
 function switchView(v){
   document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
   const el=document.getElementById(v); if(el) el.classList.add('on');
-  const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',orders:'学习单',exams:'试卷库',archive:'学习者档案',tasks:'计划与课表',timeline:'时间轴记录',report:'学习报告',set:'环境与口令'};
+  const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',orders:'导学单',exams:'试卷库',archive:'导学档案',tasks:'计划与课表',timeline:'时间轴记录',report:'导学报告',set:'环境与口令',speakstep:'英语练习'};
   document.getElementById('title').textContent=map[v]||v;
-  /* 每个视图的副标题后缀 —— 口径与「只读」文案一致：只有「学习单」是可写区（决策 3） */
+  /* 每个视图的副标题后缀 —— 口径与「只读」文案一致：只有「导学单」是可写区（决策 3） */
   const suffix = (v === 'orders') ? ' · 可写（出单 / 交回执）' : ' · 只读';
   document.getElementById('sub').textContent=(map[v]||'')+suffix;
   document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
   document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
   if(v==='set') loadVisionConfig();
+  if(v==='speakstep' && typeof window.__ssMaybeApply==='function') window.__ssMaybeApply();
   closeDrawer();
 }
 document.querySelectorAll('.nav a,.tabbar a').forEach(a=>a.addEventListener('click',()=>switchView(a.dataset.v)));
@@ -29798,6 +30235,528 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(TOKEN){ hideGate(); startSession(); }
   else { showGate(); setStatus('请输入访问口令以查看数据','loading'); }
 });
+
+/* ============ SpeakStep 英语练习（嵌入模块，闭包隔离） ============ */
+(function(){
+
+/* ===== 数据 ===== */
+const GRADES_ALL = ['一年级','二年级','三年级','四年级','五年级','六年级','七年级','八年级','九年级'];
+const GRADES = { primary:['一年级','二年级','三年级','四年级','五年级','六年级'], junior:['七年级','八年级','九年级'] };
+const BOOKS = {
+  primary:['人教PEP（三年级起点）','人教新起点','外研版（一起）','外研版（三起）','译林版','北师大版','冀教版','湘少版','沪教版','其他'],
+  junior:['人教版（新目标）','外研版','译林版','北师大版','冀教版','仁爱版','鲁教版','沪教版','其他']
+};
+const EXAMS = ['剑桥少儿·Starters','剑桥少儿·Movers','剑桥少儿·Flyers','KET（A2 Key）','PET（B1 Preliminary）'];
+const EXAM_STRUCT = {
+  '剑桥少儿·Starters':{ lv:'L', words:'约 500 词（Starters 官方词表）',
+    listen:['Part 1 听名字连线人物','Part 2 听对话填空（数字/名字）','Part 3 听信息选择图片','Part 4 听指令涂色'],
+    speak:['Part 1 打招呼与个人问题','Part 2 看图问答','Part 3 看图讲故事','Part 4 开放个人问题'] },
+  '剑桥少儿·Movers':{ lv:'M', words:'约 700 词（Movers 官方词表）',
+    listen:['Part 1 听名字连线人物','Part 2 听对话填空','Part 3 听信息选择图片','Part 4 听短文选择','Part 5 听指令涂色'],
+    speak:['Part 1 看图找不同','Part 2 看图讲故事','Part 3 看图问答','Part 4 开放问答'] },
+  '剑桥少儿·Flyers':{ lv:'M', words:'约 900 词（Flyers 官方词表）',
+    listen:['Part 1 连线','Part 2 填空','Part 3 选择','Part 4 选择','Part 5 涂色'],
+    speak:['Part 1 看图找不同','Part 2 信息问答','Part 3 看图讲故事','Part 4 开放问答'] },
+  'KET（A2 Key）':{ lv:'H', words:'约 1500 词（A2 Key 官方词表）',
+    listen:['Part 1 短对话三选一（标准 5 题）','Part 2 长对话信息填空（标准 5 空）','Part 3 独白信息填空（标准 5 空）','Part 4 长对话三选一（标准 5 题）','Part 5 匹配（标准 5 题）'],
+    speak:['Part 1 个人信息问答','Part 2 情景交流与看图讨论'] },
+  'PET（B1 Preliminary）':{ lv:'H', words:'约 3500 词（B1 Preliminary 官方词表）',
+    listen:['Part 1 短对话三选一（标准 7 题）','Part 2 长对话三选一（标准 6 题）','Part 3 独白填空（标准 6 空）','Part 4 独白三选一（标准 6 题）'],
+    speak:['Part 1 个人问答','Part 2 情景交流','Part 3 看图描述','Part 4 观点讨论'] }
+};
+const UNIT_NUM = ['不指定','Unit 1','Unit 2','Unit 3','Unit 4','Unit 5','Unit 6','Unit 7','Unit 8','Unit 9','Unit 10','Unit 11','Unit 12'];
+const THEMES = {
+  '人教PEP（三年级起点）|三年级|上册|3':'身体部位',
+  '人教PEP（三年级起点）|三年级|上册|4':'动物',
+  '人教PEP（三年级起点）|四年级|上册|1':'教室',
+  '人教PEP（三年级起点）|四年级|上册|4':'房间与家居',
+  '人教PEP（三年级起点）|五年级|上册|3':'食物与饮品',
+  '人教PEP（三年级起点）|五年级|上册|4':'活动与技能',
+  '人教PEP（三年级起点）|六年级|上册|1':'交通方式',
+  '人教PEP（三年级起点）|六年级|上册|3':'周末计划',
+  '人教新起点|一年级|上册|1':'问候与自我介绍',
+  '人教版（新目标）|七年级|上册|3':'家庭与物品',
+  '人教版（新目标）|七年级|上册|5':'运动与爱好',
+  '人教版（新目标）|八年级|上册|6':'未来计划',
+  '人教版（新目标）|八年级|下册|6':'故事与传说',
+  '外研版（三起）|三年级|上册|1':'问候与自我介绍'
+};
+const TOPICS = {
+  topic:['动物与自然','足球与篮球','游戏与动画','科学与太空','音乐与舞蹈','食物与旅行','恐龙与探险','机器人与编程'],
+  task:['认识新朋友','在餐厅点餐','在商店买东西','问路','介绍自己的学校','邀请朋友参加活动','制订周末计划','介绍家乡和中国节日','旅行中的简单交流'],
+  world:['世界各地的校园','不同国家的早餐','国际节日','世界动物与地理','太空探索','环境保护','体育赛事','不同文化中的礼貌表达']
+};
+const SRC_NAME = { topic:'兴趣主题', task:'生活任务', world:'世界见闻', free:'自由主题' };
+const FOCUS_NOTE = {
+  '听说综合':'听力与口语交替进行，先听后说',
+  '听懂关键信息':'听人物、地点、时间与动作，听后选择或找关键词',
+  '开口完成对话':'回答问题、情境对话或角色扮演，完成一个小任务',
+  '听完简单复述':'复述一句话、说大意或按顺序重讲',
+  '表达自己的想法':'介绍兴趣、说明原因、比较或表达简单观点'
+};
+const QUICK_PLANS = [
+  { n:'放学后聊一聊', d:'5 分钟 · 校园生活 · 简单问答', set:{ src:'topic', topic:'校园生活', focus:'开口完成对话', minutes:5 } },
+  { n:'我最喜欢的动物', d:'5 分钟 · 兴趣主题 · 听说综合', set:{ src:'topic', topic:'动物与自然', focus:'听说综合', minutes:5 } },
+  { n:'在餐厅点餐', d:'10 分钟 · 生活任务 · 开口完成对话', set:{ src:'task', topic:'在餐厅点餐', focus:'开口完成对话', minutes:10 } },
+  { n:'世界各地的早餐', d:'10 分钟 · 世界见闻 · 听后表达', set:{ src:'world', topic:'不同国家的早餐', focus:'听完简单复述', minutes:10 } },
+  { n:'介绍我的兴趣', d:'10 分钟 · 兴趣主题 · 说出理由', set:{ src:'topic', topic:'我的兴趣', focus:'表达自己的想法', minutes:10 } }
+];
+const SAMPLES = [
+  { mode:'quick', grade:'五年级', src:'topic', topic:'动物与自然', focus:'听说综合', minutes:10, name:'小虎' },
+  { mode:'quick', grade:'四年级', src:'task', topic:'在餐厅点餐', focus:'开口完成对话', minutes:10, name:'小虎' },
+  { mode:'school', track:'school', stage:'primary', grade:'五年级', book:'人教PEP（三年级起点）', term:'上册', unit:3, lesson:'第1课时', focus:'开口完成对话', minutes:10, name:'小虎', goal:'What would you like? / I\'d like ...' },
+  { mode:'school', track:'exam', exam:'KET（A2 Key）', mod:'听力 + 口语', part:'L0', focus:'听懂关键信息', minutes:15, name:'小虎' }
+];
+
+/* ===== 状态 ===== */
+const state = {
+  mode:'quick', kind:'practice',
+  name:'', self:'能说简单句', grade:'五年级',
+  src:'topic', topic:'动物与自然',
+  track:'school', stage:'primary', gradeS:'三年级', book:'人教PEP（三年级起点）',
+  term:'上册', unit:3, lesson:'',
+  exam:'KET（A2 Key）', mod:'听力 + 口语', part:'',
+  focus:'听说综合', minutes:10,
+  langMode:'auto', pronCheck:true, summary:true, goal:'',
+  device:'cloud'
+};
+const root=document.getElementById('speakstep');
+  const $ = id => root.querySelector('#'+id);
+
+/* ===== 渲染 ===== */
+function gradeLevel(){
+  if(state.mode==='school' && state.track==='exam') return EXAM_STRUCT[state.exam].lv;
+  const g = state.mode==='quick' ? state.grade : state.gradeS;
+  if(['一年级','二年级','三年级'].includes(g)) return 'L';
+  if(['四年级','五年级','六年级'].includes(g)) return 'M';
+  return 'H';
+}
+function fillGrade(){ $('selGrade').innerHTML = GRADES[state.stage].map(g => `<option ${g===state.gradeS?'selected':''}>${g}</option>`).join(''); }
+function fillGradeQuick(){ $('selGradeQuick').innerHTML = GRADES_ALL.map(g => `<option ${g===state.grade?'selected':''}>${g}</option>`).join(''); }
+function fillBook(){ $('selBook').innerHTML = BOOKS[state.stage].map(b => `<option ${b===state.book?'selected':''}>${b}</option>`).join(''); }
+function fillUnit(){
+  $('selUnit').innerHTML = UNIT_NUM.map((u,i) => `<option value="${i}" ${i===state.unit?'selected':''}>${u}</option>`).join('');
+}
+function fillExam(){ $('selExam').innerHTML = EXAMS.map(e => `<option ${e===state.exam?'selected':''}>${e}</option>`).join(''); }
+function fillTopic(){
+  const list = TOPICS[state.src] || [];
+  let extra = '';
+  if(state.src!=='free' && state.topic && !list.includes(state.topic)) extra = `<button class="chip on" data-topic="${state.topic}">${state.topic}</button>`;
+  $('topicChips').innerHTML = extra + list.map(t => `<button class="chip ${t===state.topic?'on':''}" data-topic="${t}">${t}</button>`).join('');
+  $('topicRow').style.display = state.src==='free' ? 'none' : '';
+  $('freeRow').style.display = state.src==='free' ? '' : 'none';
+  $('inTopicFree').value = state.src==='free' && state.topic ? state.topic : '';
+}
+function partOptions(){
+  const st = EXAM_STRUCT[state.exam]; if(!st) return [];
+  const opts = [];
+  if(state.mod.includes('听力')) st.listen.forEach((p,i) => opts.push({v:'L'+i, t:'[听] '+p}));
+  if(state.mod.includes('口语')) st.speak.forEach((p,i) => opts.push({v:'S'+i, t:'[说] '+p}));
+  return opts;
+}
+function fillPart(){
+  const opts = partOptions();
+  let html = '<option value="">不指定（按顺序混练）</option>';
+  html += opts.map(o => `<option value="${o.v}" ${o.v===state.part?'selected':''}>${o.t}</option>`).join('');
+  $('selPart').innerHTML = html;
+}
+function partMeta(){
+  if(!state.part || state.mode!=='school' || state.track!=='exam') return null;
+  const k = state.part[0]==='L' ? 'listen' : 'speak';
+  const idx = +state.part.slice(1);
+  const st = EXAM_STRUCT[state.exam];
+  const name = st[k][idx] || '';
+  const m = name.match(/（标准 (\d+) (题|空)）/);
+  return { kind:k==='listen'?'听力':'口语', name:name.replace(/（标准.*$/,''), std:m?m[1]:'' };
+}
+function themePreview(){
+  if(state.mode!=='school' || state.track!=='school' || state.unit===0) return '';
+  return THEMES[`${state.book}|${state.gradeS}|${state.term}|${state.unit}`] || '';
+}
+function langDesc(){
+  const lv = gradeLevel();
+  let mode = state.langMode;
+  if(mode==='auto') mode = lv==='L' ? '中英结合' : (lv==='M' ? '英语为主' : '全英语为主');
+  return `反馈语言：${mode}，必要时中文提示`;
+}
+
+function buildPrompt(){
+  const lvName = { L:'入门', M:'成长', H:'自主' }[gradeLevel()];
+  const lv = gradeLevel();
+  const name = state.name || '同学';
+  /* ===== 新词听读卡模式 ===== */
+  if(state.kind==='cards'){
+    const nWord = lv==='L' ? 8 : lv==='M' ? 12 : 15;
+    const sentLen = lv==='L' ? 6 : lv==='M' ? 10 : 15;
+    const lines = ['【SpeakStep 新词听读卡】',
+      `称呼：${name}（导学与小结中使用）`,
+      `年级：${state.mode==='quick'?state.grade:state.gradeS}（${lvName}档）`];
+    if(state.mode==='quick'){
+      lines.push(`内容来源：${SRC_NAME[state.src]}`, `主题：${state.topic}`);
+    } else if(state.track==='school'){
+      const unitTxt = state.unit===0 ? '当前单元' : 'Unit '+state.unit + (state.lesson?'（'+state.lesson+'）':'');
+      lines.push(`内容来源：校内同步`,
+        `教材坐标：${state.stage==='primary'?'小学':'初中'} · ${state.gradeS} · ${state.book} · ${state.term} · ${unitTxt}`);
+      if(state.goal) lines.push(`本课词句：${state.goal}`);
+      lines.push('请围绕上述坐标设计；不声称复现教材词表原文，如需严格同步请在本对话提供课本内容');
+    } else {
+      lines.push(`内容来源：剑桥考试`, `考试：${state.exam}`, `词汇范围：${EXAM_STRUCT[state.exam].words}`);
+    }
+    lines.push('',
+      '【请按以下规则输出单词听读卡】',
+      `1. 先选出本单元/本主题核心新词 ${nWord} 个（按${lv}档），按出现频率从高到低排`,
+      `2. 每张卡包含：单词 + 教练读一遍 + 一个适龄例句（不超过 ${sentLen} 词）+ 一个跟读提示（重音/尾音/连读，不编发音分数）+ 一个小应用问题（让孩子用这个词说一句自己的话）`,
+      '3. 逐张出卡：先读词 → 例句 → 让孩子跟读 → 问小应用问题，孩子答完再出下一张，不要一次性把所有卡片倒出来',
+      '4. 出完卡片后，请孩子从这组词里挑 3 个，各说一句和自己有关的话',
+      '5. 最后做一个快速小测：随机念 3 个词的中文意思，让孩子说出英文，或反过来',
+      '6. 结束用「'+name+'」称呼给简短小结：哪几个词读得顺、哪个词还不熟、下次建议复习哪几个');
+    if(state.device==='phone'){
+      lines.push('',
+        '【执行规则：语音通话模式，技能未加载，请严格遵守】',
+        '- 你是'+lv+'档英语听说教练，句子难度按孩子水平，新词先说再解释',
+        '- 一次只出一张卡；先让孩子跟读/回答，再简短反馈',
+        '- 发音可指出重音、尾音、节奏，但不编造百分制分数');
+    }
+    return lines.join('\n');
+  }
+  /* ===== 听说练习单模式 ===== */
+  const lines = ['【SpeakStep 听说练习单】',
+    `称呼：${name}（导学与小结中使用）`];
+  if(state.mode==='quick') lines.push(`年级：${state.grade}（${lvName}档）`);
+  else if(state.track==='school') lines.push(`年级：${state.gradeS}（${lvName}档）`);
+  lines.push(`起步水平：${state.self}`);
+  if(state.mode==='quick'){
+    lines.push(`内容来源：${SRC_NAME[state.src]}`, `主题：${state.topic}`);
+  } else if(state.track==='school'){
+    const unitTxt = state.unit===0 ? '当前单元' : 'Unit '+state.unit + (state.lesson?'（'+state.lesson+'）':'');
+    lines.push(`内容来源：校内同步`,
+      `教材坐标：${state.stage==='primary'?'小学':'初中'} · ${state.gradeS} · ${state.book} · ${state.term} · ${unitTxt}`);
+    if(state.goal) lines.push(`本课词句：${state.goal}`);
+    lines.push('请围绕上述坐标设计适龄的听说练习；不声称复现教材原文，如需严格同步请在本对话提供课本内容');
+  } else {
+    const pm = partMeta();
+    const partTxt = pm ? `${pm.kind} ${pm.name}${pm.std?`（标准 ${pm.std} 题，本次练 2-3 题）`:''}` : '各 Part 按顺序混练';
+    lines.push(`内容来源：剑桥考试`,
+      `考试：${state.exam} · ${partTxt}`,
+      `词汇范围：${EXAM_STRUCT[state.exam].words}`);
+  }
+  lines.push(`今天重点：${state.focus}`, `时长：${state.minutes} 分钟`, langDesc());
+  if(state.pronCheck) lines.push('加入一句跟读练习：孩子按教练示范自行比较清晰度与节奏，不提供机器发音分数');
+  if(state.summary) lines.push('结束生成简短小结：练习证据 + 需要复习 + 下次建议');
+  lines.push('请直接开始语音友好的听说练习：一次只给一个任务，先让孩子回答，再简短反馈');
+  if(state.device==='phone'){
+    const mins = state.minutes;
+    const rounds = mins<=5 ? '3-4 个回合' : mins<=10 ? '5-7 个回合' : '7-9 个回合';
+    lines.push('',
+      '【执行规则：语音通话模式，技能未加载，请严格遵守】',
+      `- 你是${gradeLevel()==='L'?'入门':'成长'}档英语听说教练，面向${name}（${state.mode==='quick'?state.grade:state.gradeS}），句子难度按其水平，新词先说再解释`,
+      '- 一次只给一个任务；先让孩子开口回答，再简短反馈，不连续讲长课',
+      '- 每轮最多纠正 1-2 个最重要问题：先肯定有效部分 → 给更自然的说法 → 让孩子再说一遍 → 继续情境',
+      '- 反馈语言：' + (state.langMode==='auto' ? (gradeLevel()==='L'?'中英结合':'英语为主') : state.langMode) + '，必要时中文一句提示',
+      '- 发音：可具体指出重音、尾音、节奏问题，但不编造百分制分数',
+      '',
+      '【流程骨架：本次练习共 '+mins+' 分钟，必须走完以下环节，不要 2-3 个回合就收尾】',
+      '1. 热身（1 轮）：用熟悉话题问一个简单问题，让孩子开口',
+      '2. 示范输入（1 轮）：围绕教材/主题，主动给出 2-4 句英语示范；如来自教材坐标，先从该单元提炼 2-3 个核心句型作为本轮目标表达',
+      '3. 理解检查（1 轮）：就示范内容问一个低负担问题（关键词/对错/大意）',
+      '4. 口语输出（'+(mins<=5?'1':'3-4')+' 轮）：围绕核心句型让孩子完成情境任务，逐轮追问或换场景',
+      '5. 变式迁移（1 轮）：把刚练的句型换到新人物/新地点/新任务，让孩子自己换说法',
+      '6. 小结（1 轮）：用「'+name+'」称呼简短收尾',
+      `全程至少 ${rounds}；每环节都要推进内容深度，不要泛泛聊两三句就结束`,
+      '结束用「'+name+'」称呼给简短小结（练了什么 / 哪里好 / 下次练什么）');
+  }
+  return lines.join('\n');
+}
+
+function renderPV(){
+  if(state.mode==='quick'){
+    $('pvCoord').textContent = `${SRC_NAME[state.src]} · ${state.topic}`;
+  } else if(state.track==='school'){
+    const unitTxt = state.unit===0 ? '当前单元' : 'Unit '+state.unit;
+    const th = themePreview();
+    $('pvCoord').textContent = `${state.stage==='primary'?'小学':'初中'} · ${state.book} · ${state.term} · ${unitTxt}${th?' · '+th:''}`;
+  } else {
+    const st = EXAM_STRUCT[state.exam];
+    const pm = partMeta();
+    $('pvCoord').textContent = state.exam + (pm ? ` · ${pm.kind} ${pm.name}` : '');
+  }
+  $('pvFocus').textContent = state.focus;
+  $('pvTime').textContent = state.minutes + ' 分钟';
+  $('promptBox').textContent = buildPrompt();
+  $('howText').textContent = state.kind==='cards'
+    ? (state.device==='cloud'
+        ? '粘贴到豆包对话发送即可。教练会逐张出词卡：读词 → 例句 → 孩子跟读 → 小应用问题，最后做快速小测。'
+        : '复制后在手机语音通话中粘贴发送。通话不带技能，词卡规则已写在提示词里。')
+    : (state.device==='cloud'
+        ? '粘贴到豆包对话发送即可。教练会一次只给一个任务，先让孩子回答再反馈，结束后给出简短小结。'
+        : '复制后在手机语音通话中粘贴发送。通话不带技能，练习单末尾已写好教学规则，教练按规则执行。');
+  const head = root.querySelector('#panelResult .card-h h2');
+  if(head) head.textContent = state.kind==='cards' ? '新词听读卡' : '听说练习单';
+  const btn = $('copyBtn');
+  if(btn) btn.textContent = state.kind==='cards' ? '复制词卡提示词' : '复制练习单';
+}
+function render(){
+  $('panelQuick').classList.toggle('on', state.mode==='quick');
+  $('panelSchool').classList.toggle('on', state.mode==='school');
+  $('quickGradeRow').style.display = state.mode==='quick' ? '' : 'none';
+  $('panelSchoolInner').classList.toggle('on', state.mode==='school' && state.track==='school');
+  $('panelExamInner').classList.toggle('on', state.mode==='school' && state.track==='exam');
+  fillGradeQuick(); fillGrade(); fillBook(); fillUnit(); fillExam(); fillPart(); fillTopic();
+  renderPV();
+}
+function syncUI(){
+  $('inName').value = state.name; $('selTerm').value = state.term;
+  $('selLesson').value = state.lesson; $('inGoal').value = state.goal;
+  const seg = (id, key, val) => root.querySelectorAll('#'+id+' button').forEach(x => x.classList.toggle('on', x.dataset[key]===val));
+  seg('modeSeg','mode',state.mode); seg('trackSeg','track',state.track); seg('stageSeg','stage',state.stage);
+  root.querySelectorAll('#examMods .chip').forEach(x => x.classList.toggle('on', x.dataset.mod===state.mod));
+  root.querySelectorAll('#srcChips .chip').forEach(x => x.classList.toggle('on', x.dataset.src===state.src));
+  root.querySelectorAll('#selfChips .chip').forEach(x => x.classList.toggle('on', x.dataset.self===state.self));
+  root.querySelectorAll('#focusChips .chip').forEach(x => x.classList.toggle('on', x.dataset.focus===state.focus));
+  root.querySelectorAll('#timeChips .chip').forEach(x => x.classList.toggle('on', +x.dataset.min===state.minutes));
+  root.querySelectorAll('#langChips .chip').forEach(x => x.classList.toggle('on', x.dataset.lang===state.langMode));
+  root.querySelectorAll('#pronChips .chip').forEach(x => x.classList.toggle('on', x.dataset.p===(state.pronCheck?'1':'0')));
+  root.querySelectorAll('#sumChips .chip').forEach(x => x.classList.toggle('on', x.dataset.s===(state.summary?'1':'0')));
+  render();
+}
+
+/* ===== Toast ===== */
+let toastTimer = null;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('on'), 2600);
+}
+
+/* ===== 事件 ===== */
+$('modeSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.mode = b.dataset.mode;
+  root.querySelectorAll('#modeSeg button').forEach(x => x.classList.toggle('on', x===b));
+  render();
+});
+$('trackSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.track = b.dataset.track; state.part='';
+  root.querySelectorAll('#trackSeg button').forEach(x => x.classList.toggle('on', x===b));
+  render();
+});
+$('stageSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.stage = b.dataset.stage;
+  state.gradeS = GRADES[state.stage][2]; state.book = BOOKS[state.stage][0];
+  root.querySelectorAll('#stageSeg button').forEach(x => x.classList.toggle('on', x===b));
+  render();
+});
+$('srcChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.src = b.dataset.src;
+  state.topic = TOPICS[state.src] ? TOPICS[state.src][0] : '';
+  root.querySelectorAll('#srcChips .chip').forEach(x => x.classList.toggle('on', x===b));
+  render();
+});
+$('topicChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.topic = b.dataset.topic;
+  root.querySelectorAll('#topicChips .chip').forEach(x => x.classList.toggle('on', x===b));
+  renderPV();
+});
+$('selfChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.self = b.dataset.self;
+  root.querySelectorAll('#selfChips .chip').forEach(x => x.classList.toggle('on', x===b));
+  renderPV();
+});
+$('focusChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.focus = b.dataset.focus;
+  root.querySelectorAll('#focusChips .chip').forEach(x => x.classList.toggle('on', x===b));
+  renderPV();
+});
+$('timeChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.minutes = +b.dataset.min;
+  root.querySelectorAll('#timeChips .chip').forEach(x => x.classList.toggle('on', x===b));
+  renderPV();
+});
+$('langChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.langMode = b.dataset.lang;
+  root.querySelectorAll('#langChips .chip').forEach(x => x.classList.toggle('on', x===b));
+  renderPV();
+});
+$('pronChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.pronCheck = b.dataset.p==='1';
+  root.querySelectorAll('#pronChips .chip').forEach(x => x.classList.toggle('on', x===b));
+  renderPV();
+});
+$('sumChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.summary = b.dataset.s==='1';
+  root.querySelectorAll('#sumChips .chip').forEach(x => x.classList.toggle('on', x===b));
+  renderPV();
+});
+$('deviceSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.device = b.dataset.dev;
+  root.querySelectorAll('#deviceSeg button').forEach(x => x.classList.toggle('on', x===b));
+  $('devHint').textContent = state.device==='cloud'
+    ? '电脑工作任务云电脑加载技能，教学规则由技能自动处理，练习单保持精简。'
+    : '手机语音通话不带技能，练习单已自包含教学规则；复制后在手机通话中粘贴发送。';
+  renderPV();
+});
+$('kindSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.kind = b.dataset.kind;
+  root.querySelectorAll('#kindSeg button').forEach(x => x.classList.toggle('on', x===b));
+  $('kindHint').textContent = state.kind==='practice'
+    ? '围绕教材坐标或兴趣主题，生成 5-15 分钟的听说练习单，一次只练一个重点。'
+    : '围绕教材坐标，生成 8-15 张单词听读卡：每个词给例句、跟读提示和一个小应用问题，帮孩子快速记住本单元新词。';
+  renderPV();
+});
+['selGradeQuick','selGrade','selBook','selTerm','selUnit','selLesson','selExam','selPart'].forEach(id => {
+  $(id).addEventListener('change', e => {
+    const v = e.target.value;
+    if(id==='selGradeQuick') state.grade = v;
+    else if(id==='selGrade') state.gradeS = v;
+    else if(id==='selBook') state.book = v;
+    else if(id==='selTerm') state.term = v;
+    else if(id==='selUnit') state.unit = +v;
+    else if(id==='selLesson') state.lesson = v;
+    else if(id==='selExam'){ state.exam = v; state.part=''; }
+    else if(id==='selPart') state.part = v;
+    renderPV();
+  });
+});
+$('examMods').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.mod = b.dataset.mod; state.part='';
+  root.querySelectorAll('#examMods .chip').forEach(x => x.classList.toggle('on', x===b));
+  renderPV();
+});
+$('inName').addEventListener('input', e => { state.name = e.target.value.trim(); renderPV(); });
+$('inGoal').addEventListener('input', e => { state.goal = e.target.value.trim(); renderPV(); });
+$('inTopicFree').addEventListener('input', e => { state.topic = e.target.value.trim(); renderPV(); });
+
+$('copyBtn').addEventListener('click', async () => {
+  const txt = buildPrompt();
+  let ok = false;
+  try{ await navigator.clipboard.writeText(txt); ok = true; }
+  catch(err){
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    ok = document.execCommand('copy'); ta.remove();
+  }
+  const btn = $('copyBtn');
+  btn.textContent = ok ? '已复制，去豆包对话粘贴发送' : '复制失败，请手动选择复制';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = '复制练习单'; btn.classList.remove('copied'); }, 2200);
+});
+
+/* ===== 快速开练抽屉 ===== */
+function fillQuick(){
+  $('quickBox').innerHTML = QUICK_PLANS.map((q,i) => `
+    <button class="qp" data-i="${i}">
+      <b>${q.n}</b><span>${q.d}</span><small>点击后自动填入，仍可修改</small>
+    </button>`).join('');
+}
+$('openQuick').addEventListener('click', () => { $('drawer').classList.add('on'); $('mask').classList.add('on'); });
+$('closeQuick').addEventListener('click', () => { $('drawer').classList.remove('on'); $('mask').classList.remove('on'); });
+$('mask').addEventListener('click', () => { $('drawer').classList.remove('on'); $('mask').classList.remove('on'); });
+$('quickBox').addEventListener('click', e => {
+  const b = e.target.closest('.qp'); if(!b) return;
+  const q = QUICK_PLANS[+b.dataset.i];
+  Object.assign(state, q.set, { mode:'quick' });
+  $('drawer').classList.remove('on'); $('mask').classList.remove('on');
+  syncUI();
+  toast('已填入：' + q.n + '，仍可在下方修改');
+});
+
+/* ===== 示例 ===== */
+let sampleIdx = 0;
+$('sampleBtn').addEventListener('click', () => {
+  const s = SAMPLES[sampleIdx % SAMPLES.length]; sampleIdx++;
+  Object.assign(state, s);
+  syncUI();
+});
+
+/* ===== 导学档案联动（英语） ===== */
+function normalizeGrade(g){
+  if(!g) return '';
+  if(GRADES_ALL.indexOf(g)>=0) return g;
+  for(const k of GRADES_ALL){ if(g.indexOf(k)>=0) return k; }
+  const m = g.match(/(\d+)\s*年级/);
+  if(m){ const n=+m[1]-1; if(n>=0 && n<GRADES_ALL.length) return GRADES_ALL[n]; }
+  return '';
+}
+function stageFromProfile(a){
+  const g = normalizeGrade(a.grade);
+  if(g && ['七年级','八年级','九年级'].indexOf(g)>=0) return 'junior';
+  if(g) return 'primary';
+  const st = (a.learner && a.learner.stage) || '';
+  if(st.indexOf('初中')>=0) return 'junior';
+  if(st.indexOf('小学')>=0) return 'primary';
+  return state.stage;
+}
+function parseUnit(progress){
+  if(!progress) return 0;
+  const m = progress.match(/(\d+)/);
+  if(m){ const n=+m[1]; if(n>=1 && n<=12) return n; }
+  return 0;
+}
+function ensureBookOption(book){
+  const sel = $('selBook'); if(!sel || !book) return;
+  const ok = Array.prototype.some.call(sel.options, o => o.value===book);
+  if(!ok){ const opt = document.createElement('option'); opt.value=book; opt.textContent=book+'（档案）'; sel.appendChild(opt); }
+}
+function applyProfile(){
+  const info = $('ssProfileInfo'); if(!info) return;
+  const a = (typeof acc==='function') ? acc() : null;
+  if(!a){ info.textContent = (DATA && DATA.profile) ? '当前孩子无档案数据' : '档案数据未加载，请稍候或刷新'; info.classList.add('mut'); return; }
+  const sp = (a.subjectProfiles && a.subjectProfiles.english) || {};
+  const name = a.nickname || '';
+  const grade = normalizeGrade(a.grade);
+  const stage = stageFromProfile(a);
+  const book = sp.textbook || '';
+  const progress = sp.progress || '';
+  const unit = parseUnit(progress);
+  state.name = name;
+  if(grade){ state.grade = grade; state.gradeS = grade; if(stage!==state.stage) state.stage = stage; }
+  if(book) state.book = book;
+  if(/下册/.test(progress)) state.term = '下册';
+  if(unit>0) state.unit = unit;
+  syncUI();
+  ensureBookOption(state.book);
+  if(state.book) $('selBook').value = state.book;
+  renderPV();
+  const bits = [];
+  if(name) bits.push(name);
+  if(grade) bits.push(grade);
+  if(book) bits.push(book);
+  if(progress) bits.push('进度 '+progress);
+  if(sp.learnerNo) bits.push('编号 '+sp.learnerNo);
+  info.textContent = bits.length ? ('已带入：'+bits.join(' · ')) : '已带入（档案信息较少，请手动补充）';
+  info.classList.remove('mut');
+  state._profileChild = selectedAccount;
+}
+function maybeApplyProfile(){
+  if(!root.classList.contains('on')) return;   // 仅在该视图可见时自动带入
+  if(!DATA || !DATA.profile) return;            // 数据未就绪
+  if(state._profileChild === selectedAccount) return; // 本孩子已带入过，保留手动调整
+  applyProfile();
+}
+window.__ssMaybeApply = maybeApplyProfile;
+$('ssPullProfile').addEventListener('click', () => { applyProfile(); toast('已带入 / 刷新英语档案，可继续手动调整'); });
+
+/* ===== 初始 ===== */
+fillQuick();
+render();
+
+})();
+
 </script>
 </body>
 </html>

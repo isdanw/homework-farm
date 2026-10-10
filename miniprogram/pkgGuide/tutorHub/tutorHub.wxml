@@ -50,11 +50,11 @@
     <view class="hub-go">去提问 ›</view>
   </view>
 
-  <!-- ===== 学习单（出单 → 豆包执行 → 回执 → 评语与汇总） ===== -->
+  <!-- ===== 导学单（出单 → 豆包执行 → 回执 → 评语与汇总） ===== -->
   <view class="hub-card" bindtap="goOrder">
     <view class="hub-ic">🎫</view>
     <view class="hub-body">
-      <view class="hub-title">学习单</view>
+      <view class="hub-title">导学单</view>
       <view class="hub-desc">按计划出单，拿去给豆包讲一遍，回来交回执——出单、回执时间全程可查</view>
     </view>
     <view wx:if="{{orderPending}}" class="hub-badge">待回执 {{orderPending}}</view>
@@ -89,6 +89,16 @@
     <view class="hub-body">
       <view class="hub-title">试卷库</view>
       <view class="hub-desc">由「全科导学工作台」推送的真题 / 测验卷，按学科浏览卷面与解析</view>
+    </view>
+    <view class="hub-go">›</view>
+  </view>
+
+  <!-- ===== 英语练习（SpeakStep 听说练习台） ===== -->
+  <view class="hub-card" bindtap="goSpeakstep">
+    <view class="hub-ic">🔤</view>
+    <view class="hub-body">
+      <view class="hub-title">英语练习</view>
+      <view class="hub-desc">一分钟生成听说练习单，复制到豆包让孩子开口练</view>
     </view>
     <view class="hub-go">›</view>
   </view>

@@ -1,0 +1,33 @@
+<view class="page-wrap">
+
+  <view class="card">
+    <view class="card-title"><view class="dot" style="background:#F5A623"></view>单元总结 · {{unitName}}</view>
+    <view class="muted us-meta" wx:if="{{unitGoal}}">单元目标：{{unitGoal}}</view>
+    <view class="muted us-meta">任务进度：{{doneCount}}/{{taskCount}}{{stageDone ? ' · 已全部完成 🎉' : ''}}</view>
+
+    <view wx:if="{{loading}}" class="us-loading">
+      <view class="us-loading-emoji">🌳</view>
+      <view>正在整理这个单元的知识树…</view>
+    </view>
+
+    <block wx:else>
+      <view wx:if="{{failed}}" class="us-fail">{{failMsg}}</view>
+
+      <!-- 文字总结 -->
+      <view class="us-summary">{{summary}}</view>
+      <view wx:if="{{advice.length}}" class="us-advice">
+        <view class="us-advice-item" wx:for="{{advice}}" wx:key="index">💡 {{item}}</view>
+      </view>
+
+      <!-- 仿黑板知识树 -->
+      <canvas type="2d" id="board" class="us-board"></canvas>
+      <view class="muted us-tip">知识树按黑板样式绘制，可保存到相册打印或分享</view>
+
+      <view class="us-acts">
+        <view class="btn btn-line us-btn" bindtap="regenerate">重新生成</view>
+        <view class="btn btn-green us-btn {{saving ? 'disabled' : ''}}" bindtap="saveImg">{{saving ? '保存中…' : '保存图片'}}</view>
+      </view>
+    </block>
+  </view>
+
+</view>

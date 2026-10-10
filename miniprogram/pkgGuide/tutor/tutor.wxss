@@ -117,6 +117,12 @@ page { background: var(--c-cream); }
 .msg-bubble.typing { color: var(--c-sub); }
 
 /* ---------------- 底部输入区 ---------------- */
+.voice-hint {
+  padding: 12rpx 24rpx 0;
+  font-size: 22rpx;
+  color: var(--c-sub);
+  line-height: 1.5;
+}
 .input-bar {
   display: flex;
   align-items: center;

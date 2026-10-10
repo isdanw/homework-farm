@@ -30,7 +30,7 @@
       <view class="entry-go">{{showPaste ? '收起' : '粘贴提示词自动填入 ›'}}</view>
     </view>
     <view wx:if="{{showPaste}}">
-      <view class="muted paste-tip">把画像提示词整段粘贴到下面（含 教材版本 / 能力维度 / 常见错误模式 / 进度 / 学习者编号 字段），点「识别并填入」自动解析并保存，之后仍可手动微调。</view>
+      <view class="muted paste-tip">把画像提示词整段粘贴到下面（含 教材版本 / 能力维度 / 常见错误模式 / 进度 / 导学编号 字段），点「识别并填入」自动解析并保存，之后仍可手动微调。</view>
       <textarea class="paste-area" placeholder="在此粘贴画像提示词全文…" placeholder-class="opt-ph"
                 value="{{rawText}}" bindinput="onPasteInput" maxlength="3000" auto-height />
       <view class="btn btn-line btn-block paste-btn" bindtap="parseAndApply">🔍 识别并填入</view>
@@ -53,7 +53,7 @@
              value="{{progress}}" bindinput="onProgress" maxlength="40" cursor-spacing="20" />
     </view>
     <view class="opt-row col">
-      <view class="opt-name">学习者编号</view>
+      <view class="opt-name">导学编号</view>
       <input class="opt-input-full" placeholder="如：JY-001" placeholder-class="opt-ph"
              value="{{learnerNo}}" bindinput="onLearnerNo" maxlength="20" cursor-spacing="20" />
     </view>
