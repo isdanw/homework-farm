@@ -2,7 +2,7 @@
  * 云函数 webAdminWrite —— 家长数据看板·写入代理（与 webAdminQuery 对称，T3 工作台→云 push）
  *
  * 职责（不可破坏的红线）：
- *   · 写。但只写「导学镜像」四类集合（tutor_sessions/mistakes/evidence/reviews）+「试卷库」
+ *   · 写。但只写「导学镜像」五类集合（tutor_sessions/mistakes/evidence/reviews/cards）+「试卷库」
  *     （exam_resources）+ 孩子切片（learner / subjectProfiles / nickname / grade）+「导学单」
  *     （tutor_orders，见下方 orders 专用通道）；
  *     绝不触碰 homework/checkin/schedule/农场等小程序权威数据，避免镜像写回污染主链路。
@@ -45,6 +45,7 @@ const COLLS = {
   evidence: 'tutor_evidence',
   exams: 'exam_resources',
   orders: 'tutor_orders',
+  cards: 'tutor_cards',
   bindings: 'web_portal_bindings'
 };
 
@@ -113,6 +114,8 @@ const PUBLISH_FIELDS = {
     'questionText', 'childAnswer', 'markSource'],
   evidence: ['total', 'correct', 'rate', 'passed'],
   reviews: ['stage', 'dueAt', 'done'],
+  // 闪卡（tutor_cards）：与 reviews 平行，可发布字段即 Leitner 盒子进度；不发布 front/back（内容不变）
+  cards: ['box', 'dueAt', 'done', 'lastResult'],
   // F-B 试卷库：试卷是**资源库条目**（不是学情数据，不产生 evidence）。
   // 全字段可发布（含 markdown/rawText/answers 三段正文），索引元数据与正文一并搬运。
   exams: ['resourceId', 'fileName', 'name', 'level', 'examType', 'retestType', 'subject', 'subjectName',
@@ -517,11 +520,12 @@ exports.main = async (event) => {
       sessions: Array.isArray(event.sessions) ? event.sessions : [],
       mistakes: Array.isArray(event.mistakes) ? event.mistakes : [],
       evidence: Array.isArray(event.evidence) ? event.evidence : [],
-      reviews: Array.isArray(event.reviews) ? event.reviews : []
+      reviews: Array.isArray(event.reviews) ? event.reviews : [],
+      cards: Array.isArray(event.cards) ? event.cards : []
     };
     const map = {
       sessions: 'tutor_sessions', mistakes: 'tutor_mistakes',
-      evidence: 'tutor_evidence', reviews: 'tutor_reviews'
+      evidence: 'tutor_evidence', reviews: 'tutor_reviews', cards: 'tutor_cards'
     };
     const tally = { added: 0, skipped: 0, updated: 0 };
     const conflicts = [];

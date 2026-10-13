@@ -60,6 +60,13 @@
       <text class="todo-go">去处理 ›</text>
     </view>
 
+    <!-- 复习卡待回顾（G3：今日到期复习卡，点击进翻面自测） -->
+    <view wx:if="{{dueCards}}" class="act-todo act-todo-card" bindtap="goCards">
+      <view class="todo-dot todo-dot-card"></view>
+      <text class="todo-tx">有 {{dueCards}} 张复习卡待回顾</text>
+      <text class="todo-go">去自测 ›</text>
+    </view>
+
     <!-- 进度条 + 反馈语 -->
     <view class="act-bar"><view class="act-fill" style="width:{{percent}}%"></view></view>
     <view wx:if="{{allDone}}" class="act-cheer">🎉 全部打卡完成，去农场领奖励吧！</view>

@@ -98,9 +98,11 @@ Page({
 
     // 待订正错题数（今日中枢：待办提醒，有才显示，无则不打扰）
     let pendingMistakes = 0;
+    let dueCards = 0;
     try {
       const tutorStore = require('../../utils/tutorStore.js');
       pendingMistakes = tutorStore.getMistakes().filter(m => m.status !== 'corrected').length;
+      dueCards = tutorStore.getDueCards().length;   // G3：今日到期复习卡（与错题复习窗口并列的待办）
     } catch (e) {}
 
     this.setData({
@@ -119,6 +121,7 @@ Page({
       todayCoursesText,
       planEntryText,
       pendingMistakes,
+      dueCards,
       forecast: engine.forecast(d)
     });
   },
@@ -131,6 +134,7 @@ Page({
 
   goFarm() { wx.switchTab({ url: '/pages/farm/farm' }); },
   goMistakes() { wx.navigateTo({ url: '/pkgTools/mistakes/mistakes' }); },
+  goCards() { wx.navigateTo({ url: '/pkgTools/cards/cards' }); },
   goPlan() {
     const first = store.getTypeList()[0];
     wx.navigateTo({ url: '/pkgTools/plan/plan' + (first ? '?key=' + first.key : '') });

@@ -103,6 +103,12 @@
 .todo-tx { flex: 1; min-width: 0; font-size: 25rpx; color: #854F0B; font-weight: 700; }
 .todo-go { font-size: 24rpx; color: #BA7517; font-weight: 700; flex-shrink: 0; }
 
+/* 复习卡待回顾徽标（G3，与错题待办区分色） */
+.act-todo-card { background: #E6F4FF; }
+.todo-dot-card { background: #3FA9F5; }
+.act-todo-card .todo-tx { color: #1C6FB0; }
+.act-todo-card .todo-go { color: #2E8BD6; }
+
 /* 进度条 */
 .act-bar { height: 16rpx; border-radius: 8rpx; background: #EDF3F8; overflow: hidden; margin-top: 20rpx; }
 .act-fill { height: 100%; border-radius: 8rpx; background: linear-gradient(90deg, #FFD27A, #F5B740); transition: width .5s ease; }

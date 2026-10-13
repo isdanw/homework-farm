@@ -1,0 +1,49 @@
+<view class="page">
+  <view class="topbar">
+    <text class="title">复习卡</text>
+    <text class="sub">提取式记忆 · 间隔重复</text>
+  </view>
+
+  <view class="stat">
+    <view class="stat-item">
+      <text class="num">{{dueCount}}</text>
+      <text class="lab">今日待复习</text>
+    </view>
+    <view class="stat-item">
+      <text class="num">{{allCount}}</text>
+      <text class="lab">卡片总数</text>
+    </view>
+  </view>
+
+  <!-- 未进入自测：统计 + 入口 + 待复习列表 -->
+  <block wx:if="{{!studying}}">
+    <view class="actions">
+      <button class="btn-primary" bindtap="startStudy" disabled="{{dueCount === 0}}">开始自测（{{dueCount}}）</button>
+    </view>
+
+    <view class="section-title">今日待复习</view>
+    <view wx:if="{{dueList.length === 0}}" class="empty">
+      今天没有到期的卡片 🌱 去导学页推通知识点，会自动生成复习卡。
+    </view>
+    <view wx:for="{{dueList}}" wx:key="id" class="card-row">
+      <view class="card-front">{{item.front}}</view>
+      <view class="card-meta">{{item.subjectName}} · 盒{{item.box}}</view>
+    </view>
+
+    <view wx:if="{{finished}}" class="done-tip">本轮自测完成，阳光已浇灌 🌞</view>
+  </block>
+
+  <!-- 自测中：翻面提取 -->
+  <block wx:else>
+    <view class="study-card" bindtap="flip">
+      <view class="study-sub">{{current.subjectName}} · 盒{{current.box}}</view>
+      <view class="study-face">{{flipped ? current.back : current.front}}</view>
+      <view class="study-hint">{{flipped ? '点击卡片翻回正面' : '点击卡片看答案'}}</view>
+    </view>
+    <view class="rate-row" wx:if="{{flipped}}">
+      <button class="btn-good" data-good="1" bindtap="rate">记得 ✅</button>
+      <button class="btn-again" data-good="0" bindtap="rate">忘了 🔁</button>
+    </view>
+    <button class="btn-ghost" bindtap="stopStudy">退出自测</button>
+  </block>
+</view>
