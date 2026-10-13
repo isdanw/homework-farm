@@ -5,6 +5,9 @@
     <text class="title">{{subjectName}} · 单元必会</text>
     <text class="sub">{{unit && unit.title ? unit.title : '尚未建立'}}</text>
   </view>
+  <view class="top-actions">
+    <view class="imp-btn" hover-class="op-hover" bindtap="openImport">⬇ 从工作台导入</view>
+  </view>
 
   <!-- 未建库：引导去导学页建库 -->
   <view wx:if="{{!unit}}" class="empty-card">
@@ -86,6 +89,32 @@
       <view class="btn-again" data-good="0" bindtap="studyRate">忘了 🔁</view>
     </view>
     <view class="btn-ghost" bindtap="studyStop">退出自测</view>
+  </view>
+
+  <!-- 从工作台知识库导入（跨仓 §七）：粘贴 JSON → 解析预览 → 确认写入 -->
+  <view wx:if="{{importing}}" class="imp-mask">
+    <view class="imp-card">
+      <view class="imp-title">从工作台知识库导入</view>
+      <view class="imp-desc">粘贴 workbench 的 knowledgePoints 或 RawCurriculum JSON，解析后可预览，确认后写入本机必会库（与网页看板云端互通）。</view>
+      <textarea class="imp-text" value="{{importText}}" bindinput="onImportText" placeholder="在此粘贴 JSON（或点「粘贴剪贴板」）" auto-height maxlength="-1"></textarea>
+      <view class="imp-actions">
+        <view class="mini-btn" bindtap="pasteFromClipboard">粘贴剪贴板</view>
+        <view class="mini-btn primary" bindtap="parseImport">解析</view>
+      </view>
+      <view wx:if="{{importErr}}" class="imp-err">{{importErr}}</view>
+      <view wx:if="{{importPreview}}" class="imp-prev">
+        <view class="imp-prev-stat">将导入 {{importPreview.stats.units}} 个单元 / {{importPreview.stats.points}} 个必会点</view>
+        <view wx:for="{{importPreview.units}}" wx:key="title" class="imp-unit">
+          <view class="imp-unit-ti">{{item.title}} · {{item.count}} 点</view>
+          <view wx:if="{{item.topics.length}}" class="imp-unit-top">{{item.topics[0]}}{{item.topics.length > 1 ? ' 等' : ''}}</view>
+        </view>
+        <view wx:for="{{importPreview.warnings}}" wx:key="*this" class="imp-warn">⚠ {{item}}</view>
+      </view>
+      <view wx:if="{{importPreview}}" class="imp-foot">
+        <view class="mini-btn primary" bindtap="confirmImport">确认导入</view>
+        <view class="mini-btn" bindtap="closeImport">取消</view>
+      </view>
+    </view>
   </view>
 
 </view>

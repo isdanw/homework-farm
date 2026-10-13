@@ -13,6 +13,7 @@ const util = require('../../utils/util.js');
 const store = require('../../utils/store.js');
 const engine = require('../../utils/farmEngine.js');
 const tutorSubjects = require('../../utils/tutorSubjects.js');
+const workbenchKpImport = require('../../utils/workbenchKpImport.js');
 
 Page({
   data: {
@@ -29,7 +30,13 @@ Page({
     newFront: '',
     newBack: '',
     // 翻面自测态（复用 cards 页翻面交互）
-    study: { active: false, flipped: false, current: null }
+    study: { active: false, flipped: false, current: null },
+    // 从工作台知识库导入态
+    importing: false,
+    importText: '',
+    importPreview: null,        // { stats, warnings, units:[{title,subject,grade,count,topics}] }
+    importUnits: [],            // 解析后的原始 unit 列表（确认时写入）
+    importErr: ''
   },
 
   onLoad(options) {
@@ -175,6 +182,52 @@ Page({
     this.render();
   },
   studyStop() { this.setData({ study: { active: false, flipped: false, current: null } }); },
+
+  /* ---------------- 从工作台知识库导入（跨仓 §七） ---------------- */
+  openImport() {
+    this.setData({ importing: true, importText: '', importPreview: null, importUnits: [], importErr: '' });
+  },
+  closeImport() { this.setData({ importing: false }); },
+  onImportText(e) { this.setData({ importText: e.detail.value || '' }); },
+  pasteFromClipboard() {
+    wx.getClipboardData({
+      success: (r) => { this.setData({ importText: r.data || '' }); util.toast('已粘贴剪贴板内容'); },
+      fail: () => util.toast('读取剪贴板失败')
+    });
+  },
+  parseImport() {
+    const txt = (this.data.importText || '').trim();
+    if (!txt) return util.toast('请先粘贴或输入 JSON');
+    let parsed;
+    try { parsed = JSON.parse(txt); }
+    catch (e) { this.setData({ importErr: 'JSON 解析失败：' + e.message, importPreview: null, importUnits: [] }); return; }
+    const res = workbenchKpImport.convert(parsed);
+    if (!res.ok) { this.setData({ importErr: res.error || '无法识别输入', importPreview: null, importUnits: [] }); return; }
+    if (!res.units.length) {
+      this.setData({ importErr: '未解析出任何单元（检查 knowledgePointRef / nodes 字段）', importPreview: null, importUnits: [] });
+      return;
+    }
+    const preview = {
+      stats: res.stats,
+      warnings: res.warnings,
+      units: res.units.map(u => ({
+        title: u.title, subject: u.subject, grade: u.grade,
+        count: u.points.length,
+        topics: u.points.slice(0, 3).map(p => p.topic)
+      }))
+    };
+    this.setData({ importErr: '', importPreview: preview, importUnits: res.units });
+  },
+  confirmImport() {
+    const units = this.data.importUnits || [];
+    if (!units.length) return util.toast('请先解析出可导入的单元');
+    let n = 0, pts = 0;
+    units.forEach(u => { const it = tutorStore.upsertUnitKp(u); if (it) { n++; pts += (u.points ? u.points.length : 0); } });
+    tutorStore.pushQueued();
+    this.setData({ importing: false, importText: '', importPreview: null, importUnits: [] });
+    this.render();
+    util.toast('已导入 ' + n + ' 个单元（' + pts + ' 个必会点）', 'success');
+  },
 
   goBack() { wx.navigateBack({ delta: 1 }); }
 });

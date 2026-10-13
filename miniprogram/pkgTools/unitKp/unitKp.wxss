@@ -20,6 +20,91 @@ page {
   color: #9A8F7D;
 }
 
+.top-actions {
+  margin: 4rpx 28rpx 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.imp-btn {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #6B5E3F;
+  background: #FFF3D6;
+  border: 2rpx solid #E0CFA0;
+  border-radius: 999rpx;
+  padding: 10rpx 26rpx;
+}
+
+/* 导入弹窗 */
+.imp-mask {
+  position: fixed;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 70;
+  background: rgba(58, 58, 58, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40rpx;
+}
+.imp-card {
+  width: 100%;
+  max-height: 84vh;
+  overflow-y: auto;
+  background: #FFFDF7;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(120, 90, 30, 0.2);
+}
+.imp-title { font-size: 32rpx; font-weight: 800; color: #3A3A3A; }
+.imp-desc { margin-top: 12rpx; font-size: 24rpx; color: #9A8F7D; line-height: 1.6; }
+.imp-text {
+  margin-top: 20rpx;
+  width: 100%;
+  min-height: 200rpx;
+  background: #fff;
+  border: 2rpx solid #E8DFC8;
+  border-radius: 16rpx;
+  padding: 18rpx;
+  font-size: 24rpx;
+  color: #3A3A3A;
+  box-sizing: border-box;
+}
+.imp-actions { margin-top: 18rpx; display: flex; gap: 16rpx; }
+.imp-err {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #B0524F;
+  background: #FBE7E6;
+  border-radius: 12rpx;
+  padding: 14rpx 18rpx;
+  line-height: 1.5;
+}
+.imp-prev { margin-top: 20rpx; }
+.imp-prev-stat {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #3A7D44;
+  margin-bottom: 12rpx;
+}
+.imp-unit {
+  background: #fff;
+  border-radius: 14rpx;
+  padding: 16rpx 18rpx;
+  margin-bottom: 10rpx;
+}
+.imp-unit-ti { font-size: 26rpx; font-weight: 600; color: #3A3A3A; }
+.imp-unit-top { margin-top: 6rpx; font-size: 22rpx; color: #B0A68F; }
+.imp-warn {
+  font-size: 22rpx;
+  color: #C08A2B;
+  background: #FCEBD2;
+  border-radius: 10rpx;
+  padding: 10rpx 14rpx;
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+.imp-foot { margin-top: 24rpx; display: flex; gap: 16rpx; }
+
 .stat {
   display: flex;
   margin: 20rpx 28rpx 0;
