@@ -499,6 +499,17 @@
             <div class="mut" style="margin-top:8px" data-page-node-id="uAJMDrFRN6iIVEOtsFVd0m">仅 <code data-page-node-id="vP7wNXmwy6ogAxIyHogWbn">passed=true</code> 计入掌握；订正/会话不在此列。</div>
           </div>
         </div>
+        <div class="card" style="margin-top:14px">
+          <h3>复习卡（tutor_cards · 自动闪卡）</h3>
+          <div class="mut" style="margin-bottom:8px">导学结束时由 AI 从「推通的重点」生成，确认后入库；网页端可查看并标记复习结果（记得/忘了），与小程序「复习卡」页数据互通（同一 tutor_cards 集合）。卡片自测只推进 Leitner 盒子，不写掌握证据。</div>
+          <table class="tbl-card" id="cardTbl"><thead><tr><th>正面（问题）</th><th>背面（答案）</th><th>主题</th><th>档位</th><th>到期</th><th>状态</th><th>复习</th></tr></thead><tbody></tbody></table>
+          <div id="cardMsg" class="mut" style="margin-top:8px"></div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <h3>单元必会清单（tutor_unit_kps · 混合路线）</h3>
+          <div class="mut" style="margin-bottom:8px">小程序导学页「📚 建单元必会库」生成的 canonical 清单；会话结束时未覆盖的点会自动补齐成复习卡。通关率 = 已毕业卡（Leitner 到顶）对应的必会点数 / 必会点总数，属复习行为指标，非教学掌握度。</div>
+          <table class="tbl-card" id="unitTbl"><thead><tr><th>单元</th><th>必会点（正面）</th><th>主题</th><th>状态</th><th>档位</th><th>到期</th><th>复习</th></tr></thead><tbody></tbody></table>
+        </div>
       </section>
 
       <!-- 试卷库（对应小程序「试卷库 / 资源库」+ 工作台「试卷」） -->
@@ -28916,8 +28927,11 @@ function renderOverview(){
     ['n','导学会话(活动)', k.sessions, '累计·非掌握度', 'M4 5h16v11H7l-3 3Z'],
     ['n','错题总量', k.mistakes, 'E1–E9 归因', 'M12 3 2 8l10 5 10-5Z'],
     ['a','待复习', k.dueReviews, 'dueAt≤现在', 'M12 8v5l3 3'],
+    ['a','待复习卡', (k.dueCards||0), '闪卡 dueAt≤现在', 'M5 4h14v16H5Z M8 8h8v3H8Z'],
     ['g','已掌握证据', k.mastered, '复测≥5题≥80%', 'M20 6 9 17l-5-5'],
-    ['n','已订正', k.corrected, '≠掌握，单独计', 'M5 13l4 4L19 7']
+    ['n','已订正', k.corrected, '≠掌握，单独计', 'M5 13l4 4L19 7'],
+    ['g','单元通关率', (k.avgUnitPass!=null?k.avgUnitPass+'%':'—'), '毕业卡/必会点·复习行为指标', 'M4 4h16v16H4Z M8 12l3 3 5-6'],
+    ['n','进行中单元', (k.unitsInProgress||0), '已覆盖未全部通关', 'M12 3v9l7 4']
   ];
   wrap.innerHTML = items.map(it=>`<div class="kpi ${it[0]}"><div class="lab"><svg viewBox="0 0 24 24"><path d="${it[4]}"/></svg>${it[1]}</div><div class="num">${it[2]}</div><div class="hint">${it[3]}</div></div>`).join('');
 
@@ -28965,6 +28979,7 @@ function renderAlertsAndActivity(){
   (DATA.profile&&DATA.profile.accounts||[]).forEach(a=>{
     const name = a.nickname || maskOpenid(a.openid);
     if(a.dueReviews>0) alerts.push({dot:'r', txt:`<b>${esc(name)}</b> 有 ${a.dueReviews} 个复习窗口今日到期`, btn:'去复习'});
+    if(a.dueCards>0) alerts.push({dot:'b', txt:`<b>${esc(name)}</b> 有 ${a.dueCards} 张复习卡今日到期`, btn:'看复习卡'});
   });
   const pending = (DATA.tutor&&DATA.tutor.mistakes||[]).filter(m=>m.status!=='corrected').length;
   if(pending>0) alerts.push({dot:'a', txt:`共 <b>${pending}</b> 条错题待订正`, btn:'看错题'});
@@ -28973,7 +28988,7 @@ function renderAlertsAndActivity(){
   const box=document.getElementById('alerts');
   if(alerts.length){
     box.style.display='block';
-    document.getElementById('alertList').innerHTML = alerts.map(a=>`<div class="arow"><span class="dot ${a.dot}"></span><span class="txt">${a.txt}</span><button class="btn" data-go="${a.btn==='看结算'?'farm':a.btn==='看错题'?'tutor':'archive'}">${a.btn}</button></div>`).join('');
+    document.getElementById('alertList').innerHTML = alerts.map(a=>`<div class="arow"><span class="dot ${a.dot}"></span><span class="txt">${a.txt}</span><button class="btn" data-go="${a.btn==='看结算'?'farm':(a.btn==='看错题'||a.btn==='看复习卡')?'tutor':'archive'}">${a.btn}</button></div>`).join('');
     document.querySelectorAll('#alertList .btn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.go)));
   } else {
     box.style.display='block';
@@ -29127,6 +29142,43 @@ function renderTutor(){
     {l:'正确率',f:r=>`<span class="tag t-g">${r.rate!=null?r.rate+'%':'—'}</span>`},
     {l:'时间',f:r=>fmtMD(r.createdAt)}
   ]);
+  // 复习卡（tutor_cards）：与小程序「复习卡」页同一集合，网页端可查看并标记复习结果
+  fillTbl('cardTbl', (t.cards||[]).slice(0,100), [
+    {l:'正面',f:r=>esc(r.front||'—')},
+    {l:'背面',f:r=>esc(r.back||'—')},
+    {l:'主题',f:r=>esc(r.topic||'—')},
+    {l:'档位',f:r=>`box ${r.box||1}`},
+    {l:'到期',f:r=>fmtDate(r.dueAt)},
+    {l:'状态',f:r=>r.done?'<span class="tag t-g">已毕业</span>':((r.dueAt||0)<=now?'<span class="tag t-a">待复习</span>':'<span class="tag t-b">复习中</span>')},
+    {l:'复习',f:r=>{
+      if(r.done) return '<span class="mut">—</span>';
+      if((r.dueAt||0)>now) return '<span class="mut">未到期</span>';
+      const id = esc(r.clientId||r._id||'');
+      return `<button class="btn card-act" data-cid="${id}" data-good="1">记得</button> <button class="btn card-act" data-cid="${id}" data-good="0">忘了</button>`;
+    }}
+  ]);
+  document.querySelectorAll('#cardTbl .card-act').forEach(b=>b.addEventListener('click', async ()=>{
+    const cid = b.dataset.cid; const good = b.dataset.good==='1';
+    await reviewCard(cid, good);
+  }));
+  // 单元必会清单（tutor_unit_kps + tutor_cards 按 unitId+kpId 关联；P2）
+  fillTbl('unitTbl', (t.unitKpPoints||[]).slice(0,200), [
+    {l:'单元',f:r=>esc(r.unitTitle||'—')},
+    {l:'必会点（正面）',f:r=>esc(r.front||'—')},
+    {l:'主题',f:r=>esc(r.topic||'—')},
+    {l:'状态',f:r=>r.status==='done'?'<span class="tag t-g">已通关</span>':(r.status==='due'?'<span class="tag t-a">待复习</span>':(r.status==='learning'?'<span class="tag t-b">复习中</span>':'<span class="tag t-n">未覆盖</span>'))},
+    {l:'档位',f:r=>r.box?`box ${r.box}`:'—'},
+    {l:'到期',f:r=>r.dueAt?fmtDate(r.dueAt):'—'},
+    {l:'复习',f:r=>{
+      if(r.status!=='due'||!r.cardClientId) return '<span class="mut">—</span>';
+      const id = esc(r.cardClientId);
+      return `<button class="btn card-act" data-cid="${id}" data-good="1">记得</button> <button class="btn card-act" data-cid="${id}" data-good="0">忘了</button>`;
+    }}
+  ]);
+  document.querySelectorAll('#unitTbl .card-act').forEach(b=>b.addEventListener('click', async ()=>{
+    const cid = b.dataset.cid; const good = b.dataset.good==='1';
+    await reviewCard(cid, good);
+  }));
 }
 
 /* ============ 试卷库 ============ */
@@ -29422,6 +29474,62 @@ async function callWrite(action, payload){
     return { ok:true, order:r.order||null, data:r };
   }catch(e){
     return { ok:false, code:'network', msg:orderErrText('network', errText(e)) };
+  }
+}
+
+/* ================================================================== *
+ * 一·补：复习卡写通道（cards 模块，与 orders 平行的另一可写区）
+ * ------------------------------------------------------------------
+ * 闪卡功能（设计文档「自动闪卡与课程总结」）要求网页看板也能标记复习卡结果
+ * （记得/忘了），且与小程序「复习卡」页数据互通（同一 tutor_cards 集合）。
+ * 因此 cards 是继 orders 之后**第二个**经 webAdminWrite 的可写模块，但约束明确：
+ *   · 只发布 Leitner 盒子进度（box/dueAt/done/lastResult），不碰 front/back 内容；
+ *   · 同样走三路合并（base/mine/theirs）：base 用下拉时的 updatedAt，若下拉后小程序
+ *     已推进该卡则 conflict 跳过，绝不静默覆盖对方的进度；
+ *   · 不写 evidence、不声称掌握（活动 ≠ 证据 ≠ 掌握）。
+ * ================================================================== */
+const CARD_STAGE_DAYS = [1, 2, 4, 7, 15];
+
+async function callWriteCards(cards){
+  if(!TOKEN) return { ok:false, code:'auth', msg:orderErrText('auth') };
+  try{
+    if(!app) await initCloud();
+    const res = await app.callFunction({ name:'webAdminWrite', data:{ token: TOKEN, cards: Array.isArray(cards)?cards:[] } });
+    const r = (res && res.result) || {};
+    if(!r.ok) return { ok:false, code:r.code||'write_error', msg:r.msg||'写入失败' };
+    return { ok:true, data:r };
+  }catch(e){ return { ok:false, code:'network', msg:orderErrText('network', errText(e)) }; }
+}
+
+/**
+ * 网页端推进一张复习卡（对齐小程序 tutorStore.advanceCard 的 Leitner 规则）：
+ *   good → box+1（封顶 5 毕业 done=true）；again → box 重置 1，dueAt=now+1天。
+ * 写回经 webAdminWrite.cards（三路合并）；base 用下拉时的 updatedAt，
+ * 若下拉后小程序已推进该卡则 conflict 跳过（不踩对方的进度）。
+ */
+async function reviewCard(cardId, good){
+  const t = DATA.tutor; if(!t||!t.cards) return;
+  const card = (t.cards||[]).find(c => (c.clientId||c._id) === cardId);
+  if(!card) return;
+  const now = Date.now();
+  const box = Number(card.box)||1;
+  let nb, dueAt, done;
+  if(good){
+    nb = Math.min(box+1, CARD_STAGE_DAYS.length);
+    if(nb >= CARD_STAGE_DAYS.length){ done = true; }       // 最高盒毕业，不再提醒
+    else { done = false; dueAt = now + (CARD_STAGE_DAYS[nb-1]||1)*86400000; }
+  } else {
+    nb = 1; done = false; dueAt = now + CARD_STAGE_DAYS[0]*86400000;
+  }
+  const patch = { clientId: card.clientId, box: nb, dueAt: dueAt, done: done, lastResult: good?'good':'again', updatedAt: now, baseUpdatedAt: Number(card.updatedAt)||0 };
+  const res = await callWriteCards([patch]);
+  const msg = document.getElementById('cardMsg');
+  if(res.ok){
+    msg.textContent = good ? ('✅ 记牢，档位 → box '+nb+(done?'（已毕业）':'')) : '🔁 已标记「忘了」，回到 box 1';
+    refreshAll();
+  } else {
+    const extra = (res.code==='conflict') ? '（云端已有更新，请刷新后重试）' : '';
+    msg.textContent = '⚠️ ' + (res.msg||'操作失败') + extra;
   }
 }
 
@@ -30064,6 +30172,7 @@ function renderReport(){
   const mastered = (t&&t.evidence||[]).filter(e=>e.passed).length;
   const pending = totalMistakes - (t&&t.mistakes||[]).filter(m=>m.status==='corrected').length;
   const dueReviews = accs.reduce((s,a)=>s+(a.dueReviews||0),0);
+  const dueCards = accs.reduce((s,a)=>s+(a.dueCards||0),0);
   // 薄弱学科（错题 - 掌握 > 0）
   const weakMap = {};
   (t&&t.mistakes||[]).forEach(m=>{ const k=subjName(m.subject); weakMap[k]=(weakMap[k]||0)+1; });
@@ -30078,10 +30187,17 @@ function renderReport(){
     <div class="kpi g"><div class="lab">已掌握证据</div><div class="num">${mastered}</div></div>
     <div class="kpi a"><div class="lab">待订正</div><div class="num">${pending}</div></div>
     <div class="kpi a"><div class="lab">待复习</div><div class="num">${dueReviews}</div></div>
+    <div class="kpi a"><div class="lab">待复习卡</div><div class="num">${dueCards}</div></div>
+    <div class="kpi g"><div class="lab">单元通关率</div><div class="num">${(o&&o.kpi.avgUnitPass!=null)?o.kpi.avgUnitPass+'%':'—'}</div></div>
+    <div class="kpi n"><div class="lab">进行中单元</div><div class="num">${(o&&o.kpi.unitsInProgress)||0}</div></div>
   </div>`);
   html += sec('掌握闭环', accs.map(a=>{
     const m = a.mistakes||0, c = a.mastered||0;
     const rate = m? Math.round(c/m*100):0;
+    return `<div class="brow"><span class="nm">${esc(a.nickname||maskOpenid(a.openid))}</span><span class="track"><i style="width:${rate}%"></i></span><span class="v">${rate}%</span></div>`;
+  }).join('') || '<div class="empty">暂无账号</div>');
+  html += sec('单元通关（必会清单覆盖率）', accs.map(a=>{
+    const rate = a.unitPassRate||0;
     return `<div class="brow"><span class="nm">${esc(a.nickname||maskOpenid(a.openid))}</span><span class="track"><i style="width:${rate}%"></i></span><span class="v">${rate}%</span></div>`;
   }).join('') || '<div class="empty">暂无账号</div>');
   html += sec('薄弱学科与建议', weak.length ? weak.map(k=>`<div class="fi"><span class="dot"></span><span><b>${esc(k)}</b> 当前净错题 ${weakMap[k]} 条，建议优先安排复测与针对性训练。</span></div>`).join('') : '<div class="empty">暂无显著薄弱学科 🎉</div>');
@@ -30097,7 +30213,7 @@ function switchView(v){
   const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',orders:'导学单',exams:'试卷库',archive:'导学档案',tasks:'计划与课表',timeline:'时间轴记录',report:'导学报告',set:'环境与口令',speakstep:'英语练习'};
   document.getElementById('title').textContent=map[v]||v;
   /* 每个视图的副标题后缀 —— 口径与「只读」文案一致：只有「导学单」是可写区（决策 3） */
-  const suffix = (v === 'orders') ? ' · 可写（出单 / 交回执）' : ' · 只读';
+  const suffix = (v === 'orders') ? ' · 可写（出单 / 交回执）' : (v === 'tutor') ? ' · 只读（复习卡可标记）' : ' · 只读';
   document.getElementById('sub').textContent=(map[v]||'')+suffix;
   document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
   document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));

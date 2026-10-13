@@ -48,7 +48,9 @@ const PULL_LIMITS = {
   tutor_mistakes: 200,
   tutor_evidence: 200,
   tutor_reviews: 100,
-  tutor_orders: 200
+  tutor_orders: 200,
+  tutor_cards: 200,
+  tutor_unit_kps: 200
 };
 
 /* push 各集合单次上限 */
@@ -57,7 +59,9 @@ const PUSH_LIMITS = {
   mistakes: 200,
   evidence: 200,
   reviews: 100,
-  orders: 200
+  orders: 200,
+  cards: 200,
+  unitKps: 200
 };
 
 /* F-B：试卷库 */
@@ -79,13 +83,15 @@ function str(v, max) {
 /* ---------------- pull ---------------- */
 async function pull(app, openid) {
   const db = app.database();
-  const out = { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [] };
+  const out = { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], cards: [], unitKps: [] };
   const map = {
     sessions: 'tutor_sessions',
     mistakes: 'tutor_mistakes',
     evidence: 'tutor_evidence',
     reviews: 'tutor_reviews',
-    orders: 'tutor_orders'
+    orders: 'tutor_orders',
+    cards: 'tutor_cards',
+    unitKps: 'tutor_unit_kps'
   };
   for (const key of Object.keys(map)) {
     const name = map[key];
@@ -117,7 +123,7 @@ async function pull(app, openid) {
   return {
     ok: true,
     sessions: out.sessions, mistakes: out.mistakes, evidence: out.evidence,
-    reviews: out.reviews, orders: out.orders
+    reviews: out.reviews, orders: out.orders, cards: out.cards, unitKps: out.unitKps
   };
 }
 
@@ -225,7 +231,9 @@ async function push(app, openid, input) {
     mistakes: 'tutor_mistakes',
     evidence: 'tutor_evidence',
     reviews: 'tutor_reviews',
-    orders: 'tutor_orders'
+    orders: 'tutor_orders',
+    cards: 'tutor_cards',
+    unitKps: 'tutor_unit_kps'
   };
 
   for (const kind of Object.keys(collName)) {
@@ -267,6 +275,25 @@ async function push(app, openid, input) {
                 stage: localStage,
                 dueAt: Number(doc.dueAt) || 0,
                 done: !!doc.done,
+                updatedAt: localUpdated || Date.now()
+              });
+              updated++;
+            } catch (e) {}
+          } else {
+            skipped++;
+          }
+        } else if (kind === 'cards') {
+          // 闪卡：推进后本地领先云端时回写 Leitner 盒子进度（与 reviews 同思路）
+          const cloud = exist[0];
+          const localUpdated = Number(doc.updatedAt) || 0;
+          const cloudUpdated = Number(cloud && cloud.updatedAt) || 0;
+          if (localUpdated > cloudUpdated) {
+            try {
+              await db.collection(collName[kind]).doc(cloud._id).update({
+                box: Number(doc.box) || 1,
+                dueAt: Number(doc.dueAt) || 0,
+                done: !!doc.done,
+                lastResult: doc.lastResult || null,
                 updatedAt: localUpdated || Date.now()
               });
               updated++;
@@ -346,7 +373,9 @@ exports.main = async (event) => {
         mistakes: Array.isArray(event.mistakes) ? event.mistakes : [],
         evidence: Array.isArray(event.evidence) ? event.evidence : [],
         reviews: Array.isArray(event.reviews) ? event.reviews : [],
-        orders: Array.isArray(event.orders) ? event.orders : []
+        orders: Array.isArray(event.orders) ? event.orders : [],
+        cards: Array.isArray(event.cards) ? event.cards : [],
+        unitKps: Array.isArray(event.unitKps) ? event.unitKps : []
       };
       return await push(app, openid, input);
     }

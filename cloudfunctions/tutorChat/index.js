@@ -2,7 +2,7 @@
  * 云函数 tutorChat —— 全科题解导学（P1 MVP：单科多轮导学对话 + 会话归档）
  *
  * 入参：
- *   action: 'chat' | 'archive' | 'diagnoseQuestions'
+ *   action: 'chat' | 'archive' | 'diagnoseQuestions' | 'sessionSummary' | 'genCards'
  *
  * 【chat】生成导学回复
  *   subject:  'math' | 'chinese' | 'english'（学科 key）
@@ -10,6 +10,8 @@
  *   history:  Array<{role:'user'|'assistant', content:string}>  最近若干轮（不含本轮）
  *   learner:  { grade, teachStyle, expectations[] } 导学画像（可空）
  *   learnerCtx: string 近期卡点快照（前端从本地 tutorStore 组装，≤1500 字，可空）
+ *   unitCtx:   { title, points:[{id,topic,status}] } 当前单元必会清单+复习状态（可空，混合路线：
+ *              注入后 AI 优先围绕未覆盖/待复习的点引导，不强行拉回清单、不宣称掌握）
  *   出参：{ ok:true, reply:string } | { ok:false, code, msg }
  *
  * 【archive】会话结束归档（写入 tutor_sessions 集合，按 openid 隔离）
@@ -26,6 +28,19 @@
  *   items:    Array<{no,type,questionText,childAnswer,marked,correctAnswer}>  ocrSchedule action='mistake' 转录结果（≤30 题）
  *   learner:  { grade }（可空，默认一年级）
  *   出参：{ ok:true, items:[{no,topic,errorType,errorDesc,suggestion}] } | { ok:false, code, msg }
+ *
+ * 【sessionSummary】会话级课程总结（写回 tutor_sessions.summary，与 archive 内联生成共用同一函数）
+ *   subject:  string 学科 key
+ *   messages: Array<{role, content}> 完整/精简会话
+ *   diagnosis: Object 可选，archive 返回的诊断结果（用于 stuckPoints）
+ *   sessionId: string 可选，tutor_sessions 的 _id（优先据此写回）
+ *   sessionClientId: string 可选，archive 传入的本地 uid（无 sessionId 时按 openid+clientId 定位写回）
+ *   出参：{ ok:true, data:{summary,keyPoints,stuckPoints,nextStep}, written } | { ok:false, code, msg }
+ *
+ * 【genCards】从会话抽取原子复习卡（仅返回候选，不入库；前端确认后才写 tutor_cards）
+ *   subject:  string 学科 key
+ *   messages: Array<{role, content}> 完整/精简会话
+ *   出参：{ ok:true, cards:[{front,back,topic}] }（cards 可为空数组，宁缺毋滥） | { ok:false, code, msg }
  *
  * 大模型：CloudBase 内置 AI（cloudbase 组，模型 hy3，文本）。
  * 与 aiRoleAnalyze / studyPlanGen 同套初始化与错误兜底。
@@ -124,8 +139,8 @@ function extractJson(text) {
   try { return JSON.parse(s.replace(/,(\s*[}\]])/g, '$1')); } catch (e) { return null; }
 }
 
-/** 组装 messages：主控 system + 学科 system + 近期卡点参考 + 历史 + 本轮 user */
-function buildMessages(subject, content, history, learner, learnerCtx) {
+/** 组装 messages：主控 system + 学科 system + 近期卡点参考 + 单元必会清单 + 历史 + 本轮 user */
+function buildMessages(subject, content, history, learner, learnerCtx, unitCtx) {
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT }
   ];
@@ -138,6 +153,23 @@ function buildMessages(subject, content, history, learner, learnerCtx) {
       role: 'system',
       content: '【孩子近期卡点参考】以下是最近记录的卡点，仅供你主动关联、温故知新；' +
         '孩子问的是新题时就正常导学，不要强行重复旧题、不要据此出题。\n' + str(learnerCtx, 1500)
+    });
+  }
+
+  // 单元必会清单（混合路线）：把当前单元的 canonical 清单 + 复习状态注入导学上下文，
+  // 让 AI 优先围绕「未覆盖 / 待复习」的点引导，而不是漫无目的地接题。
+  if (unitCtx && Array.isArray(unitCtx.points) && unitCtx.points.length) {
+    const STATUS_CN = { uncovered: '未覆盖', learning: '复习中', due: '待复习', done: '已通关' };
+    const lines = unitCtx.points.slice(0, 30).map(p =>
+      '- ' + (p.topic || p.id) + '（' + (STATUS_CN[p.status] || '未覆盖') + '）');
+    messages.push({
+      role: 'system',
+      content: '【本单元必会清单】孩子正在学习「' + str(unitCtx.title, 60) + '」，' +
+        '本单元的必会知识点及当前复习状态如下：\n' + lines.join('\n') + '\n' +
+        '引导建议：① 优先围绕「未覆盖 / 待复习」的点设计提问与提示，让孩子的每一轮都推进清单覆盖；' +
+        '② 「已通关」的点不必重复引导；③ 孩子主动问清单外的内容时正常导学，不要强行拉回清单；' +
+        '④ 状态只是复习进度参考，用来决定问什么，禁止在对话里对孩子宣称「已掌握 / 已通关 / 学会了」，' +
+        '完成一个点时用「这个点想通了」这类过程性表述。'
     });
   }
 
@@ -189,7 +221,7 @@ async function generateWithRetry(model, params) {
 
 /* ---------------- chat ---------------- */
 async function chat(app, input) {
-  const messages = buildMessages(input.subject, input.content, input.history, input.learner, input.learnerCtx);
+  const messages = buildMessages(input.subject, input.content, input.history, input.learner, input.learnerCtx, input.unitCtx);
   const ai = app.ai();
   const model = ai.createModel('cloudbase');
   const result = await generateWithRetry(model, { model: 'hy3', messages: messages });
@@ -348,10 +380,26 @@ const UNITSUM_PROMPT =
   '规则：\n' +
   '1. branches 给 6-8 个，按知识点把单元拆细（如「比大小」「分与合」「加法」「减法」「0的认识」「几和第几」），不要把多个大块塞进同一分支。\n' +
   '2. 每个分支 2-4 条要点，像黑板板书：写具体内容和小例子——算式（如「2+3=5」「5-3=2」）、符号（如「＞＜＝」）、词语、口诀；不要写「认识了加法」这类空话。\n' +
-  '3. 知识框架可按「年级+学科+单元名」对应的通用教材内容拆分支和要点（教材知识是公开常识）；涉及孩子表现/掌握情况的表述只依据下面输入的真实数据，不编造。\n' +
+  '3. **严格围绕给定「单元名称」对应的教材范围拆分支**：不引入其他单元的内容、不跨年级拔高；' +
+  '单元名称无法识别具体教材版本时，按「年级+学科+单元名」最通用的教材范围推断（教材知识是公开常识）；' +
+  '涉及孩子表现/掌握情况的表述只依据下面输入的真实数据，不编造。\n' +
   '4. 做得好的和薄弱的都要体现；错题要落到对应分支的要点里（如「进位易错」「默写需巩固」），做对的部分也写进去。\n' +
   '5. color 在 yellow/pink/blue/green 四色粉笔里选，相邻分支颜色不同。\n' +
-  '6. 要点里不要出现 E1-E9 这类错因编号，错因用通俗中文短词（如「运算失误」「审题不细」）。';
+  '6. 要点里不要出现 E1-E9 这类错因编号，错因用通俗中文短词（如「运算失误」「审题不细」）。\n' +
+  '7. 单元名称信息不足时（如只写「第三单元」），按该年级该学科最常见的进度推断范围，不要因此返回空 branches。';
+
+/* 学科特定的必会点拆解要求（按导学类型定制提示词；与 SUBJECT_PROMPTS 的同学科重点一致，更细化） */
+const UNIT_KP_HINTS = {
+  math: '按知识模块拆细（如「数感」「20以内加减法」「图形与位置」「分类比较」），每条要点必须带具体算式、符号或口诀（如「2+3=5」「＞＜＝」「凑十法」），不写空话。',
+  chinese: '按「拼音→识字→写字→词语→句子」模块拆细（如「声母韵母」「拼读规则」「偏旁部首」「笔画顺序」），每条要点带具体字词或拼读示例（如「b—à→bà（爸）」「日字旁」）。',
+  english: '按「听说模仿→词汇认读→简单句型」模块拆细，每条要点带具体单词或句型（如「apple 苹果」「Hello, I\'m…」），不纠结语法术语。',
+  physics: '按「概念→规律→公式→实验」模块拆细，每条要点带具体公式或实验现象（如「v=s/t」「压强 p=F/S」）。',
+  chemistry: '按「化学用语→物质性质→反应类型→定量计算」模块拆细，每条要点带具体化学式或方程式。',
+  biology: '按「结构→功能→联系」模块拆细，每条要点带具体结构名或生活实例。',
+  history: '按「时间→事件→影响」模块拆细，每条要点带具体年代、事件名或人物。',
+  geography: '按「定位→特征→成因→影响」模块拆细，每条要点带具体地名、数据或图表读法。',
+  politics: '按「是什么→为什么→怎么做」模块拆细，每条要点带具体规则或生活实例。'
+};
 
 /** E 码 → 黑板可读的通俗错因名（与 DIAG_PROMPT 的 E1-E9 口径一致，取短词） */
 const ERROR_SHORT = {
@@ -384,10 +432,13 @@ async function unitSummary(app, input) {
     (input.subjectName ? ('；学科：' + str(input.subjectName, 10)) : '') + '\n\n';
   const ai = app.ai();
   const model = ai.createModel('cloudbase');
+  // 按导学类型（学科）注入必会点拆解要求：提示词关联学科 + 严格落在给定单元范围内
+  const hint = UNIT_KP_HINTS[input.subject] || '';
+  const sys = hint ? (UNITSUM_PROMPT + '\n\n【本学科必会点拆解要求】' + hint) : UNITSUM_PROMPT;
   const result = await model.generateText({
     model: 'hy3',
     messages: [
-      { role: 'system', content: UNITSUM_PROMPT },
+      { role: 'system', content: sys },
       { role: 'user', content: head + lines.join('\n\n') }
     ]
   });
@@ -413,7 +464,177 @@ function parseUnitSum(text) {
   };
 }
 
-/* ---------------- archive（会话归档 + 错因诊断 + 错题落库 + 复习窗口派生） ---------------- */
+/* ---------------- 禁用词门禁（合规红线：与 order-kit K.findBannedWords 同口径，11 词） ----------------
+ * 总结/卡片文字若混入绝对化掌握度表述，一律替换为合规中性表述，绝不落入「已掌握/已精通」断言。
+ * 顺序：先长词组后短词组，避免「完全掌握」被「掌握了」短路。 */
+const BANNED_WORDS = [
+  ['已精通', '掌握扎实'],
+  ['已掌握', '达成较好'],
+  ['学会了', '推通了'],
+  ['完全懂了', '理解了'],
+  ['完全掌握', '掌握得不错'],
+  ['稳稳掌握', '掌握得较稳'],
+  ['掌握了', '学得很扎实'],
+  ['精通了', '学得扎实'],
+  ['已学会', '已能独立做'],
+  ['学懂了', '理解了'],
+  ['全懂了', '都理解了']
+];
+function sanitizeBanned(text) {
+  let s = String(text == null ? '' : text);
+  for (const [bad, good] of BANNED_WORDS) s = s.split(bad).join(good);
+  return s;
+}
+
+/* ---------------- 会话级课程总结（action='sessionSummary'，也会在 archive 内联调用） ----------------
+ * 与 unitSummary 平级但粒度更细：本次对话「推通了什么、卡在哪、下一步」。
+ * 写回 tutor_sessions.summary（by _id 或 openid+clientId），降级不阻塞。
+ * keyPoints 只来自孩子实际说出/推导的内容；stuckPoints 来自诊断；合规走 sanitizeBanned。 */
+const SESSIONSUM_PROMPT =
+  '你是「会话总结」模块，负责把一次导学对话浓缩成孩子和家长都能看懂的回顾。\n' +
+  '只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块，第一个字符必须是 {。\n\n' +
+  '输出格式：\n' +
+  '{"summary":"200字以内一段话：本次围绕什么题、孩子自己推通了哪些点、卡在哪、下一步做什么；' +
+  '不使用「已掌握/已精通/学会了」等绝对化表述，改用「达成较好/还需巩固/可以加强」",' +
+  '"keyPoints":["本次孩子自己说出或推导出的关键结论1","结论2"],' +
+  '"stuckPoints":["仍卡住的点1（来自诊断，没有就留空数组）"],' +
+  '"nextStep":"一句话：下次可先练什么、或复习哪张卡"}\n\n' +
+  '规则：\n' +
+  '1. keyPoints 只能来自对话中孩子「实际说出或推导出来」的内容，不替孩子总结他没做过的；每条≤25字，最多4条。\n' +
+  '2. stuckPoints 只写本次真正卡住的地方，最多3条，没有就返回空数组。\n' +
+  '3. 不编造题面没有的内容；孩子表现只依据真实对话与诊断，不臆测。\n' +
+  '4. 语气中性、给孩子成就感但不夸大；禁用「已掌握/已精通/学会了」等绝对化掌握度表述。';
+
+async function sessionSummary(app, input, diagnosis) {
+  const grade = (input.learner && input.learner.grade) ? str(input.learner.grade, 20)
+    : (str(input.grade, 20) || '');
+  const lines = (Array.isArray(input.messages) ? input.messages : [])
+    .slice(-40)
+    .map(m => (m && m.role === 'user' ? '孩子：' : '老师：') + str(m && m.content, 1500));
+  const head = '学科：' + (SUBJECT_NAMES[input.subject] || str(input.subject, 10) || '未指定') +
+    (grade ? ('；年级：' + grade) : '') + '\n\n';
+  let diagText = '';
+  if (diagnosis && (diagnosis.topic || diagnosis.stuck)) {
+    diagText = '\n【本次诊断参考】' +
+      (diagnosis.topic ? ('知识点：' + str(diagnosis.topic, 40) + '；') : '') +
+      ('是否卡住：' + (diagnosis.stuck ? '是' : '否') + '；') +
+      (diagnosis.errorDesc ? ('观察：' + str(diagnosis.errorDesc, 100)) : '') +
+      (diagnosis.suggestion ? ('；建议：' + str(diagnosis.suggestion, 100)) : '');
+  }
+  const ai = app.ai();
+  const model = ai.createModel('cloudbase');
+  const result = await generateWithRetry(model, {
+    model: 'hy3',
+    messages: [
+      { role: 'system', content: SESSIONSUM_PROMPT },
+      { role: 'user', content: head + '请总结以下导学对话：\n\n' + lines.join('\n') + diagText }
+    ]
+  });
+  return parseSessionSum((result && result.text) || '');
+}
+
+/** 解析会话总结 JSON（防御性：字段兜底 + 合规门禁），解析失败返回 null */
+function parseSessionSum(text) {
+  const obj = extractJson(text);
+  if (!obj) return null;
+  const keyPoints = (Array.isArray(obj.keyPoints) ? obj.keyPoints : []).slice(0, 4).map(k => sanitizeBanned(str(k, 30)));
+  const stuckPoints = (Array.isArray(obj.stuckPoints) ? obj.stuckPoints : []).slice(0, 3).map(s => sanitizeBanned(str(s, 30)));
+  const summary = sanitizeBanned(str(obj.summary, 240));
+  const nextStep = sanitizeBanned(str(obj.nextStep, 60));
+  if (!summary && !keyPoints.length && !stuckPoints.length) return null;
+  return { summary: summary, keyPoints: keyPoints, stuckPoints: stuckPoints, nextStep: nextStep };
+}
+
+/** 把总结写回 tutor_sessions（优先 _id，否则 openid+clientId 定位）。失败返回 false，不抛错。 */
+async function writeSessionSummary(app, openid, sessionId, clientId, summary) {
+  if (!summary) return false;
+  const db = app.database();
+  try {
+    if (sessionId) {
+      await db.collection('tutor_sessions').doc(sessionId).update({ summary: summary });
+      return true;
+    }
+    if (clientId && openid) {
+      const r = await db.collection('tutor_sessions').where({ openid: openid, clientId: clientId }).get();
+      const list = (r && r.data) || [];
+      if (list.length) {
+        await db.collection('tutor_sessions').doc(list[0]._id).update({ summary: summary });
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
+}
+
+/* ---------------- 复习卡生成（action='genCards'，仅返回候选，不入库） ----------------
+ * 从本次会话抽取「孩子自己推通」的原子知识点，≤5 张；前端确认后才写 tutor_cards。
+ * 卡片形态：front 一个可回想的问题，back 简短答案+具体小例子（Anki 一张卡一个事实）。 */
+const GENCARDS_PROMPT =
+  '你是「复习卡生成」模块。下面是一段导学对话（孩子在老师引导下自己推导出结论）。' +
+  '请从中提取「孩子自己推通的关键知识点」，生成可自测的复习卡。\n' +
+  '只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块，第一个字符必须是 {。\n\n' +
+  '输出格式：\n' +
+  '{"cards":[{"front":"卡片正面：一个具体问题/词/填空（如「3+4 等于几？」「b—à 拼成什么音节？」「‘明’字左边是什么偏旁？」）",' +
+  '"back":"卡片背面：答案 + 一个具体小例子（如「7」「bà（爸）」「日字旁」）",' +
+  '"topic":"这张卡对应的小知识点（一句话）",' +
+  '"kpId":"若本卡确实覆盖了下面给定的「单元必会点」中某一条，填它的 id；否则填 null"}]}\n\n' +
+  '规则：\n' +
+  '1. 每张卡只承载「一个事实」，正面是一个可回想的问题，背面是简短答案+例子，不写大段解释。\n' +
+  '2. 卡片只能来自对话中孩子「实际推通/说出」的内容，不凭空造卡、不造孩子没学过的题。\n' +
+  '3. 数量：最多 5 张；如果本次对话没有值得单独记的知识点，返回 cards:[]（宁缺毋滥）。\n' +
+  '4. 适合一年级孩子：用词具体、不抽象；拼音/汉字卡正面带语境（如给出音节或偏旁）。\n' +
+  '5. kpId 仅当本卡确实覆盖了给定「单元必会点」某条时才填对应 id，且 id 必须从给定清单里取；' +
+  '不确定或无关就填 null，不要硬凑、不要编造 id。';
+
+async function genCards(app, input) {
+  const grade = (input.learner && input.learner.grade) ? str(input.learner.grade, 20)
+    : (str(input.grade, 20) || '');
+  const lines = (Array.isArray(input.messages) ? input.messages : [])
+    .slice(-40)
+    .map(m => (m && m.role === 'user' ? '孩子：' : '老师：') + str(m && m.content, 1500));
+  const head = '学科：' + (SUBJECT_NAMES[input.subject] || str(input.subject, 10) || '未指定') +
+    (grade ? ('；年级：' + grade) : '') + '\n\n';
+  // 单元必会点（混合路线）：若前端传了当前单元的 canonical 清单，则要求 AI 把覆盖到的点映射 kpId
+  const unitPoints = Array.isArray(input.unitPoints) ? input.unitPoints.slice(0, 50) : [];
+  let unitPart = '';
+  if (unitPoints.length) {
+    unitPart = '\n\n【单元必会点（id → 主题），kpId 只能取这里的 id】\n' +
+      unitPoints.map(p => '- ' + (p.id || '') + '：' + (p.topic || '')).join('\n');
+  }
+  const ai = app.ai();
+  const model = ai.createModel('cloudbase');
+  const result = await generateWithRetry(model, {
+    model: 'hy3',
+    messages: [
+      { role: 'system', content: GENCARDS_PROMPT },
+      { role: 'user', content: head + '请生成复习卡：\n\n' + lines.join('\n') + unitPart }
+    ]
+  });
+  const parsed = parseGenCards((result && result.text) || '');
+  // 仅保留落在给定必会点 id 集合内的 kpId（防止 AI 编造 id 导致误去重）
+  if (unitPoints.length) {
+    const allowed = new Set(unitPoints.map(p => p.id));
+    parsed.cards.forEach(c => { if (c.kpId && !allowed.has(c.kpId)) c.kpId = null; });
+    parsed.coveredKpIds = parsed.cards.filter(c => c.kpId).map(c => c.kpId);
+  }
+  // 返回 { cards, coveredKpIds }；不入库（单元必会未覆盖点的自动补齐由前端按本地已有卡计算，见小程序端）
+  return parsed;
+}
+
+/** 解析复习卡 JSON（防御性：去空卡、≤5 张，kpId 归一为字符串或 null），解析失败返回空结构 */
+function parseGenCards(text) {
+  const obj = extractJson(text);
+  if (!obj || !Array.isArray(obj.cards)) return { cards: [], coveredKpIds: [] };
+  const cards = obj.cards.slice(0, 5).map(c => ({
+    front: str(c && c.front, 80),
+    back: str(c && c.back, 120),
+    topic: str(c && c.topic, 40),
+    kpId: (c && c.kpId && typeof c.kpId === 'string' && /^[A-Za-z0-9_:-]+$/.test(c.kpId)) ? c.kpId : null
+  })).filter(c => c.front && c.back);
+  return { cards: cards, coveredKpIds: cards.filter(c => c.kpId).map(c => c.kpId) };
+}
+
+/* ---------------- archive（会话归档 + 错因诊断 + 错题落库 + 复习窗口派生 + 会话总结写回） ---------------- */
 async function archive(app, input, openid) {
   const db = app.database();
   const now = Date.now();
@@ -525,12 +746,22 @@ async function archive(app, input, openid) {
     }
   }
 
+  // 会话级总结（写回 tutor_sessions.summary；失败不阻塞归档，与 diagnose 同级降级）
+  let summary = null;
+  try { summary = await sessionSummary(app, input, diagnosis); } catch (e) { summary = null; }
+  if (summary && addRes && addRes.id) {
+    try {
+      await db.collection('tutor_sessions').doc(addRes.id).update({ summary: summary });
+    } catch (e) {}
+  }
+
   return {
     ok: true,
     id: (addRes && addRes.id) || '',
     diagnosis: diagnosis,
     mistakeId: mistakeId,
-    review: review
+    review: review,
+    summary: summary
   };
 }
 
@@ -555,12 +786,31 @@ exports.main = async (event) => {
     subjectName: str(event.subjectName, 10),
     tasks: Array.isArray(event.tasks) ? event.tasks.slice(0, 30) : [],
     mistakes: Array.isArray(event.mistakes) ? event.mistakes.slice(0, 20) : [],
-    notes: Array.isArray(event.notes) ? event.notes.slice(0, 20) : []
+    notes: Array.isArray(event.notes) ? event.notes.slice(0, 20) : [],
+    /* 会话总结 / 复习卡（sessionSummary / genCards）专用字段 */
+    sessionId: str(event.sessionId, 60),
+    grade: str(event.grade, 20),
+    diagnosis: event.diagnosis && typeof event.diagnosis === 'object' ? event.diagnosis : null,
+    /* 复习卡混合生成（genCards）专用字段：当前单元必会清单（用于 kpId 映射），
+     *   元素 {id,topic,front,back} */
+    unitPoints: Array.isArray(event.unitPoints) ? event.unitPoints.slice(0, 50) : [],
+    /* 导学对话（chat）专用字段：当前单元必会清单 + 复习状态快照（前端从本地组装，云函数不查库），
+     *   {title, points:[{id,topic,status}]}，status ∈ uncovered|learning|due|done */
+    unitCtx: (event.unitCtx && typeof event.unitCtx === 'object') ? {
+      title: str(event.unitCtx.title, 60),
+      points: (Array.isArray(event.unitCtx.points) ? event.unitCtx.points : []).slice(0, 30).map(p => ({
+        id: str(p && p.id, 30),
+        topic: str(p && p.topic, 60),
+        status: /^(uncovered|learning|due|done)$/.test(p && p.status) ? p.status : 'uncovered'
+      }))
+    } : null
   };
 
   const action = event.action === 'archive' ? 'archive'
     : event.action === 'diagnoseQuestions' ? 'diagnoseQuestions'
     : event.action === 'unitSummary' ? 'unitSummary'
+    : event.action === 'sessionSummary' ? 'sessionSummary'
+    : event.action === 'genCards' ? 'genCards'
     : 'chat';
 
   if (action === 'chat') {
@@ -609,6 +859,39 @@ exports.main = async (event) => {
         return { ok: false, code: 'no_pack', msg: 'AI 资源包未开通：请在云开发控制台购买「Token Credits 资源包」后重试' };
       }
       return { ok: false, code: 'ai_error', msg: '总结生成失败：' + msg };
+    }
+  }
+
+  if (action === 'sessionSummary') {
+    if (!input.messages.length && !input.sessionId && !input.sessionClientId) {
+      return { ok: false, code: 'empty', msg: '缺少会话内容或会话标识' };
+    }
+    try {
+      const data = await sessionSummary(app, input, input.diagnosis);
+      if (!data) return { ok: false, code: 'parse', msg: '总结生成失败，请重试' };
+      const written = await writeSessionSummary(app, openid, input.sessionId, input.sessionClientId, data);
+      return { ok: true, data: data, written: written };
+    } catch (e) {
+      const msg = (e && e.message) || String(e);
+      if (/token|tokencredit|resource|pack|quota|余额|额度|开通|403|404|未购买|模型|model|not found|不存在|unauthorized|forbidden/i.test(msg)) {
+        return { ok: false, code: 'no_pack', msg: 'AI 资源包未开通：请在云开发控制台购买「Token Credits 资源包」后重试' };
+      }
+      return { ok: false, code: 'ai_error', msg: '总结生成失败：' + msg };
+    }
+  }
+
+  if (action === 'genCards') {
+    if (!input.messages.length) return { ok: false, code: 'empty', msg: '没有可生成卡片的对话内容' };
+    try {
+      const parsed = await genCards(app, input);
+      // 仅返回候选（cards + coveredKpIds），不入库；单元必会未覆盖点的自动补齐由前端完成
+      return { ok: true, cards: parsed.cards || [], coveredKpIds: parsed.coveredKpIds || [] };
+    } catch (e) {
+      const msg = (e && e.message) || String(e);
+      if (/token|tokencredit|resource|pack|quota|余额|额度|开通|403|404|未购买|模型|model|not found|不存在|unauthorized|forbidden/i.test(msg)) {
+        return { ok: false, code: 'no_pack', msg: 'AI 资源包未开通：请在云开发控制台购买「Token Credits 资源包」后重试' };
+      }
+      return { ok: false, code: 'ai_error', msg: '卡片生成失败：' + msg };
     }
   }
 

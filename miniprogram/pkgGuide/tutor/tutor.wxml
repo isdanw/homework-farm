@@ -27,6 +27,17 @@
     </view>
   </scroll-view>
 
+  <!-- 单元必会库（P1 混合路线）：按当前学科建立 canonical 必会清单，会话结束自动补齐漏点 -->
+  <view style="padding:16rpx 24rpx 0;display:flex;gap:16rpx;">
+    <view style="display:inline-block;background:#FFF3D6;color:#8A6D2F;border:2rpx solid #F0D9A0;font-size:26rpx;font-weight:600;padding:14rpx 30rpx;border-radius:999rpx;" bindtap="buildUnitLibrary">📚 建单元必会库</view>
+    <view style="display:inline-block;background:#fff;color:#6B5E3F;border:2rpx solid #E0CFA0;font-size:26rpx;font-weight:600;padding:14rpx 30rpx;border-radius:999rpx;" bindtap="openUnitKp">📋 查看/编辑清单</view>
+  </view>
+
+  <!-- 单元覆盖进度（导学结合清单的可见性：AI 会优先围绕未覆盖/待复习的点引导） -->
+  <view wx:if="{{unitProgress}}" style="padding:10rpx 24rpx 0;font-size:22rpx;color:#9A8F7D;line-height:1.5;">
+    「{{unitProgress.title}}」必会 {{unitProgress.total}} 点 · 已覆盖 {{unitProgress.covered}} · 已通关 {{unitProgress.done}}<text wx:if="{{unitProgress.dueCount}}"> · 今日待复习 {{unitProgress.dueCount}}</text>
+  </view>
+
   <!-- 成长计划任务横幅 -->
   <view class="task-banner" wx:if="{{taskContext}}">
     <view class="tb-tag">正在导学</view>
@@ -83,6 +94,41 @@
   <!-- 结束本次导学并归档 -->
   <view class="end-bar">
     <view class="end-btn" bindtap="endSession">✓ 结束本次导学并归档</view>
+  </view>
+
+  <!-- 复习卡双组确认弹窗（P1 混合路线）：本次推通 + 单元必会未覆盖已自动补齐，可勾选剔除 -->
+  <view wx:if="{{cardConfirm.show}}" style="position:fixed;left:0;right:0;top:0;bottom:0;z-index:60;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;justify-content:center;">
+    <view style="width:100%;max-height:86vh;background:#fff;border-radius:28rpx 28rpx 0 0;padding:32rpx 28rpx 24rpx;box-sizing:border-box;overflow-y:auto;">
+      <view style="font-size:34rpx;font-weight:800;color:#3A3A3A;">生成复习卡？</view>
+      <view style="font-size:26rpx;color:#888;margin-top:8rpx;">勾选要加入的要点，之后用间隔重复巩固。</view>
+
+      <view wx:if="{{cardConfirm.session.length}}" style="margin-top:20rpx;">
+        <view style="font-size:28rpx;font-weight:700;color:#3A7D44;">本次推通（{{cardConfirm.session.length}}）</view>
+        <view wx:for="{{cardConfirm.session}}" wx:key="index" style="display:flex;align-items:flex-start;gap:16rpx;padding:16rpx 0;border-bottom:2rpx solid #F2F2F2;" bindtap="toggleCardCheck" data-group="session" data-index="{{index}}">
+          <view style="width:40rpx;height:40rpx;border-radius:10rpx;border:3rpx solid {{item.checked ? '#5FBF6B' : '#CCC'}};background:{{item.checked ? '#5FBF6B' : '#fff'}};flex-shrink:0;margin-top:4rpx;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26rpx;">{{item.checked ? '✓' : ''}}</view>
+          <view style="flex:1;">
+            <view style="font-size:28rpx;color:#333;font-weight:600;">{{item.front}}</view>
+            <view style="font-size:24rpx;color:#999;margin-top:4rpx;">答：{{item.back}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{cardConfirm.fill.length}}" style="margin-top:20rpx;">
+        <view style="font-size:28rpx;font-weight:700;color:#C08A2B;">单元必会 · 未覆盖已自动补齐（{{cardConfirm.fill.length}}）</view>
+        <view wx:for="{{cardConfirm.fill}}" wx:key="index" style="display:flex;align-items:flex-start;gap:16rpx;padding:16rpx 0;border-bottom:2rpx solid #F2F2F2;" bindtap="toggleCardCheck" data-group="fill" data-index="{{index}}">
+          <view style="width:40rpx;height:40rpx;border-radius:10rpx;border:3rpx solid {{item.checked ? '#5FBF6B' : '#CCC'}};background:{{item.checked ? '#5FBF6B' : '#fff'}};flex-shrink:0;margin-top:4rpx;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26rpx;">{{item.checked ? '✓' : ''}}</view>
+          <view style="flex:1;">
+            <view style="font-size:28rpx;color:#333;font-weight:600;">{{item.front}}</view>
+            <view style="font-size:24rpx;color:#999;margin-top:4rpx;">答：{{item.back}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view style="display:flex;gap:20rpx;margin-top:28rpx;">
+        <view style="flex:1;background:#fff;color:#666;border:3rpx solid #E2E2E2;font-size:30rpx;font-weight:600;padding:22rpx 0;border-radius:999rpx;text-align:center;" bindtap="cancelCards">不了</view>
+        <view style="flex:1;background:#5FBF6B;color:#fff;font-size:30rpx;font-weight:700;padding:22rpx 0;border-radius:999rpx;text-align:center;" bindtap="confirmCards">生成</view>
+      </view>
+    </view>
   </view>
 
 </view>

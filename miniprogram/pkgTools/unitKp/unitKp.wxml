@@ -1,0 +1,91 @@
+<view class="page">
+
+  <!-- 顶部：单元信息 + 通关率统计 -->
+  <view class="topbar">
+    <text class="title">{{subjectName}} · 单元必会</text>
+    <text class="sub">{{unit && unit.title ? unit.title : '尚未建立'}}</text>
+  </view>
+
+  <!-- 未建库：引导去导学页建库 -->
+  <view wx:if="{{!unit}}" class="empty-card">
+    <view class="empty-emoji">📚</view>
+    <view class="empty-ti">还没有单元必会库</view>
+    <view class="empty-sub">去导学页点「📚 建单元必会库」，AI 会生成本单元必会知识点清单；会话结束时未覆盖的点会自动补齐成复习卡。</view>
+    <view class="empty-btn" bindtap="goBack">返回导学页</view>
+  </view>
+
+  <block wx:if="{{unit}}">
+    <view class="stat">
+      <view class="stat-item">
+        <text class="num">{{stats.done}}/{{stats.total}}</text>
+        <text class="lab">已通关/必会点</text>
+      </view>
+      <view class="stat-item">
+        <text class="num">{{stats.passRate}}%</text>
+        <text class="lab">通关率</text>
+      </view>
+      <view class="stat-item">
+        <text class="num">{{stats.carded}}/{{stats.total}}</text>
+        <text class="lab">已覆盖</text>
+      </view>
+    </view>
+    <view class="stat-note">通关率 = 已毕业卡（间隔重复到顶）对应必会点数 / 总数，属复习行为指标，非掌握度判定。</view>
+
+    <!-- 必会点列表 -->
+    <view class="section-title">必会点（{{rows.length}}）</view>
+    <view wx:if="{{rows.length === 0}}" class="empty">清单为空，点下方「添加必会点」补充。</view>
+
+    <view wx:for="{{rows}}" wx:key="id" class="kp-row">
+      <view class="kp-main">
+        <view class="kp-front">{{item.front}}</view>
+        <view class="kp-meta">
+          <text class="tag {{item.status === 'done' ? 't-g' : (item.status === 'due' ? 't-a' : (item.status === 'learning' ? 't-b' : 't-n'))}}">
+            {{item.status === 'done' ? '已通关' : (item.status === 'due' ? '待复习' : (item.status === 'learning' ? '复习中' : '未覆盖'))}}
+          </text>
+          <text wx:if="{{item.box}}" class="kp-box">盒{{item.box}}</text>
+          <text wx:if="{{item.topic}}" class="kp-topic">{{item.topic}}</text>
+        </view>
+        <!-- 编辑态：front/back 内联输入 -->
+        <view wx:if="{{editingId === item.id}}" class="kp-edit">
+          <input class="inp" value="{{editFront}}" bindinput="onEditFront" placeholder="正面：一个可回想的问题" />
+          <input class="inp" value="{{editBack}}" bindinput="onEditBack" placeholder="背面：答案 + 小例子" />
+          <view class="kp-edit-btns">
+            <view class="mini-btn primary" bindtap="saveEdit">保存</view>
+            <view class="mini-btn" bindtap="cancelEdit">取消</view>
+          </view>
+        </view>
+      </view>
+      <view class="kp-ops" wx:if="{{editingId !== item.id}}">
+        <view class="op-btn" hover-class="op-hover" data-id="{{item.id}}" bindtap="startStudy">自测</view>
+        <view class="op-btn" hover-class="op-hover" data-id="{{item.id}}" bindtap="startEdit">编辑</view>
+        <view class="op-btn danger" hover-class="op-hover" data-id="{{item.id}}" bindtap="askRemove">删除</view>
+      </view>
+    </view>
+
+    <!-- 添加必会点 -->
+    <view wx:if="{{!adding}}" class="add-btn" hover-class="op-hover" bindtap="startAdd">＋ 添加必会点</view>
+    <view wx:else class="kp-edit card-add">
+      <input class="inp" value="{{newFront}}" bindinput="onNewFront" placeholder="正面：一个可回想的问题" />
+      <input class="inp" value="{{newBack}}" bindinput="onNewBack" placeholder="背面：答案 + 小例子" />
+      <view class="kp-edit-btns">
+        <view class="mini-btn primary" bindtap="saveAdd">添加</view>
+        <view class="mini-btn" bindtap="cancelAdd">取消</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 翻面自测遮罩（复用 cards 页交互：点卡翻面 → 自评） -->
+  <view wx:if="{{study.active}}" class="study-mask">
+    <view class="study-card" bindtap="studyFlip">
+      <view class="study-sub">盒{{study.current.box}}</view>
+      <view class="study-face">{{study.flipped ? study.current.back : study.current.front}}</view>
+      <view class="study-hint">{{study.flipped ? '点击卡片翻回正面' : '先在心里想答案，再点卡片'}}</view>
+    </view>
+    <view class="rate-row" wx:if="{{study.flipped}}">
+      <view class="btn-good" data-good="1" bindtap="studyRate">记得 ✅</view>
+      <view class="btn-again" data-good="0" bindtap="studyRate">忘了 🔁</view>
+    </view>
+    <view class="btn-ghost" bindtap="studyStop">退出自测</view>
+  </view>
+
+</view>

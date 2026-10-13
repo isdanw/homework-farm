@@ -55,8 +55,8 @@ const SYNC_THROTTLE_MS = 60000;
 /* 有改动登记后的合并推送延迟：连续 3 次写操作只触发 1 次云调用 */
 const FLUSH_DEBOUNCE_MS = 1500;
 
-/* 本地持有的五个集合 */
-const KINDS = ['sessions', 'mistakes', 'evidence', 'reviews', 'orders'];
+/* 本地持有的集合（P3 闪卡：cards 与 reviews 平行，来源不同；P1 新增 unitKps 单元必会库） */
+const KINDS = ['sessions', 'mistakes', 'evidence', 'reviews', 'orders', 'cards', 'unitKps'];
 
 function storageKey() {
   const oid = store.getOpenid();
@@ -64,7 +64,7 @@ function storageKey() {
 }
 
 function blank() {
-  return { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], removed: [], pushQueue: [], lastSyncAt: 0 };
+  return { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], cards: [], unitKps: [], removed: [], pushQueue: [], lastSyncAt: 0 };
 }
 
 let _probeOid = '';            // 已探查过 _guest 空间的 openid（按身份各探一次）
@@ -77,6 +77,8 @@ function readAll() {
   if (!Array.isArray(all.evidence)) all.evidence = [];
   if (!Array.isArray(all.reviews)) all.reviews = [];
   if (!Array.isArray(all.orders)) all.orders = [];
+  if (!Array.isArray(all.cards)) all.cards = [];
+  if (!Array.isArray(all.unitKps)) all.unitKps = [];
   if (!Array.isArray(all.pushQueue)) all.pushQueue = [];
   if (!Array.isArray(all.removed)) all.removed = [];
   // 身份已确认且本进程还没为该身份探查过 → 探一次 _guest 空间（F9）。
@@ -433,6 +435,214 @@ function advanceReview(mistakeId, passed) {
   return r;
 }
 
+/* ======================= 复习卡（G2 提取式记忆实体，与 reviews 平行） ======================= */
+
+/** 全部复习卡（按到期时间正序） */
+function getCards() {
+  const all = readAll();
+  return (all.cards || []).slice().sort((a, b) => (a.dueAt || 0) - (b.dueAt || 0));
+}
+
+/** 今日到期（dueAt ≤ now 且未毕业），最早到期的在前 */
+function getDueCards(now) {
+  const t = now || Date.now();
+  return getCards().filter(c => !c.done && (c.dueAt || 0) <= t);
+}
+
+/** 未毕业的复习卡数（用于首页/农场徽标） */
+function cardPendingCount() {
+  return getCards().filter(c => !c.done).length;
+}
+
+/**
+ * 新增/更新一张复习卡（返回该条）。
+ * 调用方（tutor.js 确认弹窗）负责构建完整条目：纯会话卡 id 用 util.uid('cd')，
+ * 有 kpId 的卡 id 用 'cd_'+unitId+'_'+kpId（与云端 clientId 一致，跨会话天然命中同一张）；
+ * box 默认 1，dueAt 默认 = now + REVIEW_STAGE_DAYS[0] 天。
+ *
+ * 混合路线（P1）：卡片新增 unitId / kpId / source('session'|'unit') 三字段。
+ * 去重主键：有 kpId 的卡以 **kpId** 命中已有卡（跨会话推通同一点时 upsert 到原卡，
+ * 保留 Leitner 盒子进度，不新建）；kpId 为空时维持原 id 主键。
+ */
+function upsertCard(c) {
+  if (!c || !c.id) return null;
+  const all = readAll();
+  // kpId 主键优先：**同一单元内** kpId 唯一 → 必须叠加 unitId 条件，
+  // 否则不同单元各自生成的 p1/p2 会互相误去重（跨会话推通同一点时 upsert 到原卡，保留盒子进度）
+  let i = -1;
+  if (c.kpId) {
+    i = (all.cards || []).findIndex(x => x.kpId && x.kpId === c.kpId && x.unitId === (c.unitId || ''));
+  }
+  if (i < 0) i = (all.cards || []).findIndex(x => x.id === c.id);        // 否则 id 主键
+  const item = {
+    id: c.id,
+    subject: c.subject || '',
+    subjectName: c.subjectName || '',
+    topic: c.topic || '',
+    front: c.front || '',
+    back: c.back || '',
+    sourceSessionId: c.sourceSessionId || '',
+    unitId: c.unitId || '',
+    kpId: c.kpId || null,
+    source: c.source === 'unit' ? 'unit' : 'session',
+    box: Math.max(1, Math.min(REVIEW_STAGE_DAYS.length, Number(c.box) || 1)),
+    dueAt: Number(c.dueAt) || (Date.now() + REVIEW_STAGE_DAYS[0] * 86400000),
+    lastResult: c.lastResult || null,   // 'good' | 'again'
+    done: !!c.done,
+    createdAt: c.createdAt || Date.now(),
+    updatedAt: c.updatedAt || Date.now()
+  };
+  if (i >= 0) all.cards[i] = item;
+  else all.cards.unshift(item);
+  commit(all, [{ kind: 'cards', id: item.id }]);
+  return item;
+}
+
+/** 批量新增（确认弹窗一次入库多张） */
+function addCards(list) {
+  if (!Array.isArray(list) || !list.length) return [];
+  return list.map(c => upsertCard(c)).filter(Boolean);
+}
+
+/**
+ * 推进复习卡（翻面自测，G4）：
+ *   good（记得）→ box+1；封顶 5 时毕业（done=true，不再提醒）
+ *   again（忘了）→ box 重置 1，dueAt = now + 1 天，取消毕业
+ * ⚠️ 卡片自测不写复测证据、不声称掌握（活动≠证据≠掌握），仅推进 Leitner 盒子。
+ */
+function advanceCard(cardId, good) {
+  if (!cardId) return null;
+  const all = readAll();
+  const c = (all.cards || []).find(x => x.id === cardId && !x.done);
+  if (!c) return null;
+  const now = Date.now();
+  if (good) {
+    c.box = Math.min((c.box || 1) + 1, REVIEW_STAGE_DAYS.length);
+    if (c.box >= REVIEW_STAGE_DAYS.length) c.done = true;            // 毕业：最高盒不再提醒
+    else c.dueAt = now + (REVIEW_STAGE_DAYS[c.box - 1] || 1) * 86400000;
+  } else {
+    c.box = 1;
+    c.done = false;
+    c.dueAt = now + REVIEW_STAGE_DAYS[0] * 86400000;
+  }
+  c.lastResult = good ? 'good' : 'again';
+  c.updatedAt = now;
+  commit(all, [{ kind: 'cards', id: c.id }]);
+  return c;
+}
+
+/**
+ * 今日待办聚合（G3 主动回访）：到期复习窗口 ∪ 到期复习卡。
+ * 返回统一结构 {type:'review'|'card', id, subject, subjectName, topic, dueAt, ...}
+ * 按 dueAt 正序。前端用其长度展示「今天 N 张该复习」。
+ */
+function getDueItems(now) {
+  const t = now || Date.now();
+  const reviews = getDueReviews(t).map(r => ({
+    type: 'review', id: r.id, subject: r.subject, subjectName: r.subjectName,
+    topic: r.topic, dueAt: r.dueAt || 0
+  }));
+  const cards = getDueCards(t).map(c => ({
+    type: 'card', id: c.id, subject: c.subject, subjectName: c.subjectName,
+    topic: c.topic, front: c.front, back: c.back, dueAt: c.dueAt || 0
+  }));
+  return reviews.concat(cards).sort((a, b) => (a.dueAt || 0) - (b.dueAt || 0));
+}
+
+/* ======================= 单元必会知识点库（P1 混合路线） =======================
+ * 一份文档 = 一个单元的 canonical 必会清单。cards 通过 unitId+kpId 挂靠到具体点，
+ * 会话结束按清单自动补齐漏点。数据经 tutorSync(pull/push) 与 tutor_unit_kps 集合同步。 */
+
+/** 按 unitId 取必会库（无则 null） */
+function getUnitKps(unitId) {
+  const t = String(unitId || '');
+  if (!t) return null;
+  return readAll().unitKps.find(u => u.id === t) || null;
+}
+
+/** 某学科最新一份必会库（建库后最新 updatedAt 的那份；无则 null） */
+function getUnitKpsBySubject(subject) {
+  const list = readAll().unitKps.filter(u => u.subject === subject);
+  if (!list.length) return null;
+  return list.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+}
+
+/** 新增/更新一份单元必会库（按 id 去重；返回该条，自动登记上云） */
+function upsertUnitKp(unit) {
+  if (!unit || !unit.id) return null;
+  const all = readAll();
+  const i = (all.unitKps || []).findIndex(x => x.id === unit.id);
+  const item = {
+    id: unit.id,
+    subject: unit.subject || '',
+    grade: unit.grade || '',
+    title: unit.title || '',
+    points: Array.isArray(unit.points) ? unit.points.map(p => ({
+      id: String(p.id || ''),
+      topic: String(p.topic || ''),
+      front: String(p.front || ''),
+      back: String(p.back || ''),
+      order: Number(p.order) || 0
+    })).filter(p => p.id) : [],
+    createdAt: unit.createdAt || Date.now(),
+    updatedAt: unit.updatedAt || Date.now()
+  };
+  if (i >= 0) all.unitKps[i] = item;
+  else all.unitKps.unshift(item);
+  commit(all, [{ kind: 'unitKps', id: item.id }]);
+  return item;
+}
+
+/** 改一个必会点（front/back/topic；按 id 定位，找不到返回 false） */
+function updateUnitKpPoint(unitId, pointId, patch) {
+  const all = readAll();
+  const u = (all.unitKps || []).find(x => x.id === unitId);
+  if (!u || !Array.isArray(u.points)) return false;
+  const p = u.points.find(x => x.id === pointId);
+  if (!p) return false;
+  if (patch && patch.front !== undefined) p.front = String(patch.front);
+  if (patch && patch.back !== undefined) p.back = String(patch.back);
+  if (patch && patch.topic !== undefined) p.topic = String(patch.topic);
+  u.updatedAt = Date.now();
+  commit(all, [{ kind: 'unitKps', id: u.id }]);
+  return true;
+}
+
+/** 删一个必会点（只删清单条目；已挂该 kpId 的卡保留，只是不再计入单元统计） */
+function removeUnitKpPoint(unitId, pointId) {
+  const all = readAll();
+  const u = (all.unitKps || []).find(x => x.id === unitId);
+  if (!u || !Array.isArray(u.points)) return false;
+  const i = u.points.findIndex(x => x.id === pointId);
+  if (i < 0) return false;
+  u.points.splice(i, 1);
+  u.updatedAt = Date.now();
+  commit(all, [{ kind: 'unitKps', id: u.id }]);
+  return true;
+}
+
+/** 加一个必会点（id 自动生成避开冲突；返回新点或 null） */
+function addUnitKpPoint(unitId, point) {
+  const all = readAll();
+  const u = (all.unitKps || []).find(x => x.id === unitId);
+  if (!u) return null;
+  if (!Array.isArray(u.points)) u.points = [];
+  const maxOrder = u.points.reduce((m, p) => Math.max(m, Number(p.order) || 0), 0);
+  let n = maxOrder + 1, id = 'p' + n;
+  while (u.points.some(p => p.id === id)) { n++; id = 'p' + n; }
+  const np = {
+    id: id,
+    topic: String((point && point.topic) || ''),
+    front: String((point && point.front) || ''),
+    back: String((point && point.back) || ''),
+    order: n
+  };
+  u.points.push(np);
+  u.updatedAt = Date.now();
+  commit(all, [{ kind: 'unitKps', id: u.id }]);
+  return np;
+}
+
 /* ======================= 跨会话记忆（learnerContext，闭环 S3） ======================= */
 
 /**
@@ -505,6 +715,17 @@ const CLOUD_DEFAULTS = {
     mistakeId: '', subject: '', subjectName: '', topic: '', errorType: '',
     stage: 1, dueAt: 0, done: false, createdAt: 0, updatedAt: 0
   },
+  // 闪卡：与 reviews 平行（提取式记忆实体），字段语义同 Leitner 盒子法
+  cards: {
+    subject: '', subjectName: '', topic: '', front: '', back: '',
+    sourceSessionId: '',
+    unitId: '', kpId: null, source: 'session',   // 混合路线新增字段（旧卡缺省兼容）
+    box: 1, dueAt: 0, lastResult: null, done: false, createdAt: 0, updatedAt: 0
+  },
+  // 单元必会知识点库（P1 混合路线）：一份文档 = 一个单元的 canonical 清单
+  unitKps: {
+    subject: '', grade: '', title: '', points: [], createdAt: 0, updatedAt: 0
+  },
   // 导学单：状态与事件是契约载体，**默认值只补缺失字段，绝不覆写云端值**
   orders: {
     orderNo: '', schema: 'order-v1', plan: null,
@@ -549,7 +770,7 @@ function mergeFromCloud(remote) {
   const all = readAll();
   let added = 0;
 
-  ['sessions', 'mistakes', 'evidence'].forEach(kind => {
+  ['sessions', 'mistakes', 'evidence', 'unitKps'].forEach(kind => {
     (Array.isArray(remote[kind]) ? remote[kind] : []).forEach(cloud => {
       const local = cloudToLocal(kind, cloud);
       if (!local) return;
@@ -572,6 +793,23 @@ function mergeFromCloud(remote) {
     if (cu > lu) {
       // 云端更新（多半是另一台设备推进了复测）→ 云端字段全量覆盖，
       // 本地独有字段保留（不删除本地知道而云端不知道的东西）
+      Object.keys(inc).forEach(k => { cur[k] = inc[k]; });
+      cur.updatedAt = cu;
+    }
+  });
+
+  /* ── 闪卡：与 reviews 同规则 —— 同 id 比 updatedAt，云端更新则全量覆盖 ──
+   * 卡片自测（advanceCard）在任一端推进后 updatedAt 刷新，换设备拉回即对端看到最新盒子进度。 */
+  (Array.isArray(remote.cards) ? remote.cards : []).forEach(cloud => {
+    const inc = cloudToLocal('cards', cloud);
+    if (!inc) return;
+    if (isBuried(all, 'cards', inc.id)) return;
+    const i = all.cards.findIndex(x => x.id === inc.id);
+    if (i < 0) { all.cards.unshift(inc); added++; return; }
+    const cur = all.cards[i];
+    const lu = Number(cur.updatedAt) || 0;
+    const cu = Number(inc.updatedAt) || Number(inc.createdAt) || 0;
+    if (cu > lu) {
       Object.keys(inc).forEach(k => { cur[k] = inc[k]; });
       cur.updatedAt = cu;
     }
@@ -636,9 +874,9 @@ function pushQueued() {
       if (!queue.length) return resolve({ ok: true, added: 0 });
       if (typeof wx === 'undefined' || !wx.cloud || !wx.cloud.callFunction) return resolve({ ok: false });
 
-      const payload = { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [] };
+      const payload = { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], cards: [], unitKps: [] };
       queue.forEach(q => {
-        const arrName = { sessions: 'sessions', mistakes: 'mistakes', evidence: 'evidence', reviews: 'reviews', orders: 'orders' }[q.kind];
+        const arrName = { sessions: 'sessions', mistakes: 'mistakes', evidence: 'evidence', reviews: 'reviews', orders: 'orders', cards: 'cards', unitKps: 'unitKps' }[q.kind];
         if (!arrName) return;
         const item = (all[arrName] || []).find(x => x.id === q.id);
         if (item) payload[q.kind].push(Object.assign({}, item, { clientId: item.id, id: undefined }));
@@ -791,6 +1029,8 @@ module.exports = {
   getMistakes, addMistake, setMistakeStatus, mistakeCount,
   getEvidence, addEvidence, evidencePassedCount,
   getReviews, getDueReviews, reviewPendingCount, upsertReview, advanceReview,
+  getCards, getDueCards, cardPendingCount, upsertCard, addCards, advanceCard, getDueItems,
+  getUnitKps, getUnitKpsBySubject, upsertUnitKp, updateUnitKpPoint, removeUnitKpPoint, addUnitKpPoint,
   getOrders, getOrder, getOrdersByPlan, getPendingOrders, orderCounts, planOrderAggregate,
   orderApi, saveOrderFromCloud, queueOrderPush,
   getLearnerContext,

@@ -39,7 +39,11 @@ Page({
     mistakeContext: null,  // 错题订正上下文 { key, topic, errorType }
     locked: false,         // 门禁（2026-09-22）：未添加孩子或未建计划时禁用导学
     lockReason: '',
-    checkinNote: ''         // 打卡详情进入时携带的打卡内容（用于预填导学输入框）
+    checkinNote: '',
+    // 复习卡双组确认弹窗（P1 混合路线）：本次推通（session）+ 单元必会未覆盖自动补齐（fill）
+    cardConfirm: { show: false, session: [], fill: [], unitTitle: '' },
+    // 当前学科单元必会库覆盖进度（混合路线：导学结合清单，见 _unitSnapshot）
+    unitProgress: null
   },
 
   onLoad(options) {
@@ -85,7 +89,9 @@ Page({
     // 从打卡 / 计划任务 / 错题订正进入：把建议开场语预填进输入框，
     // 由用户确认后点「发送」才真正发起对话（不再自动发送，避免进入即消耗 AI 调用、打断用户节奏）。
     // 2026-10-06 调整。
-    if (taskContext || mistakeContext || checkinNote) {
+    // 必会清单开场引导（混合路线）：无任务/订正/打卡上下文时，若当前学科有必会库，
+    // 按「今日待复习 > 未覆盖」推荐一个必会点预填（用户可改可删，不自动发送）。
+    if (taskContext || mistakeContext || checkinNote || (this.data.unitProgress && this.data.unitProgress.nextTopic)) {
       this.setData({ input: this.buildOpenContent() });
     }
   },
@@ -93,6 +99,62 @@ Page({
   onShow() {
     if (this._locked) return;
     this.setData({ archivedCount: tutorStore.archiveCount() });
+    // 从 unitKp 清单页返回后本地卡/清单可能变了 → 刷新覆盖进度
+    this._refreshUnitProgress();
+  },
+
+  /* ---------------- 单元必会清单快照（混合路线：导学结合清单） ---------------- */
+
+  /**
+   * 当前学科单元必会库快照：
+   *  · progress = UI 覆盖进度（标题/总数/已覆盖/已通关/今日待复习/开场推荐点）
+   *  · ctx      = chat 注入给 AI 的清单上下文（{title, points:[{id,topic,status}]}）
+   * 无建库返回 null（导学退化为原行为，不受影响）。
+   * ⚠️ kpId 仅单元内唯一 → 关联卡必须同时匹配 unitId + kpId。
+   */
+  _unitSnapshot() {
+    const unit = tutorStore.getUnitKpsBySubject(this.data.subject);
+    if (!unit || !Array.isArray(unit.points) || !unit.points.length) return null;
+    const cards = tutorStore.getCards();
+    const now = Date.now();
+    let covered = 0, done = 0, dueCount = 0;
+    let nextTopic = '', nextStatus = '';
+    const points = unit.points.map(p => {
+      const cs = cards.filter(c => c.kpId === p.id && c.unitId === unit.id);
+      const anyDone = cs.some(c => c.done);
+      const anyDue = cs.some(c => !c.done && (c.dueAt || 0) <= now);
+      const status = !cs.length ? 'uncovered' : (anyDone ? 'done' : (anyDue ? 'due' : 'learning'));
+      if (cs.length) covered++;
+      if (anyDone) done++;
+      if (anyDue) dueCount++;
+      // 开场推荐：今日待复习优先于未覆盖（遇到 due 就替换掉已记的 uncovered）
+      if (status === 'due' || status === 'uncovered') {
+        if (!nextTopic || (nextStatus === 'uncovered' && status === 'due')) {
+          nextTopic = p.topic || '';
+          nextStatus = status;
+        }
+      }
+      return { id: p.id, topic: p.topic || '', status: status };
+    });
+    return {
+      progress: {
+        title: unit.title || '',
+        total: unit.points.length,
+        covered: covered, done: done, dueCount: dueCount,
+        nextTopic: nextTopic, nextStatus: nextStatus
+      },
+      ctx: { title: unit.title || '', points: points }
+    };
+  },
+
+  _refreshUnitProgress() {
+    const snap = this._unitSnapshot();
+    this.setData({ unitProgress: snap ? snap.progress : null });
+  },
+
+  _buildUnitCtx() {
+    const snap = this._unitSnapshot();
+    return snap ? snap.ctx : null;
   },
 
   /** 离页标记：限流延时重试的定时器可能在页面卸载后触发，需丢弃 */
@@ -121,6 +183,8 @@ Page({
       sending: false,
       scrollTo: ''
     }, () => this.scrollBottom());
+    // 切学科后必会库不同 → 刷新覆盖进度
+    this._refreshUnitProgress();
   },
 
   /* ---------------- 输入 ---------------- */
@@ -160,6 +224,13 @@ Page({
       return '我想订正这个知识点：' + m.topic +
         (m.errorType ? '（之前的错因是 ' + m.errorType + '）' : '') +
         '，请引导我重新理解，先看看我哪里还没弄明白，不要直接给答案。';
+    }
+    // 必会清单引导（混合路线）：无其他上下文时，按「今日待复习 > 未覆盖」推荐一个必会点开场
+    const up = this.data.unitProgress;
+    if (up && up.nextTopic) {
+      const tail = up.nextStatus === 'due' ? '今天该复习啦' : '还没复习到';
+      return '我们在学「' + up.title + '」，必会点「' + up.nextTopic + '」' + tail +
+        '。今天就先从这个点开始好吗？我有不会的地方，请一步步引导我，不要直接给答案。';
     }
     return '';
   },
@@ -224,7 +295,9 @@ Page({
       content: content,
       history: history,
       learner: learner,
-      learnerCtx: learnerCtx
+      learnerCtx: learnerCtx,
+      // 混合路线：把当前单元必会清单 + 复习状态注入，AI 优先围绕未覆盖/待复习的点引导
+      unitCtx: this._buildUnitCtx()
     };
     this._callChat(this._lastPayload);
   },
@@ -325,6 +398,8 @@ Page({
       const r = res && res.result;
       if (r && r.ok) {
         tutorStore.closeSession(sessionId);
+        // 归档后可能顺带更新错题/复习窗口 → 刷新覆盖进度
+        this._refreshUnitProgress();
         const diagnosis = r.diagnosis || null;
         const now = Date.now();
 
@@ -360,12 +435,17 @@ Page({
         // 自动完成（见其「写操作出口」），这里只需触发一次合并推送。
         tutorStore.pushQueued();
 
+        // 暂存归档上下文，供 showSummary 之后调 genCards 生成候选卡使用（setData 会清空 sessionId）
+        this._archiveSessionId = sessionId;
+        this._sessionMessages = messages;
+        this._archiveLearner = learner;
+
         const hasTask = !!(this.data.taskContext && this.data.taskContext.key);
         this.setData({
           messages: [], sessionId: '', input: '',
           archivedCount: tutorStore.archiveCount()
         });
-        this.showSummary(diagnosis, hasTask ? this.data.taskContext : null);
+        this.showSummary(diagnosis, hasTask ? this.data.taskContext : null, r.summary);
       } else {
         wx.showModal({
           title: '归档未成功',
@@ -383,10 +463,15 @@ Page({
     });
   },
 
-  /** 导学结束小结：错因反馈 + 计划任务确认（合一弹窗） */
-  showSummary(diagnosis, taskContext) {
+  /** 导学结束小结：会话总结 + 错因反馈 + 计划任务确认（合一弹窗） */
+  showSummary(diagnosis, taskContext, summary) {
     const lines = [];
+    // G1：会话级课程总结（archive 内联生成并写回 tutor_sessions.summary）
+    if (summary && summary.summary) lines.push('📒 ' + summary.summary);
     if (diagnosis && diagnosis.topic) lines.push('本次学了：' + diagnosis.topic);
+    if (summary && summary.keyPoints && summary.keyPoints.length) {
+      lines.push('推通的重点：\n' + summary.keyPoints.map((k, i) => ((i + 1) + '. ' + k)).join('\n'));
+    }
     if (diagnosis && diagnosis.stuck) {
       lines.push('卡点：' + (diagnosis.errorDesc || '遇到了一点困难') +
         (diagnosis.errorType ? '（' + diagnosis.errorType + '）' : ''));
@@ -420,7 +505,230 @@ Page({
           setTimeout(() => util.toast('导学完成，阳光 +' + gain.sun, 'success'), taskContext ? 600 : 0);
         }
         this.setData({ taskContext: null });
+        // G2：生成复习卡候选 → 确认弹窗（genCards 降级不阻塞；失败/无候选则静默跳过）
+        if (this._sessionMessages && this._sessionMessages.length) {
+          this._genAndConfirmCards(this._archiveSessionId, this._sessionMessages, this._archiveLearner);
+        }
       }
+    });
+  },
+
+  /**
+   * G2：调 genCards 取候选卡（仅候选，不落库）；失败/无候选静默跳过。
+   * P1 混合路线：带当前学科最新单元必会库的 points → AI 映射 kpId → 前端按本地已有卡
+   * 计算「未覆盖点」自动补齐为 source:'unit' 卡 → 双组确认弹窗。
+   * （missing 计算放前端而非云端：genCards 保持「只读候选、不查库」；且要并入本地
+   *   已有的 kpId 才能正确判「已有卡」，云端没有这份数据。）
+   */
+  _genAndConfirmCards(sessionId, messages, learner) {
+    if (!messages || !messages.length) return;
+    wx.showLoading({ title: '生成复习卡…', mask: true });
+    const unit = tutorStore.getUnitKpsBySubject(this.data.subject);
+    const unitPoints = (unit && Array.isArray(unit.points)) ? unit.points.map(p => ({
+      id: p.id, topic: p.topic, front: p.front, back: p.back
+    })) : [];
+    wx.cloud.callFunction({
+      name: 'tutorChat',
+      data: {
+        action: 'genCards',
+        subject: this.data.subject,
+        messages: messages,
+        learner: learner,
+        unitPoints: unitPoints
+      }
+    }).then(res => {
+      wx.hideLoading();
+      const r = res && res.result;
+      if (!(r && r.ok)) return;
+      const sessionCards = Array.isArray(r.cards) ? r.cards : [];
+      const coveredKpIds = Array.isArray(r.coveredKpIds) ? r.coveredKpIds : [];
+      // 单元必会未覆盖点 → 自动补齐为待复习卡（排除本次已覆盖 + 本地已有卡已挂的点）
+      let unitFillCards = [];
+      if (unit && unitPoints.length) {
+        const existingKpIds = (tutorStore.getCards() || []).filter(c => c.kpId).map(c => c.kpId);
+        const covered = {};
+        coveredKpIds.concat(existingKpIds).forEach(k => { covered[k] = true; });
+        unitFillCards = unitPoints
+          .filter(p => !covered[p.id])
+          .map(p => ({ front: p.front, back: p.back, topic: p.topic, kpId: p.id, source: 'unit', unitId: unit.id }));
+      }
+      if (!sessionCards.length && !unitFillCards.length) return;   // 无候选 → 不弹窗
+      this._showCardConfirm(sessionId, sessionCards, unitFillCards, unit);
+    }).catch(() => { wx.hideLoading(); });
+  },
+
+  /** G2/P1：双组确认弹窗（自定义遮罩，支持勾选剔除）。确认后才写 tutor_cards 并上云 */
+  _showCardConfirm(sessionId, sessionCards, unitFillCards, unit) {
+    this.setData({
+      cardConfirm: {
+        show: true,
+        session: (sessionCards || []).map(c => ({
+          front: c.front || '', back: c.back || '', topic: c.topic || '',
+          kpId: c.kpId || null, unitId: unit ? unit.id : '', checked: true
+        })),
+        fill: (unitFillCards || []).map(c => ({
+          front: c.front || '', back: c.back || '', topic: c.topic || '',
+          kpId: c.kpId || null, unitId: c.unitId || '', checked: true
+        })),
+        unitTitle: unit ? unit.title : ''
+      }
+    });
+    this._archiveSessionId = sessionId || this._archiveSessionId || '';
+  },
+
+  /** 双组弹窗：勾选/取消某一条（session 或 fill 组） */
+  toggleCardCheck(e) {
+    const group = e.currentTarget.dataset.group;
+    const idx = Number(e.currentTarget.dataset.index);
+    const cc = this.data.cardConfirm;
+    if (!cc || !cc.show || !cc[group] || cc[group][idx] == null) return;
+    cc[group][idx].checked = !cc[group][idx].checked;
+    this.setData({ cardConfirm: cc });
+  },
+
+  /** 双组弹窗：取消（不入库） */
+  cancelCards() {
+    this.setData({ cardConfirm: { show: false, session: [], fill: [], unitTitle: '' } });
+  },
+
+  /** 双组弹窗：确认生成勾选的卡（有 kpId 走 kpId 主键去重 upsert，保留盒子进度） */
+  confirmCards() {
+    const cc = this.data.cardConfirm;
+    if (!cc || !cc.show) return;
+    const now = Date.now();
+    const built = [];
+    const push = (c, source) => {
+      if (!c.checked) return;
+      built.push({
+        id: c.kpId ? ('cd_' + (c.unitId || '') + '_' + c.kpId) : util.uid('cd'),
+        subject: this.data.subject,
+        subjectName: this.data.subjectName,
+        topic: c.topic || '',
+        front: c.front || '',
+        back: c.back || '',
+        sourceSessionId: this._archiveSessionId || '',
+        unitId: c.unitId || '',
+        kpId: c.kpId || null,
+        source: source,
+        box: 1,
+        dueAt: now + 86400000,         // stage 1 = 次日到期
+        lastResult: null,
+        done: false,
+        createdAt: now,
+        updatedAt: now
+      });
+    };
+    (cc.session || []).forEach(c => push(c, 'session'));
+    (cc.fill || []).forEach(c => push(c, 'unit'));
+    if (built.length) {
+      tutorStore.addCards(built);
+      tutorStore.pushQueued();
+      util.toast('已加入 ' + built.length + ' 张复习卡', 'success');
+    }
+    this.setData({ cardConfirm: { show: false, session: [], fill: [], unitTitle: '' } });
+  },
+
+  /* ---------------- 单元必会库建库（P1 混合路线 · A 路径：unitSummary 生成候选） ---------------- */
+
+  /** 入口：打开当前学科的单元必会清单页（查看 / 编辑 / 翻面自测） */
+  openUnitKp() {
+    if (this._locked) return;
+    wx.navigateTo({ url: '/pkgTools/unitKp/unitKp?subject=' + this.data.subject });
+  },
+
+  /** 入口：输入单元名称 → AI 生成必会点候选草稿 → 保存到 tutor_unit_kps。
+   *  默认带入当前导学的单元（成长计划任务阶段名），让建库与正在导学的内容对齐；
+   *  说明文字放 placeholderText（editable 模式下 content 是输入框默认值）。 */
+  buildUnitLibrary() {
+    if (this._locked) return;
+    const t = this.data.taskContext;
+    const defaultName = (t && t.stage) ? t.stage : '';
+    wx.showModal({
+      title: '建单元必会库',
+      content: defaultName,
+      editable: true,
+      placeholderText: '单元名称（如「第三单元 1~5 的认识和加减法」）',
+      success: (res) => {
+        if (!res.confirm) return;
+        const name = (res.content || '').trim();
+        if (!name) return util.toast('单元名称不能为空');
+        this._buildUnitFromAI(name);
+      }
+    });
+  },
+
+  /** 调 unitSummary 生成黑板知识树 → 拆成必会点候选 → 保存。
+   *  若从成长计划任务进入，把阶段名（单元）与目标一并带入，提示词据此定制拆点范围。 */
+  _buildUnitFromAI(name) {
+    wx.showLoading({ title: '生成必会清单…', mask: true });
+    const sub = TUTOR_SUBJECTS.find(s => s.key === this.data.subject);
+    const t = this.data.taskContext;
+    wx.cloud.callFunction({
+      name: 'tutorChat',
+      data: {
+        action: 'unitSummary',
+        unitName: name,
+        unitGoal: (t && t.goal) || '',
+        subject: this.data.subject,
+        subjectName: sub ? sub.name : this.data.subjectName,
+        learner: { grade: store.get().grade || '' }
+      }
+    }).then(res => {
+      wx.hideLoading();
+      const r = res && res.result;
+      const branches = (r && r.ok && r.data && Array.isArray(r.data.branches)) ? r.data.branches : [];
+      if (!branches.length) {
+        return wx.showModal({ title: '生成失败', content: (r && r.msg) || '请稍后重试', showCancel: false, confirmText: '知道了' });
+      }
+      // branches → points 候选：每个分支的要点各成一条必会点
+      const points = [];
+      let n = 0;
+      branches.forEach(b => {
+        const branchTitle = (b && b.title) || '';
+        const pts = Array.isArray(b && b.points) ? b.points : [];
+        pts.forEach(p => {
+          const text = String(p || '').trim();
+          if (!text) return;
+          n++;
+          points.push({
+            id: 'p' + n,
+            topic: branchTitle,
+            front: branchTitle ? (branchTitle + '：能说出「' + text + '」吗？') : ('能说出「' + text + '」吗？'),
+            back: text,
+            order: n
+          });
+        });
+      });
+      if (!points.length) {
+        return wx.showModal({ title: '无要点', content: '本次总结未产出可记录的要点，换个单元名重试', showCancel: false, confirmText: '知道了' });
+      }
+      this._saveUnitLibrary(name, points);
+    }).catch(() => {
+      wx.hideLoading();
+      wx.showModal({ title: '调用失败', content: 'unitSummary 云函数可能未部署，请稍后重试', showCancel: false, confirmText: '知道了' });
+    });
+  },
+
+  /** 保存单元必会库（id 按 subject+名称 slug 稳定生成：重名重建即更新，不重复建库） */
+  _saveUnitLibrary(name, points) {
+    const grade = store.get().grade || '';
+    const slug = name.replace(/[^\u4e00-\u9fa5A-Za-z0-9]+/g, '_').slice(0, 40);
+    const unitId = 'u_' + this.data.subject + '_' + slug;
+    tutorStore.upsertUnitKp({
+      id: unitId,
+      subject: this.data.subject,
+      grade: grade,
+      title: name,
+      points: points,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+    tutorStore.pushQueued();
+    wx.showModal({
+      title: '单元必会库已建',
+      content: '已为「' + name + '」生成 ' + points.length + ' 条必会点。\n会话结束时，未覆盖的点会自动补齐成复习卡。',
+      showCancel: false,
+      confirmText: '好的'
     });
   },
 

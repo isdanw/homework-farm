@@ -36,6 +36,8 @@ const COLLS = {
   evidence: 'tutor_evidence',
   exams: 'exam_resources',
   orders: 'tutor_orders',
+  cards: 'tutor_cards',
+  unitKps: 'tutor_unit_kps',
   bindings: 'web_portal_bindings'
 };
 const READ_LIMIT = 200; // 单集合读取上限（防误拉全量，家庭自用量级足够）
@@ -71,6 +73,87 @@ function groupCount(rows, key) {
   return Object.keys(m).map(k => ({ n: k, v: m[k] })).sort((a, b) => b.v - a.v);
 }
 
+/* ---------- 单元必会通关率（P2 混合路线量化） ----------
+ * 口径：total=单元必会点数；carded=有卡的必会点数（kpId 命中）；done=有已毕业卡(done,
+ * Leitner 到顶 5)的必会点数；passRate=done/total；due=有今日到期卡的必会点数。
+ * ⚠️ kpId 仅**单元内唯一**（p1/p2 会在不同单元重复）→ 必须按 (unitId, kpId) 聚合，
+ *    不能只按 kpId 分组，否则跨单元串数据。
+ * 合规：通关率只基于 Leitner 毕业（复习行为指标），不写 tutor_evidence、不称「掌握」。 */
+const SUBJECT_NAMES_CN = {
+  math: '数学', chinese: '语文', english: '英语', physics: '物理', chemistry: '化学',
+  biology: '生物', history: '历史', geography: '地理', politics: '道德与法治'
+};
+
+/** 按 (unitId, kpId) 把卡片归组，返回单元粒度统计 */
+function computeUnitKpStats(units, cards) {
+  const now = Date.now();
+  const byKp = {};
+  cards.forEach(c => {
+    if (!c.kpId || !c.unitId) return;
+    const key = c.unitId + '|' + c.kpId;
+    (byKp[key] = byKp[key] || []).push(c);
+  });
+  return units.map(u => {
+    const unitId = u.clientId || u._id || '';
+    const points = Array.isArray(u.points) ? u.points : [];
+    let carded = 0, done = 0, due = 0;
+    points.forEach(p => {
+      const cs = byKp[unitId + '|' + p.id] || [];
+      if (!cs.length) return;
+      carded++;
+      if (cs.some(c => c.done)) done++;
+      if (cs.some(c => !c.done && (Number(c.dueAt) || 0) <= now)) due++;
+    });
+    const total = points.length;
+    return {
+      unitId: unitId,
+      subject: u.subject || '',
+      subjectName: SUBJECT_NAMES_CN[u.subject] || u.subject || '',
+      title: u.title || '',
+      total: total, carded: carded, due: due, done: done,
+      passRate: total ? Math.round(done / total * 100) : 0,
+      coveredRate: total ? Math.round(carded / total * 100) : 0,
+      updatedAt: u.updatedAt || 0
+    };
+  });
+}
+
+/** 展开到必会点粒度（看板「单元必会」表按行展示 + 直达该点卡片的复习按钮） */
+function computeUnitKpPoints(units, cards) {
+  const now = Date.now();
+  const byKp = {};
+  cards.forEach(c => {
+    if (!c.kpId || !c.unitId) return;
+    const key = c.unitId + '|' + c.kpId;
+    (byKp[key] = byKp[key] || []).push(c);
+  });
+  const out = [];
+  units.forEach(u => {
+    const unitId = u.clientId || u._id || '';
+    const points = Array.isArray(u.points) ? u.points : [];
+    points.forEach(p => {
+      const cs = byKp[unitId + '|' + p.id] || [];
+      const anyDone = cs.some(c => c.done);
+      const anyDue = cs.some(c => !c.done && (Number(c.dueAt) || 0) <= now);
+      const c0 = cs[0] || null;
+      out.push({
+        unitId: unitId,
+        unitTitle: u.title || '',
+        subject: u.subject || '',
+        kpId: p.id,
+        topic: p.topic || '',
+        front: p.front || '',
+        cardCount: cs.length,
+        cardClientId: c0 ? (c0.clientId || '') : '',
+        box: c0 ? (Number(c0.box) || 1) : 0,
+        dueAt: c0 ? (Number(c0.dueAt) || 0) : 0,
+        status: !cs.length ? 'uncovered' : (anyDone ? 'done' : (anyDue ? 'due' : 'learning'))
+      });
+    });
+  });
+  return out;
+}
+
 /* ---------- 工具：按账号维度过滤（per-user 口令场景） ---------- */
 function ofilter(name, openid) {
   if (!openid) return {}; // 管理员：不过滤，看全部
@@ -99,12 +182,14 @@ function dateKey(offsetDays) {
 
 /* ---------- 各模块聚合 ---------- */
 async function overview(query, openid) {
-  const [sessions, mistakes, reviews, evidence, users] = await Promise.all([
+  const [sessions, mistakes, reviews, evidence, cards, users, unitKps] = await Promise.all([
     getAll(COLLS.sessions, ofilter(COLLS.sessions, openid)),
     getAll(COLLS.mistakes, ofilter(COLLS.mistakes, openid)),
     getAll(COLLS.reviews, ofilter(COLLS.reviews, openid)),
     getAll(COLLS.evidence, ofilter(COLLS.evidence, openid)),
-    getAll(COLLS.user, ofilter(COLLS.user, openid))
+    getAll(COLLS.cards, ofilter(COLLS.cards, openid)),
+    getAll(COLLS.user, ofilter(COLLS.user, openid)),
+    getAll(COLLS.unitKps, ofilter(COLLS.unitKps, openid))
   ]);
   const now = Date.now();
   // 范围窗口（今日/7日/30日）
@@ -144,8 +229,16 @@ async function overview(query, openid) {
   }));
 
   const dueReviews = reviews.filter(r => !r.done && (r.dueAt || 0) <= now).length;
+  const dueCards = cards.filter(c => !c.done && (c.dueAt || 0) <= now).length;
   const mastered = evidence.filter(e => e.passed === true).length;
   const corrected = mistakes.filter(m => m.status === 'corrected').length;
+
+  // 单元通关率（P2 混合路线量化）：进行中 = 有卡但未全部通关的单元；avgUnitPass = 各单元通关率均值
+  const unitStats = computeUnitKpStats(unitKps, cards);
+  const unitsInProgress = unitStats.filter(u => u.carded > 0 && u.done < u.total).length;
+  const avgUnitPass = unitStats.length
+    ? Math.round(unitStats.reduce((s, u) => s + u.passRate, 0) / unitStats.length)
+    : 0;
 
   // 孩子状态摘要：即使无打卡 / 导学活动，也能展示画像（昵称 / 年级）与农场资产
   const u0 = users[0];
@@ -163,7 +256,7 @@ async function overview(query, openid) {
 
   return {
     child,
-    kpi: { checkinRate, sessions: sessions.length, mistakes: mistakes.length, dueReviews, mastered, corrected },
+    kpi: { checkinRate, sessions: sessions.length, mistakes: mistakes.length, dueReviews, dueCards, mastered, corrected, unitsInProgress, avgUnitPass },
     subjectDist: groupCount(sessions, 'subject'),
     errorDist: groupCount(mistakes, 'errorType'),
     trend
@@ -204,32 +297,57 @@ async function farm(openid) {
 }
 
 async function tutor(openid) {
-  const [sessions, mistakes, reviews, evidence] = await Promise.all([
+  const [sessions, mistakes, reviews, evidence, cards, unitKps] = await Promise.all([
     getAll(COLLS.sessions, ofilter(COLLS.sessions, openid)),
     getAll(COLLS.mistakes, ofilter(COLLS.mistakes, openid)),
     getAll(COLLS.reviews, ofilter(COLLS.reviews, openid)),
-    getAll(COLLS.evidence, ofilter(COLLS.evidence, openid))
+    getAll(COLLS.evidence, ofilter(COLLS.evidence, openid)),
+    getAll(COLLS.cards, ofilter(COLLS.cards, openid)),
+    getAll(COLLS.unitKps, ofilter(COLLS.unitKps, openid))
   ]);
+  // 会话白名单含 summary（会话级课程总结）；其余集合无该字段，多带无害
   const clean = r => {
     const o = {};
-    ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'stage', 'dueAt', 'done', 'total', 'correct', 'rate', 'passed', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+    ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'stage', 'dueAt', 'done', 'total', 'correct', 'rate', 'passed', 'summary', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+    return o;
+  };
+  // 闪卡白名单（提取式记忆实体；不回 messages、不回 openid 属主细节）
+  // 混合路线（P1）增补 unitId / kpId / source 三字段，供看板标注「必会覆盖」来源
+  const cardClean = r => {
+    const o = {};
+    ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'front', 'back', 'sourceSessionId', 'unitId', 'kpId', 'source', 'box', 'dueAt', 'done', 'lastResult', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+    return o;
+  };
+  // 单元必会清单白名单（P2）：points 只留结构化字段，不带正文外内容
+  const unitClean = r => {
+    const o = {};
+    ['openid', 'clientId', 'subject', 'subjectName', 'title', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+    o.points = (Array.isArray(r.points) ? r.points : []).map(p => ({
+      id: p.id, topic: p.topic, front: p.front, back: p.back, order: p.order
+    }));
     return o;
   };
   return {
     sessions: sessions.slice(0, 100).map(clean),
     mistakes: mistakes.slice(0, 100).map(clean),
     reviews: reviews.slice(0, 100).map(clean),
-    evidence: evidence.slice(0, 100).map(clean)
+    evidence: evidence.slice(0, 100).map(clean),
+    cards: cards.slice(0, 100).map(cardClean),
+    unitKps: unitKps.slice(0, 100).map(unitClean),
+    unitKpStats: computeUnitKpStats(unitKps, cards),
+    unitKpPoints: computeUnitKpPoints(unitKps, cards)
   };
 }
 
 async function profile(openid) {
-  const [users, sessions, mistakes, reviews, evidence] = await Promise.all([
+  const [users, sessions, mistakes, reviews, evidence, cards, unitKps] = await Promise.all([
     getAll(COLLS.user, ofilter(COLLS.user, openid)),
     getAll(COLLS.sessions, ofilter(COLLS.sessions, openid)),
     getAll(COLLS.mistakes, ofilter(COLLS.mistakes, openid)),
     getAll(COLLS.reviews, ofilter(COLLS.reviews, openid)),
-    getAll(COLLS.evidence, ofilter(COLLS.evidence, openid))
+    getAll(COLLS.evidence, ofilter(COLLS.evidence, openid)),
+    getAll(COLLS.cards, ofilter(COLLS.cards, openid)),
+    getAll(COLLS.unitKps, ofilter(COLLS.unitKps, openid))
   ]);
   const now = Date.now();
   // 按 openid 聚合（tutor_* 无 childId 字段，真实口径只到 openid 级）
@@ -250,6 +368,13 @@ async function profile(openid) {
     const m = mistakes.filter(x => x.openid === oid);
     const rv = reviews.filter(x => x.openid === oid);
     const ev = evidence.filter(x => x.openid === oid);
+    const cd = cards.filter(x => x.openid === oid);
+    const uk = unitKps.filter(x => x.openid === oid);
+    // 单元通关率（P2）：该账号各单元 passRate 均值（无单元库时为 0）
+    const ukStats = computeUnitKpStats(uk, cd);
+    const unitPassRate = ukStats.length
+      ? Math.round(ukStats.reduce((s, u) => s + u.passRate, 0) / ukStats.length)
+      : 0;
     accounts.push({
       openid: oid,
       nickname: cu.nickname || data.nickname || '',
@@ -277,6 +402,9 @@ async function profile(openid) {
       sessions: s.length,
       mistakes: m.length,
       dueReviews: rv.filter(x => !x.done && (x.dueAt || 0) <= now).length,
+      dueCards: cd.filter(x => !x.done && (x.dueAt || 0) <= now).length,
+      unitPassRate: unitPassRate,
+      unitCount: uk.length,
       mastered: ev.filter(x => x.passed === true).length,
       corrected: m.filter(x => x.status === 'corrected').length,
       subjectDist: groupCount(s, 'subject'),
@@ -297,13 +425,14 @@ async function profile(openid) {
  *   exams = exam_resources 全字段（含 markdown/rawText/answers），F-B 起纳入下拉，供 papers md 重建。
  */
 async function sync(openid) {
-  const [users, sessions, mistakes, reviews, evidence, exams] = await Promise.all([
+  const [users, sessions, mistakes, reviews, evidence, exams, cards] = await Promise.all([
     getAll(COLLS.user, ofilter(COLLS.user, openid)),
     getAll(COLLS.sessions, ofilter(COLLS.sessions, openid)),
     getAll(COLLS.mistakes, ofilter(COLLS.mistakes, openid)),
     getAll(COLLS.reviews, ofilter(COLLS.reviews, openid)),
     getAll(COLLS.evidence, ofilter(COLLS.evidence, openid)),
-    getAll(COLLS.exams, ofilter(COLLS.exams, openid))
+    getAll(COLLS.exams, ofilter(COLLS.exams, openid)),
+    getAll(COLLS.cards, ofilter(COLLS.cards, openid))
   ]);
   const u = users[0];
   const data = (u && u.data) || {};
@@ -338,6 +467,8 @@ async function sync(openid) {
     mistakes: pass(mistakes, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'source', 'questionText', 'childAnswer', 'markSource', 'createdAt', 'updatedAt']),
     evidence: pass(evidence, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'total', 'correct', 'rate', 'passed', 'createdAt', 'updatedAt']),
     reviews: pass(reviews, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'stage', 'dueAt', 'done', 'mistakeClientId', 'createdAt', 'updatedAt']),
+    // 闪卡：与 reviews 同口径透传（含 box/lastResult 进度 + 混合路线 unitId/kpId/source，供工作台下拉完整重建）
+    cards: pass(cards, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'front', 'back', 'sourceSessionId', 'unitId', 'kpId', 'source', 'box', 'dueAt', 'done', 'lastResult', 'createdAt', 'updatedAt']),
     // F-B：试卷库（资源库条目，非学情数据）。正文三段一并返回，供工作台下拉重建 papers md。
     exams: pass(exams, ['openid', 'clientId', 'resourceId', 'fileName', 'name', 'level', 'examType', 'retestType',
       'subject', 'subjectName', 'stage', 'grade', 'textbookEdition', 'correspondingUnit',

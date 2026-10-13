@@ -32,7 +32,9 @@
         "webportal/webportal",
         "typeManage/typeManage",
         "checkinDetail/checkinDetail",
-        "unitSummary/unitSummary"
+        "unitSummary/unitSummary",
+        "cards/cards",
+        "unitKp/unitKp"
       ]
     }
   ],
