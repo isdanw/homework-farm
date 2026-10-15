@@ -51,6 +51,7 @@ Page({
   _viewOf(c) {
     return {
       id: c.id,
+      subject: c.subject || '',            // P2 情境：据此定位学科（老卡可能为空 → 下方兜底）
       subjectName: c.subjectName || '',
       topic: c.topic || '',
       front: c.front || '',
@@ -81,6 +82,8 @@ Page({
     // 农场浇灌（G3）：完成一次卡片自测 = 一次浇灌（每日有上限，防刷）
     const gain = engine.tutorReward(store.get());
     if (gain) util.toast('阳光 +' + gain.sun, 'success');
+    // 学科情境（P2）：按当前卡的学科推进情境进度；解锁碎片时轻提示
+    this._advanceScenario(cur.subject);
     // 取下一张到期卡；无则结束本轮
     const due = tutorStore.getDueCards();
     if (due.length) {
@@ -94,6 +97,24 @@ Page({
   stopStudy() {
     this.setData({ studying: false, finished: false, current: null, flipped: false });
     this.render();
+  },
+
+  /**
+   * 学科情境（P2）：推进该卡的学科情境，达节点解锁剧情碎片时弹一次轻提示。
+   * 老卡可能缺 subject → 用内置第一科兜底（保证「每学科一份」永远有一个有效身份）。
+   */
+  _advanceScenario(subject) {
+    try {
+      const key = subject || 'math';
+      const res = store.advanceScenario(key);
+      if (res && res.unlocked && res.unlocked.length) {
+        const b = store.getScenarioBanner(key);
+        const frag = b && b.latest;
+        if (frag) {
+          setTimeout(() => util.toast(`${b.emoji} ${frag.title}：${frag.text}`, 'success'), 700);
+        }
+      }
+    } catch (e) {}
   },
 
   goBack() { wx.navigateBack({ delta: 1 }); }

@@ -461,9 +461,53 @@ Page({
       studyPlan.markTaskStarted(this.data.key, ref.si, ref.ti, util.today());
     }
 
+    // 精力条（P1）：按本次打卡时长扣减，口径与导学统一（1 分钟 = 1 点）。
+    // 未填时长按 CHECKIN_DEFAULT_MIN 兜底，保证「填了多久就扣多久」不被打卡流程割裂。
+    const spentMin = Number(this.data.minutes) || 5;
+    const cap = store.checkPaceCap(spentMin);
+    if (cap.over) this._restTip(cap);
+    store.spendPace(spentMin);   // 内部走 save()：落盘 + 登记上云 + 广播（首页精力条自动刷新）
+
+    // 学科情境（P2）：按打卡科目推进情境进度，解锁碎片时轻提示（累积制，不阻断）
+    this._advanceScenario();
+
     wx.vibrateShort && wx.vibrateShort({ type: 'light' });
     util.toast(`🎉 ${this.data.type.name}打卡完成！阳光 +${gain.sun}`, 'success');
     this.render();
+  },
+
+  /**
+   * 学科情境（P2）：推进本次打卡科目的情境进度，达节点解锁剧情碎片时弹一次轻提示。
+   * 累积制只增不减，不阻断打卡。
+   */
+  _advanceScenario() {
+    try {
+      const key = this.data.key;
+      const res = store.advanceScenario(key);
+      if (res && res.unlocked && res.unlocked.length) {
+        const b = store.getScenarioBanner(key);
+        const frag = b && b.latest;
+        if (frag) {
+          setTimeout(() => util.toast(`${b.emoji} ${frag.title}：${frag.text}`, 'success'), 900);
+        }
+      }
+    } catch (e) {}
+  },
+
+  /**
+   * 精力条：单节/单次时长超建议上限时的**非阻断**轻提示。
+   * 只提示一次（同一会话内不连弹），不阻止打卡 —— 契合「习惯培养」而非「管控」。
+   */
+  _restTip(cap) {
+    if (this._restTipShown) return;
+    this._restTipShown = true;
+    wx.showModal({
+      title: '该让大脑歇歇啦 🌿',
+      content: `这次花了 ${cap.minutes} 分钟，超过建议的 ${cap.capMin} 分钟。\n要不要起来活动一下，再继续？`,
+      confirmText: '去玩会儿',
+      cancelText: '继续',
+      confirmColor: '#5FBF6B'
+    });
   },
 
   /** 已打卡后仍可补充 / 修改描述 */

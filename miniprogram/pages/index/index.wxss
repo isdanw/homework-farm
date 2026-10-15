@@ -174,3 +174,70 @@
 .ec-title { font-size: 30rpx; font-weight: 800; color: #3A4350; }
 .ec-sub { font-size: 23rpx; color: var(--c-sub); margin-top: 4rpx; }
 .ec-go { font-size: 40rpx; color: #C9D3DC; flex: 0 0 auto; }
+
+/* ===== 精力条 / 节奏护盾（P1）=====
+   设计：轻量资源条，不惩罚、不锁死；颜色随水位 high→mid→low→crit 变化 */
+.pace {
+  background: #fff; border-radius: var(--radius); padding: 20rpx 24rpx 18rpx;
+  margin-bottom: 22rpx; box-shadow: 0 8rpx 24rpx rgba(150,180,210,.14);
+}
+.pace-head { display: flex; align-items: center; gap: 10rpx; margin-bottom: 12rpx; }
+.pace-ic { font-size: 30rpx; flex: 0 0 auto; }
+.pace-label { font-size: 25rpx; font-weight: 700; color: #3A4350; }
+.pace-val { font-size: 23rpx; color: var(--c-sub); margin-left: 2rpx; }
+.pace-tip {
+  font-size: 22rpx; font-weight: 700; margin-left: auto;
+  color: #fff; background: #F0913A; border-radius: 18rpx; padding: 3rpx 14rpx;
+}
+.pace.crit .pace-tip { background: #E4674C; }
+
+/* 轨道 + 填充 */
+.pace-track {
+  height: 18rpx; border-radius: 10rpx; background: #EFF3F7; overflow: hidden;
+}
+.pace-fill {
+  height: 100%; border-radius: 10rpx;
+  background: linear-gradient(90deg, #A8E6A1, #5FBF6B);
+  transition: width .35s ease;
+}
+.pace.low .pace-fill { background: linear-gradient(90deg, #FFD9A0, #F0913A); }
+.pace.crit .pace-fill { background: linear-gradient(90deg, #FFB3A3, #E4674C); }
+
+.pace-sub {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 21rpx; color: var(--c-sub); margin-top: 10rpx;
+}
+
+/* ===== 学科情境横幅（P2）=====
+   克制：高度紧凑、次要色，置于精力条之下，不与主行动卡争 C 位 */
+.scen {
+  background: linear-gradient(135deg, #F3F0FF, #E8F1FF);
+  border-radius: var(--radius); padding: 18rpx 22rpx 16rpx;
+  margin-bottom: 22rpx; box-shadow: 0 6rpx 18rpx rgba(150,160,210,.14);
+}
+.scen-head { display: flex; align-items: center; gap: 10rpx; margin-bottom: 10rpx; }
+.scen-ic { font-size: 28rpx; flex: 0 0 auto; }
+.scen-id { font-size: 26rpx; font-weight: 800; color: #4A4270; }
+.scen-ch {
+  font-size: 21rpx; font-weight: 700; color: #6C63A8;
+  background: rgba(255,255,255,.75); border-radius: 16rpx; padding: 2rpx 12rpx;
+}
+.scen-arrow { font-size: 24rpx; color: #9A93C4; margin-left: auto; }
+
+.scen-track { height: 12rpx; border-radius: 8rpx; background: rgba(255,255,255,.7); overflow: hidden; }
+.scen-fill {
+  height: 100%; border-radius: 8rpx;
+  background: linear-gradient(90deg, #C9C2F5, #8E86D8);
+  transition: width .35s ease;
+}
+.scen-sub {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 21rpx; color: #7A72A8; margin-top: 9rpx;
+}
+/* 展开的剧情碎片（短句，纯本地写死） */
+.scen-frag {
+  margin-top: 12rpx; padding: 14rpx 16rpx;
+  background: rgba(255,255,255,.8); border-radius: 14rpx;
+}
+.sf-t { display: block; font-size: 23rpx; font-weight: 800; color: #4A4270; margin-bottom: 6rpx; }
+.sf-x { display: block; font-size: 23rpx; color: #6C63A8; line-height: 1.6; }

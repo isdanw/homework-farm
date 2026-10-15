@@ -29,6 +29,46 @@
     </view>
   </view>
 
+  <!-- ===== 精力条 / 节奏护盾（P1）：轻量资源条，非惩罚、不锁死 =====
+       参数（上限 / 池大小）由儿童画像 learner 自动推导，不绑定年龄或年级 -->
+  <view class="pace {{pace.level}}">
+    <view class="pace-head">
+      <text class="pace-ic">{{pace.emoji}}</text>
+      <text class="pace-label">今日精力</text>
+      <text class="pace-val">{{pace.energy}}/{{pace.pool}}</text>
+      <text class="pace-tip" wx:if="{{pace.tip}}">{{pace.tip}}</text>
+    </view>
+    <view class="pace-track">
+      <view class="pace-fill" style="width:{{pace.pct}}%"></view>
+    </view>
+    <view class="pace-sub">
+      <text>本周已学 {{pace.weeklyUsed}} 分钟</text>
+      <text>单节建议 {{pace.capMin}} 分钟内</text>
+    </view>
+  </view>
+
+  <!-- ===== 学科情境横幅（P2）：轻量使命叙事，不喧宾夺主（置于精力条之下）=====
+     身份按学科框架自动分配（内置 9 科 + 自定义兜底），不写死某一科 -->
+  <view class="scen" wx:if="{{scenario}}" bindtap="toggleScenario">
+    <view class="scen-head">
+      <text class="scen-ic">{{scenario.emoji}}</text>
+      <text class="scen-id">{{scenario.identity}}</text>
+      <text class="scen-ch">第 {{scenario.chapter}} 段</text>
+      <text class="scen-arrow">{{scenarioOpen ? '▾' : '▸'}}</text>
+    </view>
+    <view class="scen-track">
+      <view class="scen-fill" style="width:{{scenario.nodePct}}%"></view>
+    </view>
+    <view class="scen-sub">
+      <text>{{scenario.progressNoun}} {{scenario.progress}} 枚</text>
+      <text>再 {{scenario.step - (scenario.progress % scenario.step)}} 次解锁下一段</text>
+    </view>
+    <view class="scen-frag" wx:if="{{scenarioOpen && scenario.latest}}">
+      <text class="sf-t">{{scenario.latest.title}}</text>
+      <text class="sf-x">{{scenario.latest.text}}</text>
+    </view>
+  </view>
+
   <!-- ===== 主行动：今日三科打卡（绝对 C 位） ===== -->
   <view class="act-card {{allDone ? 'all' : ''}}">
     <view class="sticker">⭐</view>

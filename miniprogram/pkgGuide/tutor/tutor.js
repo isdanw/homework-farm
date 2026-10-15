@@ -266,6 +266,8 @@ Page({
       const s = tutorStore.newSession(this.data.subject, this.data.subjectName);
       sessionId = s.id;
       this.setData({ sessionId: sessionId });
+      // 精力条（P1）：标记本次学习行为开始（幂等，结束时按实际时长结算）
+      try { store.markPaceSession(); } catch (e) {}
     }
 
     // 追加用户消息
@@ -402,6 +404,24 @@ Page({
         this._refreshUnitProgress();
         const diagnosis = r.diagnosis || null;
         const now = Date.now();
+
+        // 精力条（P1）：按本次导学实际时长结算扣减（非阻断；封顶 cap*1.5 见 pace.settleSession）
+        let paceSpent = null;
+        try {
+          paceSpent = store.settlePaceSession();
+          if (paceSpent && paceSpent.spent > 0) {
+            const cap = store.checkPaceCap(paceSpent.spent);
+            if (cap.over) {
+              wx.showModal({
+                title: '该让大脑歇歇啦 🌿',
+                content: `这次导学用了 ${paceSpent.spent} 分钟，超过建议的 ${cap.capMin} 分钟。\n要不要休息一下再来？`,
+                confirmText: '好的',
+                showCancel: false,
+                confirmColor: '#5FBF6B'
+              });
+            }
+          }
+        } catch (e) {}
 
         // 诊断出卡点 → 写本地错题本（id 与云端 clientId 一致）
         if (diagnosis && diagnosis.stuck) {

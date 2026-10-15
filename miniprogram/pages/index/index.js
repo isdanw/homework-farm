@@ -26,7 +26,13 @@ Page({
     seedsTotal: 0,
     forecast: {},
     todayCoursesText: '',       // 今日课表（有课表时展示，如「语文 · 数学 · 体育」）
-    pendingMistakes: 0          // 待订正错题数（今日中枢待办提醒，0 则隐藏）
+    pendingMistakes: 0,         // 待订正错题数（今日中枢待办提醒，0 则隐藏）
+    dueCards: 0,                // 今日到期复习卡
+    // 学科情境（P2）：身份按学科框架自动分配，不写死某一科
+    scenario: null,
+    scenarioOpen: false,       // 情境横幅是否展开看碎片短句
+    // 精力条 / 节奏护盾（P1）：参数由 learner 档案自动推导，不绑年龄
+    pace: { pct: 100, level: 'high', emoji: '🌿', tip: '', capMin: 25, weeklyUsed: 0, weeklyTotal: 300, derived: true }
   },
 
   onLoad() {
@@ -105,6 +111,23 @@ Page({
       dueCards = tutorStore.getDueCards().length;   // G3：今日到期复习卡（与错题复习窗口并列的待办）
     } catch (e) {}
 
+    // 精力条（P1）：视图模型由 store 统一推导（跨天自动回满），页面只渲染
+    let pace = null;
+    try { pace = store.getPaceSnapshot(); } catch (e) {}
+
+    // 学科情境（P2）：展示「当前学科」的情境横幅。
+    // 「当前学科」= 最近有推进的那个学科（scenarios[x].updatedAt 最大）；
+    // 一个都没推进过时回落到第一个可用打卡类型 —— 不写死某一科，用户多样。
+    let scenario = null;
+    try {
+      const scns = d.scenarios || {};
+      const keys = Object.keys(scns).filter(k => scns[k] && (scns[k].progress > 0 || (scns[k].unlocked || []).length));
+      let pick = keys.sort((a, b) => (scns[b].updatedAt || 0) - (scns[a].updatedAt || 0))[0];
+      if (!pick) pick = types.length ? types[0].key : 'math';
+      const b = store.getScenarioBanner(pick);
+      scenario = Object.assign({ subject: pick }, b);
+    } catch (e) {}
+
     this.setData({
       dateText: util.cnDate(today),
       weekText: util.weekday(today),
@@ -122,6 +145,7 @@ Page({
       planEntryText,
       pendingMistakes,
       dueCards,
+      pace,
       forecast: engine.forecast(d)
     });
   },
@@ -133,6 +157,7 @@ Page({
   },
 
   goFarm() { wx.switchTab({ url: '/pages/farm/farm' }); },
+  toggleScenario() { this.setData({ scenarioOpen: !this.data.scenarioOpen }); },
   goMistakes() { wx.navigateTo({ url: '/pkgTools/mistakes/mistakes' }); },
   goCards() { wx.navigateTo({ url: '/pkgTools/cards/cards' }); },
   goPlan() {

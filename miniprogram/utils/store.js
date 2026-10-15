@@ -118,6 +118,14 @@ function defaultData() {
     /* 每日计划：{ 'YYYY-MM-DD': [ {id, subject, title, done} ] } */
     plans: {},
 
+    /* 精力条 / 节奏护盾（P1）：energy/todayUsedMin/… 形状由 utils/pace.js defaultPace() 唯一定义
+       参数（单节上限 / 每日精力池）不落盘，一律由 learner 档案实时推导，见 pace.derivePaceConfig */
+    pace: require('./pace.js').defaultPace(),
+
+    /* 学科情境（P2）：{ [subject]: {subject,progress,chapter,unlocked,updatedAt} }
+       形状由 utils/scenario.js defaultScenario() 唯一定义；框架/剧情碎片不落盘（现取） */
+    scenarios: {},
+
     /* 成长乐园：累计获得的小星星（做题正确即 +1，用于首页展示与激励） */
     learn: { stars: 0 },
 
@@ -249,6 +257,14 @@ function ensureUserFields(u) {
   // 字段改名兼容：旧 profile.nickname 同步到顶层 nickname
   if (u.profile && u.profile.nickname && !u.nickname) u.nickname = u.profile.nickname;
   if (!u.avatar) u.avatar = '🐯';
+  // 精力条（P1）：逐字段补齐（顶层循环只会整体拷贝引用，缺字段的老数据不会被填上）
+  if (!u.pace || typeof u.pace !== 'object') u.pace = def.pace;
+  else {
+    const pd = require('./pace.js').defaultPace();
+    Object.keys(pd).forEach(k => { if (u.pace[k] === undefined) u.pace[k] = pd[k]; });
+  }
+  // 学科情境（P2）：补齐缺失的学科切片（形状由 scenario.js 唯一定义）
+  if (!u.scenarios || typeof u.scenarios !== 'object' || Array.isArray(u.scenarios)) u.scenarios = {};
   return u;
 }
 
@@ -663,6 +679,100 @@ function save(slice, sync) {
 
   emit(get());                                     // ← 广播：所有页面立即拿到「当前孩子」最新数据
   return get();
+}
+
+/* ==========================================================================
+ * 精力条 / 节奏护盾（P1）—— 数据层出口
+ * 契约：写操作一律走 save()（落盘 + 登记上云 + 广播），页面不得直接改 u.pace。
+ * ========================================================================== */
+
+/** 取当前孩子的节奏参数（由 learner 档案推导，不绑年龄；只读，不落盘） */
+function getPaceConfig() {
+  const u = get();
+  return require('./pace.js').derivePaceConfig(u.learner, u.grade);
+}
+
+/**
+ * 取精力条视图模型（只读；内部会补齐/规范化 u.pace，但不落盘不广播）
+ * @returns {{energy:Number,pool:Number,pct:Number,level:String,emoji:String,tip:String,...}}
+ */
+function getPaceSnapshot() {
+  const u = get();
+  return require('./pace.js').snapshot(u, getPaceConfig());
+}
+
+/**
+ * 消耗精力（按分钟）。**非惩罚**：不阻断任何行为，energy 最低 0。
+ * 走 save() → 落盘 + 登记上云 + 广播，各页面自动刷新。
+ * @param {Number} minutes 分钟数（<=0 视为无效，不落盘）
+ * @returns {{spent:Number,energy:Number,pool:Number,drained:Boolean}|null}
+ */
+function spendPace(minutes) {
+  const pace = require('./pace.js');
+  const u = get();
+  const cfg = getPaceConfig();
+  const res = pace.spend(u, minutes, cfg);
+  if (!res.spent) return null;              // 无效时长：不产生写操作
+  save(u);
+  return res;
+}
+
+/** 标记一次学习行为开始（幂等；已有未结算起点时不覆盖） */
+function markPaceSession() {
+  const u = get();
+  const pace = require('./pace.js');
+  const at = pace.markSessionStart(u, getPaceConfig());
+  save(u);
+  return at;
+}
+
+/**
+ * 结算本次学习行为并扣减精力（按实际时长）。
+ * @returns {{spent:Number,energy:Number,pool:Number,drained:Boolean}|null} 无起点时返回 null
+ */
+function settlePaceSession() {
+  const pace = require('./pace.js');
+  const u = get();
+  const cfg = getPaceConfig();
+  const min = pace.settleSession(u, cfg);
+  if (!min) return null;                    // 没记录起点：不动数据
+  const res = pace.spend(u, min, cfg);
+  save(u);
+  return res;
+}
+
+/** 单节是否超过建议上限（只读；页面据此弹**非阻断**轻提示） */
+function checkPaceCap(minutes) {
+  return require('./pace.js').checkSessionCap(minutes, getPaceConfig());
+}
+
+/* ==========================================================================
+ * 学科情境（P2）—— 数据层出口
+ * 契约：写操作一律走 save()，页面不得直接改 u.scenarios。
+ * ========================================================================== */
+
+/** 取某学科情境横幅视图模型（只读，不落盘） */
+function getScenarioBanner(subject) {
+  return require('./scenario.js').banner(get(), subject);
+}
+
+/** 取某学科情境状态（只读，自动归一化但不落盘） */
+function getScenario(subject) {
+  return require('./scenario.js').getScenario(get(), subject);
+}
+
+/**
+ * 推进学科情境进度（累积制，只增不减）。走 save() → 落盘 + 上云 + 广播。
+ * @param {String} subject 学科 key
+ * @returns {{unlocked:Array,chapter:Number,progress:Number}|null}
+ */
+function advanceScenario(subject) {
+  if (!subject) return null;
+  const sc = require('./scenario.js');
+  const u = get();
+  const res = sc.advance(u, subject);
+  save(u);
+  return res;
 }
 
 /** 重置当前孩子的数据（保留昵称 / 头像 / 年级 / 创建时间） */
@@ -1393,6 +1503,8 @@ module.exports = {
   getOpenid, getBindInfo, getWxProfile, setWxProfile, isOnboarded, isGuest,
   getComments, addComment,
   getLearner, saveLearner, getSubjectProfile, saveSubjectProfile,
+  getPaceConfig, getPaceSnapshot, spendPace, markPaceSession, settlePaceSession, checkPaceCap,
+  getScenarioBanner, getScenario, advanceScenario,
   resolveGrade, parseGrade,
   exportJSON, importJSON
 };

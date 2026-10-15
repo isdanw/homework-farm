@@ -175,11 +175,29 @@ Page({
     if (!cur) return;
     tutorStore.advanceCard(cur.id, good);
     tutorStore.pushQueued();
+    // 精力条（P1）：翻面自测是轻量行为，按 MICRO_MIN 少量扣减（非阻断）
+    try { store.spendPace(require('../../utils/pace.js').MICRO_MIN); } catch (e) {}
+    // 学科情境（P2）：叠加情境进度（累积制）；解锁新剧情碎片时轻提示一次
+    this._advanceScenario();
     // 完成一次自测 = 一次农场浇灌（每日有上限，防刷）
     const gain = engine.tutorReward(store.get());
     if (gain) util.toast('阳光 +' + gain.sun, 'success');
     this.setData({ study: { active: false, flipped: false, current: null } });
     this.render();
+  },
+
+  /** 学科情境（P2）：推进当前学科情境，达节点解锁碎片时弹一次轻提示 */
+  _advanceScenario() {
+    try {
+      const res = store.advanceScenario(this.data.subject);
+      if (res && res.unlocked && res.unlocked.length) {
+        const b = store.getScenarioBanner(this.data.subject);
+        const frag = b && b.latest;
+        if (frag) {
+          setTimeout(() => util.toast(`${b.emoji} ${frag.title}：${frag.text}`, 'success'), 700);
+        }
+      }
+    } catch (e) {}
   },
   studyStop() { this.setData({ study: { active: false, flipped: false, current: null } }); },
 
