@@ -64,38 +64,12 @@
       </view>
     </view>
 
-    <!-- 其他孩子：点击整行即切换（当前孩子已在上方展示，不重复列出） -->
-    <view class="kid-others" wx:if="{{others.length > 0}}">
-      <view class="kid-others-head">其他孩子</view>
-      <view class="ulist">
-        <view
-          wx:for="{{others}}"
-          wx:key="id"
-          class="urow"
-          data-id="{{item.id}}"
-          hover-class="urow-hover"
-          bindtap="switchUser">
-          <view class="u-avatar">{{item.avatar}}</view>
-          <view class="u-info">
-            <view class="u-name">{{item.nickname}}<text wx:if="{{item.grade}}" class="u-grade">{{item.grade}}</text></view>
-            <view class="u-sub">连续打卡 {{item.streak}} 天 · 农场 {{item.coins}} 金币</view>
-          </view>
-          <view class="u-switch">切换</view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 孩子管理操作 -->
-    <view class="kid-actions">
-      <view class="kid-add" bindtap="openAdd">＋ 添加孩子</view>
-      <view wx:if="{{users.length > 1}}" class="kid-del" bindtap="removeUser">删除当前孩子</view>
-    </view>
   </view>
 
-  <!-- 未有孩子时的空态提示 -->
+  <!-- 首次使用：填写唯一的孩子信息 -->
   <view class="hero hero-empty" wx:if="{{!current}}">
-    <text class="hero-empty-text">还没有添加孩子哦</text>
-    <view class="btn btn-sm btn-green" style="margin-top:16rpx" bindtap="openAdd">＋ 添加第一个孩子</view>
+    <text class="hero-empty-text">还没有填写孩子信息</text>
+    <view class="btn btn-sm btn-green" style="margin-top:16rpx" bindtap="openAdd">＋ 填写孩子信息</view>
   </view>
 
   <!-- ===== 儿童画像（全局儿童信息） ===== -->
@@ -113,7 +87,7 @@
       <view class="dot" style="background:#9B7BF0"></view><text class="section-title">导学中心</text>
       <view class="entry-go">{{tutorLocked ? '未启用' : '去导学 ›'}}</view>
     </view>
-    <view class="muted tools-desc">{{tutorLocked ? (tutorLockReason === 'no-bind' ? '🔒 本地模式不可用，请先绑定微信再开启导学功能' : (tutorLockReason === 'no-child' ? '🔒 请先在上方添加孩子，再开启导学功能' : '🔒 请先为孩子建立「成长计划」，再开启导学功能')) : hubInfo}}</view>
+    <view class="muted tools-desc">{{tutorLocked ? (tutorLockReason === 'no-bind' ? '🔒 本地模式不可用，请先绑定微信再开启导学功能' : (tutorLockReason === 'no-child' ? '🔒 请先填写孩子信息，再开启导学功能' : '🔒 请先为孩子建立「成长计划」，再开启导学功能')) : hubInfo}}</view>
   </view>
 
   <!-- ===== 成长计划（阶段计划生成 + 打卡进度对照） ===== -->
@@ -134,6 +108,15 @@
     <view class="muted tools-desc">{{scheduleInfo || '录入一学期课程表，自动识别对应的打卡内容'}}</view>
   </view>
 
+  <!-- ===== 教材库（官方教材目录 + 上传 PDF 建自己的教材；计划生成的目录锚点） ===== -->
+  <view class="card tools-card" bindtap="goTextbookLib">
+    <view class="section-head">
+      <view class="dot" style="background:#F5A623"></view><text class="section-title">教材库</text>
+      <view class="entry-go">去管理 ›</view>
+    </view>
+    <view class="muted tools-desc">官方教材单元目录，或上传课本 PDF 目录建自己的教材；成长计划按所选教材的单元编排。</view>
+  </view>
+
   <!-- ===== 打卡类型管理（家长可增删自定义打卡项） ===== -->
   <view class="card tools-card" bindtap="goTypeManage">
     <view class="section-head">
@@ -150,6 +133,15 @@
       <view class="entry-go">去生成 ›</view>
     </view>
     <view class="muted tools-desc">生成与微信绑定的网页口令，用电脑浏览器查看孩子的打卡与导学数据；「导学单」可在电脑上出单与交回执。</view>
+  </view>
+
+  <!-- ===== 家长验证（独立家长口令 → 2 小时会话；家长特权操作前校验） ===== -->
+  <view class="card tools-card" bindtap="goParentGate">
+    <view class="section-head">
+      <view class="dot" style="background:#7A8CF5"></view><text class="section-title">家长验证</text>
+      <view class="entry-go">去验证 ›</view>
+    </view>
+    <view class="muted tools-desc">设置 4-8 位家长口令并验证身份，验证后 2 小时内有效；签发/作废学习单、修改计划、增删打卡类型都需要先通过这道验证。</view>
   </view>
 
   <!-- ===== 家长工具（数据备份 / 体验数据，放页面最底部） ===== -->
@@ -176,7 +168,7 @@
     <view class="sheet" catchtap="__stop">
       <view class="sheet-handle"></view>
       <view class="sheet-head">
-        <text class="sheet-title">添加孩子</text>
+        <text class="sheet-title">填写孩子信息</text>
         <view class="sheet-close" bindtap="closeAdd">✕</view>
       </view>
       <scroll-view class="sheet-body" scroll-y>
@@ -205,7 +197,7 @@
       </scroll-view>
       <view class="sheet-foot">
         <view class="btn btn-gray btn-sm" bindtap="closeAdd">取消</view>
-        <view class="btn btn-green btn-sm" bindtap="confirmAdd">添加</view>
+        <view class="btn btn-green btn-sm" bindtap="confirmAdd">开始使用</view>
       </view>
     </view>
   </view>

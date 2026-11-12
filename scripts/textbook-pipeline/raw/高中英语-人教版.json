@@ -1,0 +1,2879 @@
+{
+ "stage": "高中",
+ "subject": "英语",
+ "version": "人教版",
+ "order": 0,
+ "region": "厦门",
+ "source": {
+  "platform": "国家中小学智慧教育平台 · 同步课堂",
+  "version": "人教版",
+  "crawledAt": "2026-09-27"
+ },
+ "note": "目录抓取自国家中小学智慧教育平台（同步课堂）；knowledge 为每节对应的知识点，由脚本生成，可手工校订后重新运行保留。",
+ "books": [
+  {
+   "name": "必修 第一册",
+   "grade": "高一",
+   "edition": "",
+   "sourceId": "9b661b42-54bc-48c5-9b03-21a03c78176f",
+   "chapters": [
+    {
+     "name": "WELCOME UNIT",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "推断态度与目的"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "主语",
+        "谓语",
+        "宾语",
+        "表语",
+        "补语",
+        "定语"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "邮件写作",
+        "通知写作",
+        "介绍类写作",
+        "段落结构与衔接",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Building Up Your Vocabulary",
+       "knowledge": [
+        "构词法",
+        "词块",
+        "熟词生义",
+        "词语搭配",
+        "语境词义判断"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 1 TEENAGE LIFE",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "推断隐含信息"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "时态的基本形式",
+        "被动语态",
+        "时间参照点",
+        "完成体",
+        "进行体",
+        "时态的常用组合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "建议信写作",
+        "写作任务回应",
+        "写作对象与语气",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 2 TRAVELLING AROUND",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "图表与文字比较",
+        "跨段联系"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "不定式",
+        "动词-ing形式",
+        "过去分词",
+        "非谓语动词的句法功能",
+        "非谓语动词的主动与被动",
+        "非谓语动词的时间先后"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "记叙文写作",
+        "主题句",
+        "段落发展",
+        "指代衔接",
+        "词汇衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 3 SPORTS AND FITNESS",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "推断态度与目的"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "定语从句",
+        "名词性从句",
+        "状语从句",
+        "关系词的选择",
+        "连接词的选择",
+        "限制性与非限制性从句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "简单议论文写作",
+        "举例说明",
+        "转折关系",
+        "因果关系"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 4 NATURAL DISASTERS",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "整体论证逻辑"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "复杂时态与语态",
+        "复杂非谓语结构",
+        "情态意义",
+        "虚拟语气",
+        "倒装结构",
+        "强调结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "介绍类写作",
+        "语篇结构与目的",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 5 LANGUAGES AROUND THE WORLD",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "作者立场识别",
+        "事实与观点区分"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "定语从句",
+        "名词性从句",
+        "状语从句",
+        "关系词的选择",
+        "连接词的选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "邮件写作",
+        "通知写作",
+        "写作任务回应",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "其他",
+     "sections": [
+      {
+       "name": "Unit 5 Travelling abroad",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "推断隐含信息",
+        "邮件写作",
+        "建议信写作"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 5 The power of nature",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "记叙文写作"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "必修 第二册",
+   "grade": "高一",
+   "edition": "",
+   "sourceId": "f5aa0d4b-88b5-47fb-864e-dab60d73b671",
+   "chapters": [
+    {
+     "name": "UNIT 1 CULTURAL HERITAGE",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "推断态度与目的",
+        "文化差异表达",
+        "中国文化英语表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "定语从句",
+        "关系词的选择",
+        "限制性与非限制性从句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "介绍类写作",
+        "段落结构与衔接",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 2 WILDLIFE PROTECTION",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "推断隐含信息",
+        "共同关切表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "被动语态",
+        "时态的基本形式",
+        "时间参照点"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "建议信写作",
+        "写作对象与语气",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 3 THE INTERNET",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "推断态度与目的",
+        "事实与观点区分"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "名词性从句",
+        "连接词的选择",
+        "从句成分完整性判断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "邮件写作",
+        "写作任务回应",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 4 HISTORY AND TRADITIONS",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "推断隐含信息",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "状语从句",
+        "连接词的选择",
+        "时间逻辑一致性"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "记叙文写作",
+        "人物情节连贯",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 5 MUSIC",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "理解逻辑关系",
+        "推断态度与目的",
+        "修辞目的识别"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "不定式",
+        "动词-ing形式",
+        "过去分词",
+        "非谓语动词的句法功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "简单议论文写作",
+        "观点与理由表达",
+        "例证与回应表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "必修 第三册",
+   "grade": "高一",
+   "edition": "",
+   "sourceId": "75399b4d-e3e1-4dfa-8f53-39abb8fb0a7a",
+   "chapters": [
+    {
+     "name": "UNIT 1 FESTIVALS AND CELEBRATIONS",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "主题句",
+        "段落发展",
+        "词汇衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "定语从句",
+        "关系词的选择",
+        "限制性与非限制性从句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "介绍类写作",
+        "邮件写作",
+        "写作任务回应",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "语法形式的意义功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [
+        "多模态信息整合",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 2 MORALS AND VIRTUES",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "推断态度与目的",
+        "转折关系",
+        "因果关系"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "名词性从句",
+        "连接词的选择",
+        "从句成分完整性判断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "简单议论文写作",
+        "观点与理由表达",
+        "例证与回应表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "语法深化"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "共同关切表达",
+        "中国文化英语表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [],
+       "by": "name"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 3 DIVERSE CULTURES",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取细节信息",
+        "理解逻辑关系",
+        "指代衔接",
+        "省略衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "状语从句",
+        "连接词的选择",
+        "时间逻辑一致性"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "记叙文写作",
+        "人物情节连贯",
+        "语言风格连贯"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "长难句与信息整合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "多模态信息整合",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [],
+       "by": "name"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 4 SPACE EXPLORATION",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "图表与文字比较",
+        "整体论证逻辑"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "不定式",
+        "动词-ing形式",
+        "过去分词",
+        "非谓语动词的句法功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Listening and Talking",
+       "knowledge": [
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "论述类写作",
+        "观点与理由表达",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "批判性阅读"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [],
+       "by": "name"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 5 THE VALUE OF MONEY",
+     "sections": [
+      {
+       "name": "1.Opening Page & Listening and Speaking（Pronunciation)",
+       "knowledge": [
+        "句重音",
+        "意群",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Reading and Thinking",
+       "knowledge": [
+        "获取细节信息",
+        "推断隐含信息",
+        "作者立场识别"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Discovering Useful Structures",
+       "knowledge": [
+        "情态意义",
+        "虚拟语气",
+        "倒装结构",
+        "强调结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Viewing and Talking",
+       "knowledge": [
+        "图片信息理解",
+        "图表信息理解",
+        "演讲信息理解"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Reading for Writing",
+       "knowledge": [
+        "建议信写作",
+        "通知写作",
+        "写作对象与语气"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "自主学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "沟通目的评价",
+        "写作迁移"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [],
+       "by": "name"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "选择性必修 第一册",
+   "grade": "高二",
+   "edition": "",
+   "sourceId": "42bb696f-cb72-446f-9fd9-afed0dc50773",
+   "chapters": [
+    {
+     "name": "UNIT 1 PEOPLE OF ACHIEVEMENT",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "推断态度与目的",
+        "语篇结构与目的"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "构词法",
+        "词语搭配",
+        "熟词生义"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "定语从句",
+        "关系词的选择",
+        "限制性与非限制性从句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达",
+        "语调"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "介绍类写作",
+        "段落结构与衔接",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "错因记录",
+        "词典与资料选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 2 LOOKING INTO THE FUTURE",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "理解逻辑关系",
+        "语篇结构与目的"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "词块",
+        "语境词义判断",
+        "语域"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "时态的基本形式",
+        "时间参照点",
+        "完成体",
+        "进行体"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "句重音",
+        "意群"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "简单议论文写作",
+        "观点与理由表达",
+        "例证与回应表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "错因记录",
+        "复述学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "图表信息理解",
+        "跨段联系"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 3 FASCINATING PARKS",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取细节信息",
+        "指代衔接",
+        "词汇衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "词语搭配",
+        "熟词生义",
+        "构词法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "状语从句",
+        "连接词的选择",
+        "从句成分完整性判断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "语流",
+        "语调"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "邮件写作",
+        "写作对象与语气",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "词典与资料选择",
+        "朗读学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "图片信息理解",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 4 BODY LANGUAGE",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "推断隐含信息",
+        "作者立场识别",
+        "事实与观点区分"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "语境词义判断",
+        "词块",
+        "语域"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "名词性从句",
+        "主语",
+        "表语"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "句重音",
+        "意群"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "记叙文写作",
+        "主题句",
+        "段落发展"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "错因记录",
+        "整体论证逻辑"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "共同关切表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 5 WORKING THE LAND",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "转折关系",
+        "因果关系"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "构词法",
+        "词语搭配",
+        "熟词生义"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "被动语态",
+        "非谓语动词的主动与被动",
+        "过去分词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "语调",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "通知写作",
+        "写作任务回应",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "词典与资料选择",
+        "语法形式的意义功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "中国文化英语表达",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "其他",
+     "sections": [
+      {
+       "name": "Unit 1 Living well",
+       "knowledge": [],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "选择性必修 第二册",
+   "grade": "高二",
+   "edition": "",
+   "sourceId": "7dc81670-4682-4bc2-87cd-f9b843d230cb",
+   "chapters": [
+    {
+     "name": "UNIT 1 SCIENCE AND SCIENTISTS",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "理解逻辑关系",
+        "语篇结构与目的",
+        "长难句与信息整合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "构词法",
+        "词块",
+        "熟词生义",
+        "词语搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "非谓语动词",
+        "不定式",
+        "动词-ing形式",
+        "过去分词",
+        "非谓语动词的句法功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达",
+        "语调",
+        "句重音"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "介绍类写作",
+        "段落结构与衔接",
+        "语言准确性与修改",
+        "主题句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "多模态信息整合",
+        "讨论学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 2 BRIDGING CULTURES",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "推断态度与目的",
+        "语篇组织",
+        "词汇衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "语境词义判断",
+        "语域",
+        "词块",
+        "词语搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "从句系统",
+        "定语从句",
+        "名词性从句",
+        "状语从句",
+        "关系词的选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "获取细节信息",
+        "意群",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "邮件写作",
+        "写作对象与语气",
+        "段落结构与衔接",
+        "指代衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "共同关切表达",
+        "中国文化英语表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "图片信息理解",
+        "图表信息理解",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 3 FOOD AND CULTURE",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "理解逻辑关系",
+        "因果关系",
+        "举例说明"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "词块",
+        "熟词生义",
+        "词语搭配",
+        "构词法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "时态与语态整合",
+        "被动语态",
+        "完成体",
+        "时间逻辑一致性"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "获取细节信息",
+        "语调",
+        "句重音"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "记叙文写作",
+        "人物情节连贯",
+        "语言风格连贯",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "多模态信息整合",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "图片信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 4 JOURNEY ACROSS A VAST LAND",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "推断隐含信息",
+        "语篇结构与目的",
+        "转折关系"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "语法深化",
+        "虚拟语气",
+        "倒装结构",
+        "强调结构",
+        "省略结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "理解逻辑关系",
+        "意群",
+        "语流"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "简单议论文写作",
+        "观点与理由表达",
+        "例证与回应表达",
+        "写作任务回应"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "批判性阅读",
+        "作者立场识别",
+        "论据识别"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "多模态信息整合",
+        "演讲信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 5 FIRST AID",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "获取细节信息",
+        "语篇组织",
+        "指代衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "情态意义",
+        "复杂时态与语态",
+        "复杂非谓语结构",
+        "语法形式的意义功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达",
+        "语调",
+        "句重音"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "通知写作",
+        "建议信写作",
+        "语言准确性与修改",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "自主学习",
+        "错因记录",
+        "词典与资料选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "多模态信息整合",
+        "图表信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "选择性必修 第三册",
+   "grade": "高二",
+   "edition": "",
+   "sourceId": "2ffd7e2f-d83f-45b6-9a85-f6c655861f04",
+   "chapters": [
+    {
+     "name": "UNIT 1 ART",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "推断态度与目的",
+        "语篇结构与目的",
+        "词汇衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "构词法",
+        "词语搭配",
+        "熟词生义",
+        "语境词义判断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "定语从句",
+        "非谓语动词的句法功能",
+        "过去分词",
+        "语法形式的意义功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "音视频信息理解",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "介绍类写作",
+        "段落结构与衔接",
+        "语言准确性与修改",
+        "写作任务回应"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "多模态信息整合",
+        "中国文化英语表达",
+        "讨论学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "图片信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 2 HEALTHY LIFESTYLE",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取细节信息",
+        "理解逻辑关系",
+        "因果关系",
+        "指代衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "词块",
+        "语域",
+        "熟词生义",
+        "词语搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "情态意义",
+        "虚拟语气",
+        "状语从句",
+        "连接词的选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达",
+        "共同关切表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "建议信写作",
+        "写作对象与语气",
+        "简单议论文写作",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "多模态信息整合",
+        "图表信息理解",
+        "讨论学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "事实与观点区分"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 3 ENVIRONMENTAL PROTECTION",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "推断隐含信息",
+        "转折关系",
+        "语篇结构与目的"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "构词法",
+        "语境词义判断",
+        "词语搭配",
+        "词块积累"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "名词性从句",
+        "定语从句",
+        "限制性与非限制性从句",
+        "从句成分完整性判断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "音视频信息理解",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "简单议论文写作",
+        "观点与理由表达",
+        "段落结构与衔接",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "多模态信息整合",
+        "信息来源评估",
+        "讨论学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "图片信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 4 ADVERSITY AND COURAGE",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取细节信息",
+        "推断态度与目的",
+        "词汇衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "熟词生义",
+        "语域",
+        "词语搭配",
+        "语境词义判断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "倒装结构",
+        "强调结构",
+        "省略结构",
+        "复杂时态与语态"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "记叙文写作",
+        "段落结构与衔接",
+        "写作对象与语气",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "多模态信息整合",
+        "不同文本比较",
+        "讨论学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "作者立场识别"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 5 POEMS",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "修辞目的识别",
+        "推断隐含信息",
+        "语篇结构与目的"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "词块",
+        "熟词生义",
+        "语境词义判断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "句子主干",
+        "插入成分识别",
+        "主次信息区分",
+        "语法形式的意义功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "介绍类写作",
+        "段落结构与衔接",
+        "写作任务回应",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "7.＊Project",
+       "knowledge": [
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.＊Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "图片信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "其他",
+     "sections": [
+      {
+       "name": "Unit 1 Art",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 2 Poems",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 3 A healthy life",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 4 Global warming",
+       "knowledge": [],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "选择性必修 第四册",
+   "grade": "高二",
+   "edition": "",
+   "sourceId": "4ebdf6c8-4c90-4537-88ea-3902a6676598",
+   "chapters": [
+    {
+     "name": "UNIT 1 SCIENCE FICTION",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "理解逻辑关系",
+        "语篇结构与目的"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "构词法",
+        "词块",
+        "熟词生义",
+        "词语搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "定语从句",
+        "名词性从句",
+        "状语从句",
+        "关系词的选择",
+        "连接词的选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达",
+        "音视频信息理解"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "介绍类写作",
+        "段落结构与衔接",
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "错因记录",
+        "词典与资料选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "多模态信息整合",
+        "沟通目的评价"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 2 ICONIC ATTRACTIONS",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "推断态度与目的",
+        "语篇结构与目的"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "语境词义判断",
+        "词块",
+        "语域"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "非谓语动词的句法功能",
+        "不定式",
+        "动词-ing形式",
+        "过去分词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "图表与文字比较"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "邮件写作",
+        "写作对象与语气",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "错因记录",
+        "复述学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "中国文化英语表达",
+        "共同关切表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "图片信息理解",
+        "音视频信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 3 SEA EXPLORATION",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取细节信息",
+        "理解逻辑关系",
+        "长难句与信息整合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "构词法",
+        "熟词生义",
+        "词语搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "时态的基本形式",
+        "被动语态",
+        "完成体",
+        "进行体"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "获取主旨大意"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "记叙文写作",
+        "人物情节连贯",
+        "语言风格连贯"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "错因记录",
+        "朗读学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "讨论学习",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "跨段联系"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 4 SHARING",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "推断隐含信息",
+        "作者立场识别",
+        "语篇组织"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "词块",
+        "语境词义判断",
+        "语域"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "虚拟语气",
+        "情态意义",
+        "语法形式的意义功能"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的总结与观点表达",
+        "不同文本比较"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "建议信写作",
+        "写作任务回应",
+        "段落结构与衔接"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "错因记录",
+        "写作迁移"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "沟通目的评价",
+        "共同关切表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "演讲信息理解",
+        "文化差异表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "UNIT 5 LAUNCHING YOUR CAREER",
+     "sections": [
+      {
+       "name": "1.Opening Page & Reading and Thinking",
+       "knowledge": [
+        "获取主旨大意",
+        "论据识别",
+        "整体论证逻辑"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "2.Learning About Language (1): Vocabulary",
+       "knowledge": [
+        "构词法",
+        "词语搭配",
+        "熟词生义"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "3.Learning About Language (2): Structures",
+       "knowledge": [
+        "倒装结构",
+        "强调结构",
+        "省略结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "4.Using Language(1): Listening and Speaking",
+       "knowledge": [
+        "听说中的提问与澄清",
+        "听说中的总结与观点表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "5.Using Language(2): Reading and Writing",
+       "knowledge": [
+        "简单议论文写作",
+        "观点与理由表达",
+        "例证与回应表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "6.Assessing Your Progress",
+       "knowledge": [
+        "错因记录",
+        "词典与资料选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "7.*Project",
+       "knowledge": [
+        "讨论学习",
+        "多模态信息整合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "8.*Video Time",
+       "knowledge": [
+        "音视频信息理解",
+        "信息来源评估"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "高考英语复习",
+     "sections": [
+      {
+       "name": "概述+完形填空解题策略",
+       "knowledge": [
+        "语境词义判断",
+        "词语搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "阅读理解解题策略",
+       "knowledge": [
+        "获取主旨大意",
+        "推断隐含信息"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "七选五解题策略",
+       "knowledge": [
+        "指代衔接",
+        "词汇衔接",
+        "段落发展"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "写作解题策略—提高篇",
+       "knowledge": [
+        "写作深化",
+        "续写",
+        "评论写作"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "写作解题策略—基础篇",
+       "knowledge": [
+        "写作基础",
+        "邮件写作",
+        "通知写作"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "高考英语复习（一）",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "高考英语复习（二）",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "高考英语复习（三）",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "高考英语复习（四）",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "高考英语复习（五）",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "高考英语复习（六）",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "厘清六大关系科学复习迎考",
+       "knowledge": [
+        "自主学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "科学安排考试时间答题顺序总体备考策略",
+       "knowledge": [
+        "自主学习"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "逆向思维看完形填空语篇填空和短文改错",
+       "knowledge": [
+        "语法深化",
+        "长难句与信息整合"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "书面表达高分策略",
+       "knowledge": [
+        "写作深化"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "几招修改作文方法助你提高作文成绩",
+       "knowledge": [
+        "语言准确性与修改"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "系统复习句法提高表达能力",
+       "knowledge": [
+        "句子主干",
+        "从句系统"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "运用范畴理论提高理解能力——基于说明文阅读",
+       "knowledge": [
+        "批判性阅读",
+        "语篇组织"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "其他",
+     "sections": [
+      {
+       "name": "Unit 2 Robots",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 3 Under the sea",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 4 Sharing",
+       "knowledge": [],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -94,8 +94,16 @@ page { background: var(--c-cream); }
 .msg-row.from-user .msg-avatar { margin-left: 16rpx; }
 .msg-row.from-ai .msg-avatar { margin-right: 16rpx; }
 
-.msg-bubble {
+.msg-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   max-width: 72%;
+}
+.msg-row.from-user .msg-main { align-items: flex-end; }
+
+.msg-bubble {
+  max-width: 100%;
   padding: 20rpx 24rpx;
   border-radius: 24rpx;
   font-size: 30rpx;
@@ -115,6 +123,46 @@ page { background: var(--c-cream); }
   border-top-right-radius: 6rpx;
 }
 .msg-bubble.typing { color: var(--c-sub); }
+
+/* 本轮讲解材料出处（召回溯源）：刻意做成弱化小字便签，避免被家长读成「掌握度标签」 */
+.msg-refs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 8rpx;
+  max-width: 100%;
+}
+.mr-label {
+  font-size: 20rpx;
+  color: #9A8F7D;
+  line-height: 1.5;
+}
+.mr-chip {
+  font-size: 20rpx;
+  line-height: 1.5;
+  color: #6B5E3F;
+  background: #FBF4E4;
+  border: 2rpx solid #EFE0BE;
+  border-radius: 999rpx;
+  padding: 2rpx 14rpx;
+}
+
+/* 朗读按钮（只在 AI 气泡下方出现） */
+.speak-btn {
+  margin-top: 8rpx;
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #4E7A9B;
+  background: #EAF4FB;
+  line-height: 1.5;
+}
+.speak-btn.on {
+  color: #fff;
+  background: var(--c-blue-deep, #3FA9F5);
+}
 
 /* ---------------- 底部输入区 ---------------- */
 .voice-hint {

@@ -1,0 +1,126 @@
+/**
+ * parentGate.wxss —— 家长验证页（沿用全局马卡龙规范：--c-blue-deep / --c-cream / --radius）
+ * 一屏一件事：标题 → 单个输入卡 → 一个主按钮。锁定时用黄色提示，不出现红色错误块。
+ */
+
+page { background: var(--c-cream); }
+
+.pg-page {
+  padding: 32rpx 28rpx calc(48rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ---------------- 状态页 ---------------- */
+.pg-state { text-align: center; padding: 140rpx 40rpx; }
+.pg-state-emoji { font-size: 84rpx; }
+.pg-state-title { font-size: 32rpx; font-weight: 700; margin-top: 20rpx; }
+.pg-state-sub { font-size: 26rpx; color: var(--c-sub); margin-top: 14rpx; line-height: 1.7; }
+.pg-state .pg-btn { margin-top: 36rpx; }
+
+/* ---------------- 标题 ---------------- */
+.pg-head { padding: 8rpx 8rpx 24rpx; }
+.pg-title { font-size: 40rpx; font-weight: 800; color: #2F4A5C; }
+.pg-sub { font-size: 26rpx; color: var(--c-sub); line-height: 1.75; margin-top: 12rpx; }
+.pg-scope-tip {
+  display: inline-block; margin-top: 16rpx; padding: 8rpx 18rpx;
+  font-size: 24rpx; font-weight: 700; color: #4E7A9B;
+  background: #EAF4FB; border-radius: 999rpx;
+}
+
+/* ---------------- 卡片 ---------------- */
+.pg-card {
+  background: #FFFFFF;
+  border-radius: var(--radius, 28rpx);
+  padding: 30rpx 30rpx 26rpx;
+  box-shadow: 0 8rpx 24rpx rgba(150, 180, 210, 0.14);
+}
+.pg-label {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: #4E7A9B;
+  margin: 6rpx 4rpx 12rpx;
+}
+.pg-input {
+  height: 92rpx;
+  background: #F6FAFE;
+  border: 2rpx solid #E2EEF8;
+  border-radius: 18rpx;
+  padding: 0 24rpx;
+  font-size: 34rpx;
+  letter-spacing: 8rpx;
+  margin-bottom: 22rpx;
+  box-sizing: border-box;
+}
+.pg-ph { color: #B7C6D3; letter-spacing: 0; font-size: 28rpx; }
+
+.pg-err {
+  background: #FFF6E6;
+  color: #B57A17;
+  border-radius: 16rpx;
+  padding: 16rpx 20rpx;
+  font-size: 25rpx;
+  line-height: 1.6;
+  margin-bottom: 20rpx;
+}
+.pg-lock {
+  background: #FFF6E6;
+  color: #B57A17;
+  border-radius: 16rpx;
+  padding: 16rpx 20rpx;
+  font-size: 25rpx;
+  text-align: center;
+  margin-bottom: 20rpx;
+}
+
+/* ---------------- 按钮 ---------------- */
+.pg-btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  margin-top: 8rpx;
+}
+.pg-btn--primary {
+  background: var(--c-blue-deep, #3FA9F5);
+  color: #FFFFFF;
+  box-shadow: 0 8rpx 18rpx rgba(63, 169, 245, 0.28);
+}
+.pg-btn--line {
+  background: #FFFFFF;
+  color: #3D7EA6;
+  border: 2rpx solid #CFE4F3;
+  box-sizing: border-box;
+  margin-top: 16rpx;
+}
+.is-off { opacity: 0.5; }
+
+/* ---------------- 已验证 ---------------- */
+.pg-ok {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #4CAF62;
+  text-align: center;
+  padding: 6rpx 0 22rpx;
+}
+.pg-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin: 4rpx 0 24rpx;
+}
+.pg-chip {
+  background: #EEF7FF;
+  color: #3D7EA6;
+  border-radius: 999rpx;
+  padding: 8rpx 22rpx;
+  font-size: 24rpx;
+}
+
+.pg-note {
+  font-size: 23rpx;
+  color: var(--c-sub);
+  line-height: 1.7;
+  margin: 18rpx 6rpx 0;
+}

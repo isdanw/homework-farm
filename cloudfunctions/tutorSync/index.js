@@ -15,17 +15,30 @@
  *   每条含 id（= 云端 clientId，无 clientId 的旧数据用 _id 兜底）+ cloudId + 原字段
  *   限量：sessions 100 / mistakes 200 / evidence 200 / reviews 100（createdAt 倒序）
  *
- * 【exams】入参：{ subject?: 'math'|'chinese'|… }（可选筛选）
+ * 【exams】入参：{ subject?: 'math'|'chinese'|…, childId?: string }（均可选）
  *   出参：{ ok:true, exams:[{ id, resourceId, name, subject, subjectName, level, examType,
  *          knowledgePoints, suggestedDuration, passingCriteria, lastVerified, staleLink,
  *          updatedAt, markdownLength, hasAnswers }] }  限量 100，createdAt 倒序
  *
- * 【exam】入参：{ resourceId }  出参：{ ok:true, exam:{ …元数据, markdown, rawText, answers } }
+ * 【exam】入参：{ resourceId, childId? }
+ *   出参：{ ok:true, exam:{ …元数据, markdown, rawText, answers } }
+ *
+ * 【试卷读路径的孩子维度】
+ *   与 examService.listExams 同一规则：能解析出当前孩子 → 只回「该孩子的卷 + 无归属卷」
+ *   （历史行无法判定归属，不猜也不藏）；解析不出孩子（未建档 / 占位切片）→ 不过滤。
+ *   端上点名的 childId 跨家庭/非法 → **回落当前孩子**再过滤，坏参数不能把过滤整个关掉。
+ *   详情（exam）同样校验：别人的孩子的卷一律按 not_found 处理，不暴露存在性。
  *
  * 【push】入参：
- *   { sessions:[], mistakes:[], evidence:[], reviews:[], orders:[] }  每条必须带 clientId（本地 uid）
- *   行为：clientId 已存在 → 跳过（reviews 额外同步 stage/dueAt/done 进度）；
- *         不存在 → 补写。出参 { ok:true, added, skipped, updated }
+ *   { sessions:[], mistakes:[], reviews:[], orders:[], cards:[], unitKps:[], childId? }
+ *   每条必须带 clientId（本地 uid）
+ *   行为：clientId 已存在 → 跳过（reviews/cards 额外同步进度）；
+ *         不存在 → 补写。出参 { ok:true, added, skipped, updated, rejected }
+ *
+ *   ⚠️ evidence 不再接受 push（P0：证据单写者 = tutorRetest）：
+ *     tutor_evidence 只能由 tutorRetest.judge 用服务端判分结果写入；
+ *     客户端推上来的证据一律计入 rejected，不落库、不「认领」。
+ *     旧客户端继续推 → 数据不会丢（judge 已写过云端那条），只是被拒。
  *
  *   ⚠️ orders 的分工契约（与 reviews 不同，别照抄）：
  *     · tutorOrder 云函数 = 唯一带状态机的写入口（出单/回执/作废/重开）
@@ -36,11 +49,16 @@
  *
  * 红线：
  *   · 全部按 openid 隔离；openid 为空直接拒绝（不产生无主数据）
+ *   · childId 由服务端从该 openid 的 hw_farm_user.users[] 解析，客户端传的只作
+ *     「想要的归属」参考；跨家庭 childId 直接拒绝该条（rejected），不落库
  *   · 纯数据搬运，不调用 AI、不做任何「掌握」判定
  *   · 试卷是**资源库条目**：不产生 evidence、不参与学情统计（§试卷登记入库规则）
  *   · 导学单（tutor_orders）不是证据集合：本函数回传的 orders 不得写入 tutor_evidence
  */
 const tcb = require('@cloudbase/node-sdk');
+const G = require('./scopeGuard');
+
+const USER = 'hw_farm_user';
 
 /* pull 拉取上限（家庭自用量级，防误拉全量） */
 const PULL_LIMITS = {
@@ -53,11 +71,10 @@ const PULL_LIMITS = {
   tutor_unit_kps: 200
 };
 
-/* push 各集合单次上限 */
+/* push 各集合单次上限（evidence 不在列：不接受客户端推证据） */
 const PUSH_LIMITS = {
   sessions: 100,
   mistakes: 200,
-  evidence: 200,
   reviews: 100,
   orders: 200,
   cards: 200,
@@ -156,8 +173,22 @@ function pickExam(doc, fields) {
   return o;
 }
 
+/**
+ * 试卷读路径的孩子作用域。规则与 examService.listExams 逐字相同（两条读路径不能各算一套口径）：
+ *   · 点名了本家庭的孩子 → 按该孩子过滤；
+ *   · 点名跨家庭/非法 id → 回落当前孩子再过滤（坏参数不能把过滤整个关掉）；
+ *   · 解析不出孩子（未建档 / 仍是占位切片）→ 返回空串 = 不过滤。
+ */
+async function resolveExamChild(app, openid, event) {
+  const root = await loadRoot(app.database(), openid);
+  let kid = G.resolveChildId(root, event && event.childId);
+  if (kid.source === 'invalid') kid = G.resolveChildId(root, '');
+  return kid.childId;
+}
+
 async function exams(app, openid, event) {
   const db = app.database();
+  const childId = await resolveExamChild(app, openid, event);
   let docs = [];
   const where = { openid: openid };
   const subject = str(event && event.subject, 20);
@@ -172,6 +203,8 @@ async function exams(app, openid, event) {
   } catch (e) {
     docs = [];   // 集合不存在（尚未推送过任何试卷）→ 当作空列表
   }
+  // 无归属的卷（工作台推送的资源库 / 迁移前历史行）一律保留：无法判定归属时不猜也不藏
+  if (childId) docs = docs.filter(d => !d.childId || d.childId === childId);
   const list = docs.map((d) => {
     const o = pickExam(d, EXAM_LIST_FIELDS);
     o.id = d.clientId || d._id;
@@ -200,6 +233,12 @@ async function exam(app, openid, event) {
   } catch (e) { docs = []; }
   if (!docs.length) return { ok: false, code: 'not_found', msg: '未找到该试卷（可能未上云）' };
   const d = docs[0];
+  // 详情同样过孩子闸：知道 resourceId 也不能读到别的孩子的卷。
+  // 仍然回 not_found 而不是 forbidden —— 不向调用方暴露「这份卷存在但不属于你」。
+  const childId = await resolveExamChild(app, openid, event);
+  if (childId && d.childId && d.childId !== childId) {
+    return { ok: false, code: 'not_found', msg: '未找到该试卷（可能未上云）' };
+  }
   const o = pickExam(d, EXAM_DETAIL_FIELDS);
   o.id = d.clientId || d._id;
   o.resourceId = o.resourceId || d.clientId || d._id;
@@ -209,39 +248,56 @@ async function exam(app, openid, event) {
 }
 
 /* ---------------- push ---------------- */
-/** 收敛 push 文档：只保留业务字段，剥离本地 id（云端用 clientId 承载） */
+/** 收敛 push 文档：只保留业务字段，剥离本地 id 与身份字段（云端用 clientId 承载 id） */
 function sanitize(kind, item) {
   if (!item || typeof item !== 'object') return null;
   const clientId = str(item.clientId || item.id, 60);
   if (!clientId) return null;
-  const doc = Object.assign({}, item);
+  const doc = G.stripIdentity(Object.assign({}, item));
   doc.clientId = clientId;
   delete doc.id;
   delete doc.cloudId;
   delete doc._id;
+  // childId 只认服务端解析结果（resolveChildId），客户端传的不透传
+  delete doc.childId;
   return doc;
 }
 
-async function push(app, openid, input) {
-  const db = app.database();
-  let added = 0, skipped = 0, updated = 0;
+/** 读该 openid 的家庭根数据（只取 users[]/currentUserId，用于解析 childId） */
+async function loadRoot(db, openid) {
+  try {
+    const res = await db.collection(USER).where({ _openid: openid }).limit(1).get();
+    const doc = (res && res.data && res.data[0]) || null;
+    return (doc && doc.data) || null;
+  } catch (e) {
+    return null;   // 集合不存在 / 尚未上传过 → 无档案，childId 留空待迁移
+  }
+}
 
+async function push(app, openid, input, childId) {
+  const db = app.database();
+  let added = 0, skipped = 0, updated = 0, rejected = 0;
+
+  /* evidence 不在此表：证据只能由 tutorRetest 服务端判分后写入（单写者）。
+   * 客户端推上来的一律 rejected —— 若客户端就传了证据，等于「自己给自己发奖状」。 */
   const collName = {
     sessions: 'tutor_sessions',
     mistakes: 'tutor_mistakes',
-    evidence: 'tutor_evidence',
     reviews: 'tutor_reviews',
     orders: 'tutor_orders',
     cards: 'tutor_cards',
     unitKps: 'tutor_unit_kps'
   };
 
+  rejected += Array.isArray(input.evidence) ? input.evidence.length : 0;
+
   for (const kind of Object.keys(collName)) {
     const items = Array.isArray(input[kind]) ? input[kind].slice(0, PUSH_LIMITS[kind]) : [];
     if (!items.length) continue;
     for (const raw of items) {
       const doc = sanitize(kind, raw);
-      if (!doc) continue;
+      if (!doc) { rejected++; continue; }
+      doc.childId = childId;
       let exist = [];
       try {
         const res = await db.collection(collName[kind])
@@ -307,34 +363,6 @@ async function push(app, openid, input) {
         continue;
       }
 
-      // 不存在 → 对于 evidence，先尝试「认领」旧数据（P0-5 修复）：
-      // 早期 tutorRetest 直写的 evidence 没有 clientId，本函数按 openid+clientId 查不到，
-      // 于是又 add 一条 → 同一份证据在云端两份。这里按业务键（学科+知识点+题数+正确数）
-      // 找一条无 clientId 的同源记录，补上 clientId 即完成合并，不再新增。
-      if (kind === 'evidence') {
-        let legacy = [];
-        try {
-          const res2 = await db.collection(collName[kind]).where({
-            openid: openid,
-            subject: doc.subject || '',
-            topic: doc.topic || '',
-            total: Number(doc.total) || 0,
-            correct: Number(doc.correct) || 0
-          }).limit(5).get();
-          legacy = ((res2 && res2.data) || []).filter(d => d && !d.clientId);
-        } catch (e) { legacy = []; }
-        if (legacy.length) {
-          try {
-            await db.collection(collName[kind]).doc(legacy[0]._id).update({
-              clientId: doc.clientId,
-              subjectName: doc.subjectName || legacy[0].subjectName || ''
-            });
-            updated++;
-            continue;                      // 认领成功 → 不再新增
-          } catch (e) { /* 认领失败 → 落到下面的正常补写 */ }
-        }
-      }
-
       // 不存在 → 补写（node-sdk 的 add(obj)：obj 直接作为新文档，无 { data:{} } 包壳）
       try {
         await db.collection(collName[kind]).add(Object.assign({ openid: openid }, doc));
@@ -344,18 +372,19 @@ async function push(app, openid, input) {
         try {
           await db.collection(collName[kind]).add(Object.assign({ openid: openid }, doc));
           added++;
-        } catch (e3) {}
+        } catch (e3) { rejected++; }
       }
     }
   }
 
-  return { ok: true, added: added, skipped: skipped, updated: updated };
+  return { ok: true, added: added, skipped: skipped, updated: updated, rejected: rejected };
 }
 
 /* ---------------- 主入口 ---------------- */
 exports.main = async (event) => {
-  const openid = (event.userInfo && event.userInfo.openId) || '';
-  if (!openid) return { ok: false, code: 'no_openid', msg: '缺少用户身份，无法同步' };
+  const gate = G.requireOpenid((event.userInfo && event.userInfo.openId) || '');
+  if (!gate.ok) return { ok: false, code: gate.code, msg: '缺少用户身份，无法同步' };
+  const openid = gate.openid;
 
   const action = ['push', 'exams', 'exam'].includes(event.action) ? event.action : 'pull';
 
@@ -377,7 +406,14 @@ exports.main = async (event) => {
         cards: Array.isArray(event.cards) ? event.cards : [],
         unitKps: Array.isArray(event.unitKps) ? event.unitKps : []
       };
-      return await push(app, openid, input);
+      const root = await loadRoot(app.database(), openid);
+      const kid = G.resolveChildId(root, event.childId);
+      // 客户端点名了不属于本家庭的孩子 → 整单拒绝：这一批的归属都不可信，
+      // 既不能写到别人孩子名下，也不该悄悄换成「当前孩子」（那正是串数据的根源）。
+      if (kid.source === 'invalid') {
+        return { ok: false, code: 'child_scope_invalid', msg: '指定的孩子不属于当前账号，已拒绝本次同步' };
+      }
+      return await push(app, openid, input, kid.childId);
     }
     if (action === 'exams') return await exams(app, openid, event);
     if (action === 'exam') return await exam(app, openid, event);

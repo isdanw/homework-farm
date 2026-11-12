@@ -1,0 +1,1976 @@
+{
+ "stage": "初中",
+ "subject": "英语",
+ "version": "人教版",
+ "order": 0,
+ "region": "厦门",
+ "source": {
+  "platform": "国家中小学智慧教育平台 · 同步课堂",
+  "version": "人教版",
+  "crawledAt": "2026-09-27"
+ },
+ "note": "目录抓取自国家中小学智慧教育平台（同步课堂）；knowledge 为每节对应的知识点，由脚本生成，可手工校订后重新运行保留。",
+ "books": [
+  {
+   "name": "七年级 上册",
+   "grade": "七年级",
+   "edition": "新教材",
+   "sourceId": "64d17a31-923e-400c-8207-53bc0346e6f0",
+   "chapters": [
+    {
+     "name": "Starter Unit 1 Hello!",
+     "sections": [
+      {
+       "name": "Section A How do you greet people?",
+       "knowledge": [
+        "元音与辅音",
+        "拼读规律记忆词汇",
+        "人称代词",
+        "主谓结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How do you start a conversation?",
+       "knowledge": [
+        "语调",
+        "连读与停顿",
+        "一般现在时",
+        "疑问句",
+        "表达建议"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Starter Unit 2 Keep Tidy!",
+     "sections": [
+      {
+       "name": "Section A What do you have?",
+       "knowledge": [
+        "可数名词与不可数名词",
+        "名词单复数",
+        "不定冠词a与an",
+        "there be结构",
+        "主题词汇网络"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B Where do you put your things?",
+       "knowledge": [
+        "位置介词",
+        "指示代词与不定代词",
+        "祈使句",
+        "物主代词"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Starter Unit 3 Welcome!",
+     "sections": [
+      {
+       "name": "Section A What is fun in a yard?",
+       "knowledge": [
+        "动词短语",
+        "情态动词表能力",
+        "主系表结构",
+        "形容词与副词的位置"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What is fun on a farm?",
+       "knowledge": [
+        "一般现在时",
+        "听取细节",
+        "主题词汇网络"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 1 You and Me",
+     "sections": [
+      {
+       "name": "Section A How do we get to know each other?",
+       "knowledge": [
+        "人称代词",
+        "物主代词",
+        "陈述句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What do we need to know about a new friend?",
+       "knowledge": [
+        "一般现在时",
+        "疑问句",
+        "听取主旨",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 We're Family!",
+     "sections": [
+      {
+       "name": "Section A What is your family like?",
+       "knowledge": [
+        "名词所有格",
+        "there be结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What do you like about your family?",
+       "knowledge": [
+        "表达观点与理由",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 My School",
+     "sections": [
+      {
+       "name": "Section A What is your school like?",
+       "knowledge": [
+        "位置介词",
+        "there be结构",
+        "说明文结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What fun things do you do at school?",
+       "knowledge": [
+        "动词短语",
+        "一般现在时",
+        "听取时间顺序"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 My Favourite Subject",
+     "sections": [
+      {
+       "name": "Section A Why do you like this subject?",
+       "knowledge": [
+        "表达观点与理由",
+        "形容词与副词的位置"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What can you learn from different subjects?",
+       "knowledge": [
+        "情态动词表能力",
+        "动名词",
+        "阅读推断",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 Fun Clubs",
+     "sections": [
+      {
+       "name": "Section A How do you choose a school club?",
+       "knowledge": [
+        "选择连接词",
+        "听取态度与意图",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What can you learn in a school club?",
+       "knowledge": [
+        "一般现在时",
+        "动词短语",
+        "计划与建议写作"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 A Day in the Life",
+     "sections": [
+      {
+       "name": "Section A How do you spend your school day?",
+       "knowledge": [
+        "时间介词",
+        "基数词",
+        "一般现在时"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How different are people's daily routines?",
+       "knowledge": [
+        "一般现在时",
+        "比较范围的限定",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 7 Happy Birthday!",
+     "sections": [
+      {
+       "name": "Section A How do we celebrate birthdays?",
+       "knowledge": [
+        "序数词",
+        "祈使句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How do you make your birthday meaningful?",
+       "knowledge": [
+        "一般过去时",
+        "应用文结构",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "七年级 下册",
+   "grade": "七年级",
+   "edition": "新教材",
+   "sourceId": "2d2e7f0e-11a7-4cde-b106-98cb10119081",
+   "chapters": [
+    {
+     "name": "Unit 1 Animal Friends",
+     "sections": [
+      {
+       "name": "Section A Why do you like animals?",
+       "knowledge": [
+        "主题词汇网络",
+        "一般现在时",
+        "表达观点与理由"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How are animals part of our lives?",
+       "knowledge": [
+        "动词短语",
+        "固定搭配",
+        "说明文结构",
+        "阅读推断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Design a zoo",
+       "knowledge": [
+        "计划与建议写作",
+        "段落组织",
+        "应用文结构"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 No Rules, No Order",
+     "sections": [
+      {
+       "name": "Section A What rules do we follow?",
+       "knowledge": [
+        "祈使句",
+        "情态动词表义务",
+        "情态动词表许可",
+        "时间介词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How can rules help us?",
+       "knowledge": [
+        "因果连接词",
+        "条件状语从句",
+        "表达建议",
+        "议论文结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Make class rules",
+       "knowledge": [
+        "通知写作",
+        "应用文结构",
+        "写作任务完整回应"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 Keep Fit",
+     "sections": [
+      {
+       "name": "Section A How often do you do sport or exercise?",
+       "knowledge": [
+        "一般现在时",
+        "听取细节",
+        "表达观点与理由"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How is exercise good for us?",
+       "knowledge": [
+        "比较级与最高级",
+        "原因状语从句",
+        "说明文结构",
+        "图表信息理解"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Compare exercise habits",
+       "knowledge": [
+        "比较范围的限定",
+        "同义替换",
+        "写作检查"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 Eat Well",
+     "sections": [
+      {
+       "name": "Section A What do we like to eat?",
+       "knowledge": [
+        "可数名词与不可数名词",
+        "不定冠词a与an",
+        "零冠词",
+        "主谓宾结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How do we make healthy eating choices?",
+       "knowledge": [
+        "转折连接词",
+        "语境辨析近义词",
+        "多模态信息理解"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Create a restaurant menu",
+       "knowledge": [
+        "应用文结构",
+        "主题词汇网络",
+        "写作任务完整回应"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 Here and Now",
+     "sections": [
+      {
+       "name": "Section A What are you doing right now?",
+       "knowledge": [
+        "现在进行时",
+        "位置介词",
+        "方向介词",
+        "听取主旨"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How do we share our lives with others?",
+       "knowledge": [
+        "社会交往主题",
+        "宾语从句的连接词",
+        "宾语从句的陈述语序",
+        "表达邀请"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Draw a group of flats",
+       "knowledge": [
+        "there be结构",
+        "叙述文结构",
+        "人物与经历写作"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 A Rain or Shine",
+     "sections": [
+      {
+       "name": "Section A What’s the weather like?",
+       "knowledge": [
+        "一般将来时",
+        "听取态度与意图",
+        "语调"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How do we feel about the weather?",
+       "knowledge": [
+        "形容词与副词的位置",
+        "感叹句",
+        "表达不同意见",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Give a live weather report",
+       "knowledge": [
+        "听力简要记录",
+        "应用文结构",
+        "连接表达运用"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 7 A Day to Remember",
+     "sections": [
+      {
+       "name": "Section A What was your special day like?",
+       "knowledge": [
+        "一般过去时",
+        "时间线分析法",
+        "听取时间顺序"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What did you learn on that special day?",
+       "knowledge": [
+        "过去进行时",
+        "原因状语从句",
+        "个人成长主题",
+        "阅读推断"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Write a chain story about a memorable day",
+       "knowledge": [
+        "叙述文结构",
+        "代词指代",
+        "语篇衔接",
+        "写作检查"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 8 Once upon a Time",
+     "sections": [
+      {
+       "name": "Section A What are your favourite stories?",
+       "knowledge": [
+        "定语从句的关系词",
+        "定语从句的先行词",
+        "略读获取主旨"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What can stories teach us?",
+       "knowledge": [
+        "宾语从句的时态",
+        "事实与推测的区分",
+        "识别作者意图"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Create and perform a short play",
+       "knowledge": [
+        "非谓语作目的状语",
+        "句子重音表强调"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "八年级 上册",
+   "grade": "八年级",
+   "edition": "新教材",
+   "sourceId": "362cc792-7fbb-42f1-808a-9cca686bcc5a",
+   "chapters": [
+    {
+     "name": "Unit 1 Happy Holiday",
+     "sections": [
+      {
+       "name": "Section A How do people spend their holidays ?",
+       "knowledge": [
+        "一般过去时",
+        "听取细节",
+        "表达观点与理由"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What can we learn from holiday experiences?",
+       "knowledge": [
+        "一般过去时",
+        "叙述文结构",
+        "人物与经历写作",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 Home Sweet Home",
+     "sections": [
+      {
+       "name": "Section A What can you do for your home?",
+       "knowledge": [
+        "情态动词表能力",
+        "动词短语",
+        "祈使句",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How do you feel at home?",
+       "knowledge": [
+        "形容词与副词的位置",
+        "主系表结构",
+        "表达建议",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Find out who does the most chores at home",
+       "knowledge": [
+        "比较级与最高级",
+        "图表信息理解",
+        "应用文结构"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 Same or Different？",
+     "sections": [
+      {
+       "name": "Section A How are we different from each other?",
+       "knowledge": [
+        "比较级与最高级",
+        "同级比较",
+        "人称代词",
+        "物主代词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How do we understand differences?",
+       "knowledge": [
+        "宾语从句的连接词",
+        "宾语从句的陈述语序",
+        "尊重文化差异",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 Amazing Plants and Animals",
+     "sections": [
+      {
+       "name": "Section A What can plants and animals do?",
+       "knowledge": [
+        "被动语态结构",
+        "说明文结构",
+        "环境和自然主题",
+        "识别作者意图"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How are plants and animals connected with us?",
+       "knowledge": [
+        "定语从句的关系词",
+        "因果连接词",
+        "阅读推断",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Make a poster about a plant or an animal",
+       "knowledge": [
+        "主题词汇网络",
+        "多模态信息理解",
+        "写作任务完整回应"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 What a Delicious Meal！",
+     "sections": [
+      {
+       "name": "Section A How do we make food?",
+       "knowledge": [
+        "祈使句",
+        "动词不定式",
+        "用英语说明现实生活"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What does cooking give us?",
+       "knowledge": [
+        "动名词",
+        "非谓语动词常见搭配",
+        "表达不同意见",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Create a recipe for a tasty dish",
+       "knowledge": [
+        "应用文结构",
+        "段落组织",
+        "写作检查"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 Plan for Yourself",
+     "sections": [
+      {
+       "name": "Section A When do we make plans?",
+       "knowledge": [
+        "一般将来时",
+        "时间介词",
+        "听取时间顺序",
+        "计划与建议写作"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How can we make good plans?",
+       "knowledge": [
+        "条件状语从句",
+        "情态动词表义务",
+        "反思学习策略",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Make plans for solving problems",
+       "knowledge": [
+        "表达建议",
+        "写作任务完整回应",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 7 When Tomorrow Comes",
+     "sections": [
+      {
+       "name": "Section A What are your predictions about the future?",
+       "knowledge": [
+        "一般将来时",
+        "there be结构",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How can we prepare for the future?",
+       "knowledge": [
+        "情态动词表推测",
+        "让步状语从句",
+        "议论文结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Project Create a picture about the future",
+       "knowledge": [
+        "多模态信息理解",
+        "写作任务完整回应",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 8 Let's Communicate!",
+     "sections": [
+      {
+       "name": "Section A How do we communicate?",
+       "knowledge": [
+        "方式介词",
+        "并列连接词",
+        "澄清未听懂信息",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How can we communicate better?",
+       "knowledge": [
+        "语篇衔接",
+        "同义替换",
+        "表达邀请",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "八年级 下册",
+   "grade": "八年级",
+   "edition": "新教材",
+   "sourceId": "62e99b8e-395f-4977-ba8a-17b5818bc464",
+   "chapters": [
+    {
+     "name": "Unit 1 Time to Relax",
+     "sections": [
+      {
+       "name": "Section A How do you spend your free time?",
+       "knowledge": [
+        "动词短语",
+        "一般现在时",
+        "听取主旨",
+        "表达观点与理由"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How can a hobby improve your life?",
+       "knowledge": [
+        "动名词",
+        "主题词汇网络",
+        "阅读推断",
+        "写作任务完整回应"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 Stay Healthy",
+     "sections": [
+      {
+       "name": "Section A What should we do when we don't feel well?",
+       "knowledge": [
+        "情态动词表义务",
+        "常见情态动词用法",
+        "表达建议",
+        "听取细节"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How should we stay safe?",
+       "knowledge": [
+        "祈使句",
+        "条件状语从句",
+        "应用文结构",
+        "通知写作"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 Growing Up",
+     "sections": [
+      {
+       "name": "Section A What makes you upset?",
+       "knowledge": [
+        "宾语从句的连接词",
+        "宾语从句的陈述语序",
+        "形容词与副词的位置",
+        "表达不同意见"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How can we stay positive?",
+       "knowledge": [
+        "原因状语从句",
+        "结果状语从句",
+        "个人成长主题",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 The Wonders of Nature",
+     "sections": [
+      {
+       "name": "Section A What is amazing about nature?",
+       "knowledge": [
+        "比较级与最高级",
+        "同级比较",
+        "说明文结构",
+        "图表信息理解"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B Why do we explore nature?",
+       "knowledge": [
+        "定语从句的关系词",
+        "环境和自然主题",
+        "识别作者意图",
+        "多模态信息理解"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 Nature's Temper",
+     "sections": [
+      {
+       "name": "Section A What happens during a natural disaster?",
+       "knowledge": [
+        "过去进行时",
+        "时间线分析法",
+        "叙述文结构",
+        "听取时间顺序"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What can we do to prepare for the worst?",
+       "knowledge": [
+        "被动语态结构",
+        "被动语态的时态变化",
+        "计划与建议写作",
+        "段落组织"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 Crossing Cultures",
+     "sections": [
+      {
+       "name": "Section A How different are our cultures?",
+       "knowledge": [
+        "一般过去时",
+        "现在完成时",
+        "尊重文化差异",
+        "用英语说明中国文化"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How do we show respect to other cultures?",
+       "knowledge": [
+        "让步状语从句",
+        "转折连接词",
+        "社会交往主题",
+        "邮件写作"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 7 A Good Read",
+     "sections": [
+      {
+       "name": "Section A What great books have you read?",
+       "knowledge": [
+        "非谓语动词常见搭配",
+        "动词不定式",
+        "略读获取主旨",
+        "寻读获取细节"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B What can we learn from great books?",
+       "knowledge": [
+        "议论文结构",
+        "观点与理由写作",
+        "文本证据作答",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 8 Making a Difference",
+     "sections": [
+      {
+       "name": "Section A What can we do to help?",
+       "knowledge": [
+        "情态动词表能力",
+        "情态动词表许可",
+        "there be结构",
+        "听力简要记录"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B How does helping others make a difference?",
+       "knowledge": [
+        "宾语从句的时态",
+        "篇章意义补足",
+        "写作检查",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "九年级 全一册",
+   "grade": "九年级",
+   "edition": "",
+   "sourceId": "57e82dcb-941b-4edb-86d0-073d9ab2b035",
+   "chapters": [
+    {
+     "name": "Unit 1 How can we become good learners?",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "动词短语",
+        "动名词",
+        "非谓语动词常见搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3b",
+       "knowledge": [
+        "阅读推断",
+        "主题句",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "动名词",
+        "非谓语动词常见搭配",
+        "宾语从句的连接词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听取细节",
+        "表达建议",
+        "动词短语"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—3b Self check",
+       "knowledge": [
+        "写作任务完整回应",
+        "段落组织",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 1 How can we become good learners？",
+       "knowledge": [
+        "个人成长主题",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 I think that mooncakes are delicious!",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "宾语从句的连接词",
+        "宾语从句的陈述语序",
+        "主题词汇网络"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "略读获取主旨",
+        "寻读获取细节",
+        "用英语说明中国文化"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "宾语从句的连接词",
+        "宾语从句的时态",
+        "宾语从句的陈述语序"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1d",
+       "knowledge": [
+        "听取态度与意图",
+        "表达观点与理由",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—3b Self check",
+       "knowledge": [
+        "人物与经历写作",
+        "连接表达运用",
+        "用英语说明中国文化"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 2 I think that mooncakes are delicious.",
+       "knowledge": [
+        "社会交往主题",
+        "用英语说明中国文化"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 Could you please tell me where the restrooms are?",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "宾语从句的连接词",
+        "宾语从句的陈述语序",
+        "位置介词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3b",
+       "knowledge": [
+        "寻读获取细节",
+        "图表信息理解",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "宾语从句的连接词",
+        "宾语从句的陈述语序",
+        "从句连接词与意义匹配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听力简要记录",
+        "澄清未听懂信息",
+        "表达邀请"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—3b Self check",
+       "knowledge": [
+        "邮件写作",
+        "应用文结构",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 3 Could you please tell me where the restrooms are?",
+       "knowledge": [
+        "社会交往主题",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 I used to be afraid of the dark.",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "一般过去时",
+        "动词短语",
+        "固定搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "识别作者意图",
+        "文本证据作答",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "一般过去时",
+        "时间线分析法",
+        "谓语与非谓语的区分"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听取时间顺序",
+        "表达不同意见",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2f",
+       "knowledge": [
+        "阅读推断",
+        "猜词",
+        "同义替换"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "人物与经历写作",
+        "叙述文结构",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 4 I used to be afraid of the dark.",
+       "knowledge": [
+        "个人成长主题",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 What are the shirts made of?",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "被动语态结构",
+        "一般现在时",
+        "介词与连接词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "说明文结构",
+        "事实与推测的区分",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "被动语态结构",
+        "被动语态的时态变化",
+        "一般现在时"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听取主旨",
+        "表达观点与理由",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "多模态信息理解",
+        "篇章意义补足",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "计划与建议写作",
+        "说明文结构",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 5 What are the shirts made of？",
+       "knowledge": [
+        "科技文化主题",
+        "比较信息来源"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 When was it invented?",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "被动语态结构",
+        "一般过去时",
+        "疑问句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "略读获取主旨",
+        "叙述文结构",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "被动语态结构",
+        "被动语态的时态变化",
+        "一般过去时"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听力简要记录",
+        "听取细节",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "阅读推断",
+        "文本证据作答",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "人物与经历写作",
+        "叙述文结构",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 6 When was it invented?",
+       "knowledge": [
+        "科技文化主题",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 7 Teenagers should be allowed to choose their own clothes.",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "情态动词表许可",
+        "情态动词表义务",
+        "被动语态结构"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "识别作者意图",
+        "议论文结构",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听取态度与意图",
+        "表达不同意见",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "多模态信息理解",
+        "同义替换",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "观点与理由写作",
+        "议论文结构",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 7 Teenagers should be allowed to choose their own clothes.",
+       "knowledge": [
+        "家庭校园主题",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 8 It must belong to Carla.",
+     "sections": [
+      {
+       "name": "Section A 1a—1c",
+       "knowledge": [
+        "情态动词表推测",
+        "物主代词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 2a—2d",
+       "knowledge": [
+        "听取细节",
+        "情态动词表推测",
+        "语境辨析近义词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "阅读推断",
+        "事实与推测的区分",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "情态动词表推测",
+        "常见情态动词用法",
+        "物主代词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1d",
+       "knowledge": [
+        "听力简要记录",
+        "澄清未听懂信息",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "猜词",
+        "篇章意义补足",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "通知写作",
+        "应用文结构",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 8 It must belong to Carla.",
+       "knowledge": [
+        "社会交往主题",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 9 I like music that I can dance to.",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "定语从句的关系词",
+        "定语从句的先行词",
+        "主题词汇网络"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "略读获取主旨",
+        "说明文结构",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "定语从句的关系词",
+        "定语从句的先行词",
+        "从句连接词与意义匹配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1d",
+       "knowledge": [
+        "听取主旨",
+        "表达观点与理由",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "阅读推断",
+        "文本证据作答",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "邮件写作",
+        "段落组织",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 9 I like music that I can dance to.",
+       "knowledge": [
+        "科技文化主题",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 10 You are supposed to shake hands.",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "动词不定式",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "寻读获取细节",
+        "叙述文结构",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1d",
+       "knowledge": [
+        "听取时间顺序",
+        "表达建议",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "多模态信息理解",
+        "同义替换",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "邮件写作",
+        "应用文结构",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 10 You're supposed to shake hands.",
+       "knowledge": [
+        "社会交往主题",
+        "尊重文化差异"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 11 Sad movies made me cry.",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "形容词与副词的位置"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "识别作者意图",
+        "叙述文结构",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4b",
+       "knowledge": [
+        "非谓语作目的状语",
+        "谓语与非谓语的区分"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听取态度与意图",
+        "表达不同意见",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "阅读推断",
+        "事实与推测的区分",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "人物与经历写作",
+        "叙述文结构",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 11 Sad movies make me cry.",
+       "knowledge": [
+        "个人成长主题",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 12 Life is full of the unexpected.",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "过去进行时",
+        "时间状语从句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "略读获取主旨",
+        "叙述文结构",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听力简要记录",
+        "听取时间顺序",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "阅读推断",
+        "文本证据作答",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "人物与经历写作",
+        "叙述文结构",
+        "社会交往主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 12 Life is full of the unexpected.",
+       "knowledge": [
+        "社会交往主题",
+        "反思学习策略"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 13 We're trying to save the earth!",
+     "sections": [
+      {
+       "name": "Section A 1a—1c",
+       "knowledge": [
+        "现在进行时",
+        "情态动词表义务"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 2a—2d",
+       "knowledge": [
+        "听取细节",
+        "表达建议",
+        "环境和自然主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3b",
+       "knowledge": [
+        "说明文结构",
+        "事实与推测的区分",
+        "环境和自然主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4c",
+       "knowledge": [
+        "现在进行时",
+        "被动语态结构",
+        "情态动词表义务"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听力简要记录",
+        "澄清未听懂信息",
+        "环境和自然主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "多模态信息理解",
+        "篇章意义补足",
+        "环境和自然主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "观点与理由写作",
+        "议论文结构",
+        "环境和自然主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 13 We're trying to save the earth.",
+       "knowledge": [
+        "环境和自然主题",
+        "科技文化主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 14 I remember meeting all of you in Grade 7.",
+     "sections": [
+      {
+       "name": "Section A 1a—2d",
+       "knowledge": [
+        "现在完成时",
+        "动名词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A 3a—3c",
+       "knowledge": [
+        "寻读获取细节",
+        "叙述文结构",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section A Grammar focus 4a—4b",
+       "knowledge": [
+        "现在完成时",
+        "时间线分析法",
+        "动名词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 1a—1e",
+       "knowledge": [
+        "听取主旨",
+        "表达观点与理由",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 2a—2e",
+       "knowledge": [
+        "阅读推断",
+        "同义替换",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Section B 3a—3b Self check",
+       "knowledge": [
+        "邮件写作",
+        "段落组织",
+        "个人成长主题"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Unit 14 I remember meeting all of you in Grade 7.",
+       "knowledge": [
+        "个人成长主题",
+        "家庭校园主题"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "中考复习",
+     "sections": [
+      {
+       "name": "词汇复习",
+       "knowledge": [
+        "合成构词法",
+        "词性转换",
+        "一词多义",
+        "动词短语",
+        "固定搭配",
+        "语境辨析近义词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "听力口语技巧",
+       "knowledge": [
+        "听取主旨",
+        "听取细节",
+        "听取态度与意图",
+        "听取时间顺序",
+        "听力简要记录",
+        "表达建议"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "时态专题",
+       "knowledge": [
+        "一般现在时",
+        "一般过去时",
+        "一般将来时",
+        "现在进行时",
+        "过去进行时",
+        "现在完成时"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "简单句句式复习",
+       "knowledge": [
+        "主谓结构",
+        "主系表结构",
+        "主谓宾结构",
+        "双宾语结构",
+        "宾语补足语结构",
+        "陈述句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "记叙文阅读与指导",
+       "knowledge": [
+        "叙述文结构",
+        "略读获取主旨",
+        "寻读获取细节",
+        "阅读推断",
+        "人物与经历写作"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "论说文阅读与指导",
+       "knowledge": [
+        "议论文结构",
+        "识别作者意图",
+        "事实与推测的区分",
+        "观点与理由写作"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "中考英语复习",
+       "knowledge": [
+        "宾语从句的连接词",
+        "宾语从句的陈述语序",
+        "宾语从句的时态",
+        "定语从句的关系词",
+        "定语从句的先行词",
+        "被动语态结构"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

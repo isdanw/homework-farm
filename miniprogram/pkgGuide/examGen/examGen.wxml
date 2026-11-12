@@ -1,0 +1,47 @@
+<view class="page">
+  <view class="head">
+    <view class="title">测验</view>
+    <view class="sub">根据孩子的画像、学习进度与近期错题，自动生成一份针对性测验卷</view>
+  </view>
+
+  <view class="form">
+    <view class="row">
+      <text class="label">学科</text>
+      <picker mode="selector" range="{{subjects}}" range-key="name" value="{{subjectIndex}}" bindchange="onSubject">
+        <view class="picker">{{subjects[subjectIndex].name}} ▾</view>
+      </picker>
+    </view>
+    <view class="row">
+      <text class="label">生成方式</text>
+      <picker mode="selector" range="{{modes}}" range-key="label" value="{{modeIndex}}" bindchange="onMode">
+        <view class="picker">{{modes[modeIndex].label}} ▾</view>
+      </picker>
+    </view>
+    <view class="row">
+      <text class="label">题量</text>
+      <picker mode="selector" range="{{counts}}" value="{{countIndex}}" bindchange="onCount">
+        <view class="picker">{{counts[countIndex]}} 题 ▾</view>
+      </picker>
+    </view>
+    <view class="row">
+      <text class="label">难度</text>
+      <picker mode="selector" range="{{diffs}}" range-key="label" value="{{diffIndex}}" bindchange="onDiff">
+        <view class="picker">{{diffs[diffIndex].label}} ▾</view>
+      </picker>
+    </view>
+    <view class="row">
+      <text class="label">卷型</text>
+      <picker mode="selector" range="{{examTypes}}" range-key="label" value="{{examTypeIndex}}" bindchange="onExamType">
+        <view class="picker">{{examTypes[examTypeIndex].label}} ▾</view>
+      </picker>
+    </view>
+  </view>
+
+  <view wx:if="{{error}}" class="err">{{error}}</view>
+
+  <button class="gen-btn" bindtap="gen" loading="{{generating}}" disabled="{{generating}}">
+    {{generating ? '正在生成测验卷…' : '生成测验卷'}}
+  </button>
+
+  <view class="tip">生成后即可在线作答，提交后 AI 自动批改并归入错题本。</view>
+</view>

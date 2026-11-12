@@ -6,6 +6,7 @@
  */
 const store = require('../../utils/store.js');
 const CFG = require('../../utils/config.js');
+const parentAuth = require('../../utils/parentAuth.js');
 
 const EMOJIS = ['📚','🔢','🔤','📖','🏃','🎹','🧹','😴','🎨','⚽','🎵','💡','🌟','🍎','✏️','🧠','💪','🌈','🚀','🐱'];
 const COLORS = [
@@ -109,7 +110,9 @@ Page({
     this.setData({ form, preview: this.buildPreview(form) });
   },
 
-  confirmForm() {
+  async confirmForm() {
+    // 增删打卡类型属于家长特权动作（§7.6 审批矩阵）
+    if (!(await parentAuth.requireScope('subjectToggle'))) return;
     const f = this.data.form;
     const name = (f.name || '').trim();
     if (!name) return wx.showToast({ title: '先给打卡项起个名字', icon: 'none' });
@@ -135,7 +138,8 @@ Page({
     wx.showToast({ title: this.data.editingId ? '已更新' : '已添加', icon: 'success' });
   },
 
-  removeType(e) {
+  async removeType(e) {
+    if (!(await parentAuth.requireScope('subjectToggle'))) return;
     const id = e.currentTarget.dataset.id;
     const t = this.data.customTypes.find(x => x.id === id);
     if (!t) return;

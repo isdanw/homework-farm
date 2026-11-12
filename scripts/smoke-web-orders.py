@@ -348,8 +348,8 @@ def main():
            '标题栏显示「导学单」')
         ok(page.evaluate("() => document.getElementById('sub').textContent") == '导学单 · 可写（出单 / 交回执）',
            '副标题明示本页可写（不是「· 只读」）')
-        ok('本页是本看板唯一的可写区域' in page.inner_text('#orders'),
-           '页面说明区明写「本页是本看板唯一的可写区域」')
+        ok('仅有的两个可写区域' in page.inner_text('#orders'),
+           '页面说明区明写「本页与教材·计划页是仅有的两个可写区域」（tbed 上线后口径）')
 
         ok('MO-TEST0001' in txt and 'MO-TEST0002' in txt, '当前孩子（加一）的两张单都渲染出来')
         ok('MO-TEST0003' not in txt, '另一个孩子的单被 chip 过滤掉（openid 过滤生效）')

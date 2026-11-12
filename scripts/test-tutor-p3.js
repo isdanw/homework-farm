@@ -31,7 +31,11 @@ const mockTcb = {
     }),
     database: () => ({
       collection: (name) => ({
-        add: async ({ data }) => { captured.addName = name; captured.addData = data; return { id: 'mock_id' }; }
+        // node-sdk 的 add(doc) 是裸对象；这里兼容 { data: doc } 包壳，避免 mock 比真 SDK 更窄
+        add: async (arg) => {
+          const data = (arg && Object.keys(arg).length === 1 && 'data' in arg) ? arg.data : arg;
+          captured.addName = name; captured.addData = data; return { id: 'mock_id' };
+        }
       }),
       createCollection: async () => {}
     })
@@ -62,12 +66,14 @@ function ok(name, cond) {
   ok('道法可查到', tutorSubjects.getTutorSubject('politics').name === '道德与法治');
   ok('未知学科返回 null', tutorSubjects.getTutorSubject('xxx') === null);
 
+  // 用另一个 openid：tutorChat 的提问限流按 openid 计数，同一身份连发两次会先撞 rate_limit
+  ok('仍拒绝未知学科', (await tutorChat.main({ userInfo: { openId: 'o2' }, action: 'chat', subject: 'foobar', content: 'x' })).code === 'bad_subject');
+
   // tutorChat 支持新学科（物理）
   const rPhys = await tutorChat.main({ userInfo: { openId: 'o1' }, action: 'chat', subject: 'physics', content: '速度怎么算' });
   ok('物理学科导学返回 ok', rPhys.ok === true);
   const subMsg = captured.lastMessages.find(m => m.role === 'system' && m.content.indexOf('【物理】') >= 0);
   ok('注入了物理学科 prompt', !!subMsg);
-  ok('仍拒绝未知学科', (await tutorChat.main({ action: 'chat', subject: 'foobar', content: 'x' })).code === 'bad_subject');
 
   /* ============ 2. tutorRetest generate ============ */
   console.log('=== 2. tutorRetest generate ===');
@@ -79,8 +85,8 @@ function ok(name, cond) {
   ok('generate 返回 ok', g.ok === true);
   ok('生成 5 题', g.questions.length === 5);
   ok('每题含 4 选项 + 答案 + 解析', g.questions.every(q => q.options.length === 4 && q.answer && q.analysis));
-  ok('无 topic → empty', (await tutorRetest.main({ action: 'generate', subject: 'math', topic: '' })).code === 'empty');
-  ok('bad subject → bad_subject', (await tutorRetest.main({ action: 'generate', subject: 'xx', topic: 'x' })).code === 'bad_subject');
+  ok('无 topic → empty', (await tutorRetest.main({ userInfo: { openId: 'o1' }, action: 'generate', subject: 'math', topic: '' })).code === 'empty');
+  ok('bad subject → bad_subject', (await tutorRetest.main({ userInfo: { openId: 'o1' }, action: 'generate', subject: 'xx', topic: 'x' })).code === 'bad_subject');
 
   /* ============ 3. judge 证据契约（硬编码） ============ */
   console.log('=== 3. judge 证据契约 ===');

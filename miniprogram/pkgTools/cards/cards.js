@@ -11,12 +11,14 @@ const store = require('../../utils/store.js');
 const tutorStore = require('../../utils/tutorStore.js');
 const util = require('../../utils/util.js');
 const engine = require('../../utils/farmEngine.js');
+const tutorSubjects = require('../../utils/tutorSubjects.js');
 
 Page({
   data: {
     dueList: [],        // 今日到期卡片（列表展示）
     allCount: 0,
     dueCount: 0,
+    filterLabel: '',    // 从 Action Registry 带 subject/unitId 进入时的筛选说明（空 = 不过滤）
     // 自测状态机
     studying: false,
     current: null,      // { id, subjectName, topic, front, back, box, done }
@@ -24,11 +26,41 @@ Page({
     finished: false
   },
 
+  onLoad(options) {
+    const subject = String((options && options.subject) || '').trim();
+    const unitId = String((options && options.unitId) || '').trim();
+    this._filter = { subject: subject, unitId: unitId };
+    if (!subject && !unitId) return;
+    const parts = [];
+    if (subject) {
+      const sub = tutorSubjects.getTutorSubject(subject);
+      parts.push(sub ? sub.name : subject);
+    }
+    if (unitId) {
+      const u = tutorStore.getUnitKps(unitId);
+      parts.push(u && u.title ? u.title : '指定单元');
+    }
+    this.setData({ filterLabel: parts.join(' · ') });
+  },
+
+  /** 按 Registry 传入的 subject/unitId 过滤；老卡可能缺 subject，没带筛选就不受影响 */
+  _allCards() {
+    const all = tutorStore.getCards();
+    const f = this._filter || {};
+    if (!f.subject && !f.unitId) return all;
+    return all.filter(c => (!f.subject || c.subject === f.subject) && (!f.unitId || c.unitId === f.unitId));
+  },
+
+  _dueCards() {
+    const t = Date.now();
+    return this._allCards().filter(c => !c.done && (c.dueAt || 0) <= t);
+  },
+
   onShow() { this.render(); },
 
   render() {
-    const all = tutorStore.getCards();
-    const due = tutorStore.getDueCards();
+    const all = this._allCards();
+    const due = this._dueCards();
     this.setData({
       allCount: all.length,
       dueCount: due.length,
@@ -43,7 +75,7 @@ Page({
     });
     // 自测进行中：刷新当前卡进度（advanceCard 后盒子可能已变化）
     if (this.data.studying && this.data.current) {
-      const cur = tutorStore.getCards().find(c => c.id === this.data.current.id);
+      const cur = this._allCards().find(c => c.id === this.data.current.id);
       if (cur) this.setData({ current: this._viewOf(cur) });
     }
   },
@@ -63,7 +95,7 @@ Page({
 
   /* ---------------- 开始自测 ---------------- */
   startStudy() {
-    const due = tutorStore.getDueCards();
+    const due = this._dueCards();
     if (!due.length) return util.toast('今天没有到期的卡片啦');
     this.setData({ studying: true, flipped: false, finished: false, current: this._viewOf(due[0]) });
   },
@@ -85,7 +117,7 @@ Page({
     // 学科情境（P2）：按当前卡的学科推进情境进度；解锁碎片时轻提示
     this._advanceScenario(cur.subject);
     // 取下一张到期卡；无则结束本轮
-    const due = tutorStore.getDueCards();
+    const due = this._dueCards();
     if (due.length) {
       this.setData({ current: this._viewOf(due[0]), flipped: false });
     } else {

@@ -75,6 +75,26 @@ page { background: var(--c-cream); }
 
 /* ---------------- 导航 / 提交 ---------------- */
 .rt-nav { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
+
+/* ---------------- 独立性声明 ---------------- */
+.rt-indep {
+  background: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(150, 180, 210, 0.12);
+}
+.rt-indep-title { font-size: 28rpx; font-weight: 700; margin-bottom: 16rpx; }
+.rt-indep-opt {
+  border: 3rpx solid #EDF1F5;
+  border-radius: 18rpx;
+  padding: 18rpx 20rpx;
+  margin-bottom: 12rpx;
+}
+.rt-indep-opt:last-child { margin-bottom: 0; }
+.rt-indep-opt.on { border-color: var(--c-blue); background: #F2FAFF; }
+.rt-indep-label { font-size: 28rpx; font-weight: 600; }
+.rt-indep-hint { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
 .rt-btn {
   flex: 1;
   text-align: center;
@@ -96,6 +116,7 @@ page { background: var(--c-cream); }
   font-size: 30rpx;
   font-weight: 700;
 }
+.rt-submit.disabled { opacity: 0.4; }
 
 /* ---------------- 结果 ---------------- */
 .rt-result {

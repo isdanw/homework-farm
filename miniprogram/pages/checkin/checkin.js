@@ -157,8 +157,6 @@ Page({
 
   goFarm() { wx.switchTab({ url: '/pages/farm/farm' }); },
   goIndex() { wx.switchTab({ url: '/pages/index/index' }); },
-  switchChild() { wx.switchTab({ url: '/pages/mine/mine' }); },
-
   noop() {}
 });
 

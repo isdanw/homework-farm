@@ -1,7 +1,17 @@
 <view class="page">
   <view class="header">
-    <view class="title">试卷库</view>
-    <view class="subtitle">由「全科导学工作台」推送的真题 / 测验卷，仅供查看</view>
+    <view class="title">测验卷中心</view>
+    <view class="subtitle">生成测验 · 在线作答 · 智能批改，错题自动回流</view>
+  </view>
+
+  <!-- 测验入口 -->
+  <view class="gen-entry" bindtap="goGen">
+    <view class="gen-icon">🤖</view>
+    <view class="gen-text">
+      <view class="gen-title">生成测验</view>
+      <view class="gen-sub">按孩子薄弱点自动生成一份测验卷</view>
+    </view>
+    <view class="gen-go">去生成 ›</view>
   </view>
 
   <scroll-view scroll-x="true" class="filter">
@@ -10,6 +20,54 @@
           data-subject="{{item.key}}" bindtap="onSubjectTap">{{item.label}}</view>
   </scroll-view>
 
+  <!-- 我的测验卷（AI/自建，可作答） -->
+  <view class="sec-title">我的测验卷</view>
+  <view wx:if="{{myExams.length === 0}}" class="state small">还没有测验卷，点上方「生成测验」生成一份吧。</view>
+  <view wx:else class="list">
+    <view wx:for="{{myExams}}" wx:key="resourceId" class="card my"
+          data-rid="{{item.resourceId}}" data-can="{{item.canAnswer}}" bindtap="goAnswer">
+      <view class="card-top">
+        <text class="card-name">{{item.name || item.resourceId}}</text>
+        <text class="badge ai" wx:if="{{item.originLabel}}">{{item.originLabel}}</text>
+        <text class="badge" wx:if="{{item.submitted}}">已回收</text>
+      </view>
+      <view class="card-meta">
+        <text wx:if="{{item.subjectName}}">{{item.subjectName}}</text>
+        <text wx:if="{{item.examTypeLabel}}">· {{item.examTypeLabel}}</text>
+        <text wx:if="{{item.qCount}}">· {{item.qCount}} 题</text>
+      </view>
+      <view class="card-foot">
+        <text wx:if="{{item.submitted}}" class="flag ok">最近 {{item.lastRate}}% · {{item.lastAt}}</text>
+        <text class="flag go">{{item.submitted ? (item.canAnswer ? '再答一次 ›' : '查看 ›') : (item.canAnswer ? '去作答 ›' : '暂不支持在线作答')}}</text>
+        <text class="flag del" catchtap="onDeleteExam" data-rid="{{item.resourceId}}" data-name="{{item.name}}">删除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 已回收的试卷（已提交批改，持久化保存） -->
+  <view class="sec-title">已回收的试卷</view>
+  <view wx:if="{{submissions.length === 0}}" class="state small">还没有已回收的试卷。提交作答并批改后会自动出现在这里。</view>
+  <view wx:else class="list">
+    <view wx:for="{{submissions}}" wx:key="id" class="card my"
+          data-sid="{{item.id}}" bindtap="goSubmission">
+      <view class="card-top">
+        <text class="card-name">{{item.examName || item.examClientId}}</text>
+        <text class="badge">{{item.rate}}%</text>
+      </view>
+      <view class="card-meta">
+        <text wx:if="{{item.subjectName}}">{{item.subjectName}}</text>
+        <text>· 得分 {{item.scoreText}}</text>
+        <text wx:if="{{item.dateText}}">· {{item.dateText}}</text>
+      </view>
+      <view class="card-foot">
+        <text class="flag ok">已批改</text>
+        <text class="flag go">查看批改 ›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 试卷库（工作台推送，只读） -->
+  <view class="sec-title">试卷库（工作台推送）</view>
   <view wx:if="{{loading}}" class="state">加载中…</view>
   <view wx:elif="{{error}}" class="state err">{{error}}</view>
   <view wx:elif="{{exams.length === 0}}" class="state">暂无试卷。请先在「全科导学工作台」经同步桥推送试卷库。</view>

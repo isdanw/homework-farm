@@ -12,6 +12,8 @@
  *   learnerCtx: string 近期卡点快照（前端从本地 tutorStore 组装，≤1500 字，可空）
  *   unitCtx:   { title, points:[{id,topic,status}] } 当前单元必会清单+复习状态（可空，混合路线：
  *              注入后 AI 优先围绕未覆盖/待复习的点引导，不强行拉回清单、不宣称掌握）
+ *   refCtx:    string 本轮「讲解材料」召回块（前端 kpRecall 从本地必会点/复习卡/错题订正建议组装，
+ *              ≤1200 字，可空）。只影响「怎么讲」，不作为本题答案与对错标准，不参与判分、不落 evidence
  *   出参：{ ok:true, reply:string } | { ok:false, code, msg }
  *
  * 【archive】会话结束归档（写入 tutor_sessions 集合，按 openid 隔离）
@@ -47,6 +49,7 @@
  * 设计：主控 prompt 管「怎么教」（最小干预 + 错因 + 契约），学科 prompt 管「教什么」（解法结构）。
  */
 const tcb = require('@cloudbase/node-sdk');
+const G = require('./scopeGuard');
 
 /* ---------------- 频控：单实例内存级（防误触/脚本刷量；多轮对话适度放宽） ----------------
  * rateWait(openid) 返回「还需等待的毫秒数」：0 = 放行，>0 = 被限流。
@@ -93,7 +96,9 @@ const SUBJECT_PROMPTS = {
     '一年级重点：数感、20以内加减法、图形与位置、分类比较。多用实物、画图、数数帮助建立直觉，' +
     '先让孩子口算或摆一摆，再过渡到算式。不直接写答案。',
   chinese: '【语文】引导孩子完成字词句篇任务：先读准字音、认清字形，再组词、造句、理解意思。' +
-    '拼音重点：声母、韵母、声调、拼读规则。先让孩子自己读一读、想一想，再给关键提示。不直接给答案。',
+    '拼音重点：声母、韵母、声调、拼读规则。先让孩子自己读一读、想一想，再给关键提示。不直接给答案。' +
+    '写拼音时后面紧跟括号补上对应汉字（如「huā（花）」「b—à→bà（爸）」）：孩子看得懂拼音，' +
+    '家长和语音朗读也能对上字。',
   english: '【英语】引导孩子开口：先听清、模仿发音，再认读单词。' +
     '一年级以听说模仿、词汇认读、兴趣为主，多用重复和鼓励。不纠结语法，不直接给答案。',
   physics: '【物理】引导孩子先建立物理情景：明确研究对象、已知条件、所求物理量，再想适用哪个概念或规律。' +
@@ -139,8 +144,8 @@ function extractJson(text) {
   try { return JSON.parse(s.replace(/,(\s*[}\]])/g, '$1')); } catch (e) { return null; }
 }
 
-/** 组装 messages：主控 system + 学科 system + 近期卡点参考 + 单元必会清单 + 历史 + 本轮 user */
-function buildMessages(subject, content, history, learner, learnerCtx, unitCtx) {
+/** 组装 messages：主控 system + 学科 system + 近期卡点参考 + 单元必会清单 + 本轮讲解材料 + 历史 + 本轮 user */
+function buildMessages(subject, content, history, learner, learnerCtx, unitCtx, planRef, refCtx) {
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT }
   ];
@@ -173,13 +178,37 @@ function buildMessages(subject, content, history, learner, learnerCtx, unitCtx) 
     });
   }
 
+  // 本轮讲解材料（kpRecall 结构化召回）：把「教什么」的素材递到面前，但素材不是答案、更不是判分依据。
+  if (refCtx) {
+    messages.push({
+      role: 'system',
+      content: '【本轮讲解材料（来自孩子自己的必会清单与复习卡）】\n' + str(refCtx, 1200) + '\n' +
+        '使用约束：① 这些是组织提问和例子的素材，不是本题的标准答案，也不要拿它去判孩子答得对不对；' +
+        '② 与孩子当前问题无关的条目直接忽略，不要硬扯；③ 不要向孩子逐条念材料、不要报清单名，' +
+        '把它化成自己的追问和例子；④ 材料里的「还没走通 / 待复习」只是进度参考，' +
+        '禁止对孩子宣称「已掌握 / 学会了」。'
+    });
+  }
+
+  // 教学计划参考（来自学科画像 teachingPlan 字段，客户端按 subject 透传；fail-open）
+  if (planRef) {
+    messages.push({
+      role: 'system',
+      content: '【教学计划参考（教学目标与重点）】以下是该学科本学期的教学计划要点，仅供你把握教学进度与目标方向；' +
+        '引导孩子时优先围绕这些目标与重点展开，孩子问清单外内容时正常导学，不要强行拉回。\n' + str(planRef, 1500)
+    });
+  }
+
   // 导学画像（简短注入，帮导学贴合「先提示后讲解」等偏好）
   const parts = [];
   if (learner && learner.grade) parts.push('年级：' + str(learner.grade, 20));
   if (learner && learner.teachStyle) parts.push('讲解偏好：' + str(learner.teachStyle, 20));
+  if (learner && learner.replyLength) parts.push('讲解长度：' + str(learner.replyLength, 10));
   if (learner && Array.isArray(learner.expectations) && learner.expectations.length) {
     parts.push('期望：' + learner.expectations.map(e => str(e, 20)).slice(0, 4).join('、'));
   }
+  // 家长辅导备忘（可观察的习惯/提醒，只影响「怎么教」，不是学习成果记录）
+  if (learner && learner.coachNote) parts.push('家长辅导备忘：' + str(learner.coachNote, 120));
 
   // 历史：只取最近 12 条，每条内容截断，防止超出上下文
   if (Array.isArray(history)) {
@@ -191,7 +220,10 @@ function buildMessages(subject, content, history, learner, learnerCtx, unitCtx) 
   }
 
   let user = str(content, 2000);
-  if (parts.length) user = '【导学画像】' + parts.join('；') + '\n\n' + user;
+  if (parts.length) {
+    user = '【导学画像】' + parts.join('；') +
+      '\n（画像与备忘只说明「怎么教」更合适，不代表孩子会或不会；禁止据此下掌握结论、也不拿来判对错）\n\n' + user;
+  }
   messages.push({ role: 'user', content: user });
   return messages;
 }
@@ -221,7 +253,8 @@ async function generateWithRetry(model, params) {
 
 /* ---------------- chat ---------------- */
 async function chat(app, input) {
-  const messages = buildMessages(input.subject, input.content, input.history, input.learner, input.learnerCtx, input.unitCtx);
+  const messages = buildMessages(input.subject, input.content, input.history, input.learner,
+    input.learnerCtx, input.unitCtx, input.teachingPlan, input.refCtx);
   const ai = app.ai();
   const model = ai.createModel('cloudbase');
   const result = await generateWithRetry(model, { model: 'hy3', messages: messages });
@@ -635,11 +668,24 @@ function parseGenCards(text) {
 }
 
 /* ---------------- archive（会话归档 + 错因诊断 + 错题落库 + 复习窗口派生 + 会话总结写回） ---------------- */
-async function archive(app, input, openid) {
+/** 读该 openid 的家庭根数据（users[]/currentUserId），仅用于解析归档归属 */
+async function loadRoot(app, openid) {
+  try {
+    const res = await app.database().collection('hw_farm_user')
+      .where({ _openid: openid }).limit(1).get();
+    const doc = (res && res.data && res.data[0]) || null;
+    return (doc && doc.data) || null;
+  } catch (e) {
+    return null;   // 尚未上传过家庭数据 → 无档案，childId 留空待迁移
+  }
+}
+
+async function archive(app, input, openid, childId) {
   const db = app.database();
   const now = Date.now();
   const doc = {
     openid: openid,
+    childId: childId,                           // 服务端解析的归属（无档案/未指定时为空串）
     clientId: str(input.sessionClientId, 60),   // 本地会话 uid，跨设备合并去重用
     subject: str(input.subject, 20),
     grade: (input.learner && input.learner.grade) ? str(input.learner.grade, 20) : '',
@@ -671,6 +717,7 @@ async function archive(app, input, openid) {
   if (diagnosis && diagnosis.stuck) {
     const mDoc = {
       openid: openid,
+      childId: childId,
       clientId: str(input.mistakeClientId, 60),   // 预生成的本地错题 uid，跨设备去重用
       subject: str(input.subject, 20),
       subjectName: SUBJECT_NAMES[input.subject] || str(input.subject, 20),
@@ -700,6 +747,7 @@ async function archive(app, input, openid) {
   if (diagnosis && diagnosis.stuck) {
     const rDoc = {
       openid: openid,
+      childId: childId,
       clientId: str(input.reviewClientId, 60),
       mistakeClientId: str(input.mistakeClientId, 60),
       subject: str(input.subject, 20),
@@ -767,16 +815,24 @@ async function archive(app, input, openid) {
 
 /* ---------------- 主入口 ---------------- */
 exports.main = async (event) => {
-  const openid = (event.userInfo && event.userInfo.openId) || '';
+  // 身份守卫（P0）：归档会写 tutor_sessions/mistakes/reviews，空 openid 一律拒绝，
+  // 不产生任何无主文档；对话类只读动作同样要求身份（限流也按 openid 计）。
+  const gate = G.requireOpenid((event.userInfo && event.userInfo.openId) || '');
+  if (!gate.ok) return { ok: false, code: gate.code, msg: '缺少用户身份，无法继续' };
+  const openid = gate.openid;
 
   const input = {
     subject: str(event.subject, 20),
     content: str(event.content, 4000),
     history: Array.isArray(event.history) ? event.history.slice(-12) : [],
+    childId: str(event.childId, 64),
     messages: Array.isArray(event.messages) ? event.messages.slice(-200) : [],
     items: Array.isArray(event.items) ? event.items.slice(0, 30) : [],
     learner: event.learner && typeof event.learner === 'object' ? event.learner : {},
     learnerCtx: str(event.learnerCtx, 1500),
+    teachingPlan: str(event.teachingPlan, 1500),
+    /* 讲解材料召回（kpRecall 端上组装，只读注入；上限从紧，防止拉长首字延迟） */
+    refCtx: str(event.refCtx, 1200),
     sessionClientId: str(event.sessionClientId, 60),
     mistakeClientId: str(event.mistakeClientId, 60),
     reviewClientId: str(event.reviewClientId, 60),
@@ -898,7 +954,12 @@ exports.main = async (event) => {
   if (action === 'archive') {
     if (!input.messages.length) return { ok: false, code: 'empty', msg: '没有可归档的对话内容' };
     try {
-      return await archive(app, input, openid);
+      const kid = G.resolveChildId(await loadRoot(app, openid), input.childId);
+      // 跨家庭 childId：不写别人的孩子，也不「猜」成当前孩子 → 拒绝归档
+      if (kid.source === 'invalid') {
+        return { ok: false, code: 'child_scope_invalid', msg: '指定的孩子不属于当前账号，已拒绝归档' };
+      }
+      return await archive(app, input, openid, kid.childId);
     } catch (e) {
       return { ok: false, code: 'archive_error', msg: '归档失败：' + ((e && e.message) || e) };
     }

@@ -34,6 +34,15 @@
     </view>
     <view class="stat-note">通关率 = 已毕业卡（间隔重复到顶）对应必会点数 / 总数，属复习行为指标，非掌握度判定。</view>
 
+    <!-- 证据覆盖程度（只读）：统计「系统里攒到第几层记录」，不是能力等级，不给百分比 -->
+    <view wx:if="{{lvDist.length}}" class="lv-card">
+      <view class="lv-ti">证据覆盖程度（只读）</view>
+      <view class="lv-sub">看每个点已经攒到第几层记录：有活动 → 有订正 → 独立达标 → 间隔稳定。点标签可看下一层缺什么。</view>
+      <view class="lv-dist">
+        <text wx:for="{{lvDist}}" wx:key="code" class="lv-pill {{item.on ? 'on' : ''}}">{{item.code}} {{item.name}} {{item.count}}</text>
+      </view>
+    </view>
+
     <!-- 必会点列表 -->
     <view class="section-title">必会点（{{rows.length}}）</view>
     <view wx:if="{{rows.length === 0}}" class="empty">清单为空，点下方「添加必会点」补充。</view>
@@ -46,6 +55,7 @@
             {{item.status === 'done' ? '已通关' : (item.status === 'due' ? '待复习' : (item.status === 'learning' ? '复习中' : '未覆盖'))}}
           </text>
           <text wx:if="{{item.box}}" class="kp-box">盒{{item.box}}</text>
+          <text wx:if="{{item.lvText}}" class="lv-tag lv-{{item.lv}}" hover-class="op-hover" data-id="{{item.id}}" bindtap="showLadder">{{item.lvText}}</text>
           <text wx:if="{{item.topic}}" class="kp-topic">{{item.topic}}</text>
         </view>
         <!-- 编辑态：front/back 内联输入 -->
@@ -60,6 +70,7 @@
       </view>
       <view class="kp-ops" wx:if="{{editingId !== item.id}}">
         <view class="op-btn" hover-class="op-hover" data-id="{{item.id}}" bindtap="startStudy">自测</view>
+        <view class="op-btn" hover-class="op-hover" data-id="{{item.id}}" bindtap="startVariant">变式</view>
         <view class="op-btn" hover-class="op-hover" data-id="{{item.id}}" bindtap="startEdit">编辑</view>
         <view class="op-btn danger" hover-class="op-hover" data-id="{{item.id}}" bindtap="askRemove">删除</view>
       </view>

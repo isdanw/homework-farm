@@ -6,6 +6,9 @@
  *
  * 说明：数据按 openid 隔离，一人一条，互相看不到对方的数据。
  *
+ * 【P0 多孩隔离·2026-10-28】打卡明细从「只写当前孩子」改为「每个当日有作业记录的孩子一行」，
+ *   upsert 业务键加上 childId；历史无 childId 的行既不覆盖也不认领（留待家长确认归属）。
+ *
  * R4 自愈（2026-09-10 修复）：集合可能因 initDB 未跑 / 被误删而不存在。
  *   旧逻辑 where().get() 直接抛错 → 云函数异常 → 前端 cloudUpload 静默吞掉 →
  *   数据从不上云。现改为：集合缺失时先 createCollection 再写，保证任意一次
@@ -28,19 +31,29 @@ const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
+const G = require('./scopeGuard');
 
 const USER = 'hw_farm_user';
 const LOG = 'hw_checkin_log';
 const EVENTS = 'hw_farm_events';
 
-/** 取「当前孩子」切片：_root 里孩子级字段（homework/farm/...）都在 users[currentUserId] 上 */
-function currentUser(root) {
-  const us = (root && Array.isArray(root.users)) ? root.users : [];
-  return us.find(x => x && x.id === (root && root.currentUserId)) || us[0] || {};
+/** 读该 openid 的家庭根数据（logEvent 无法自带 root，需回查一次） */
+async function loadRoot(openid) {
+  try {
+    const res = await db.collection(USER).where({ _openid: openid }).limit(1).get();
+    const doc = (res && res.data && res.data[0]) || null;
+    return (doc && doc.data) || null;
+  } catch (e) {
+    return null;
+  }
 }
 
 exports.main = async (event) => {
-  const { OPENID } = cloud.getWXContext();
+  const { OPENID: rawOpenid } = cloud.getWXContext();
+  // 身份守卫（P0）：空 openid 写入会产生无主数据，一律拒绝（含 whoami 之外的全部动作）
+  const gate = G.requireOpenid(rawOpenid);
+  if (!gate.ok) return { ok: false, code: gate.code, msg: '缺少用户身份' };
+  const OPENID = gate.openid;
   const action = event.action;
 
   // 仅返回调用者的 openid（客户端用来做「微信已绑定」展示 + 本地多账号隔离）
@@ -51,11 +64,15 @@ exports.main = async (event) => {
   // 埋点事件（analytics.js 尽力同步，失败静默）：单条追加，字段白名单 + 截断
   if (action === 'logEvent') {
     const rec = event.payload || {};
+    /* childId 由服务端解析：显式传了就必须属于该家庭，否则丢弃本次埋点；
+     * 没传则取当前孩子。绝不把客户端给的 childId 原样落库。 */
+    const kid = G.resolveChildId(await loadRoot(OPENID), rec.childId);
+    if (kid.source === 'invalid') return { ok: true, skipped: true };
     const row = {
       _openid: OPENID,
       event: String(rec.event || '').slice(0, 40),
       uid: String(rec.uid || '').slice(0, 64),
-      childId: String(rec.childId || '').slice(0, 64),
+      childId: kid.childId,
       subject: String(rec.subject || '').slice(0, 30),
       subjectName: String(rec.subjectName || '').slice(0, 30),
       action: String(rec.action || '').slice(0, 30),
@@ -164,16 +181,18 @@ exports.main = async (event) => {
       await db.collection(USER).where({ _openid: _.exists(false) }).remove();
     } catch (e) { /* 集合空或已无孤儿时忽略 */ }
 
-    // 3) 单独落一条「今日打卡明细」，方便后台统计
-    //    ⚠️ payload 是整份 _root，homework/farm 挂在 payload.users[i]（当前孩子）上，
-    //    顶层 payload.homework 恒为 undefined —— 早期误读顶层导致 hw_checkin_log 永远不写。
-    const today = new Date();
-    const dateKey = `${today.getFullYear()}-${p(today.getMonth() + 1)}-${p(today.getDate())}`;
-    const cu = currentUser(payload);
-    const hw = (cu.homework || {})[dateKey];
-    if (hw) {
-      const row = {
+    // 3) 打卡明细：每个「当日有作业记录」的真实孩子各落一行
+    //    ⚠️ payload 是整份 _root，homework 挂在 payload.users[i] 上，顶层 payload.homework 恒为 undefined
+    //    —— 早期误读顶层导致 hw_checkin_log 永远不写。
+    //    多孩家庭不再只写「当前孩子」：归属取自切片自身 id（内容与归属同源），占位切片不落库。
+    const nowD = new Date();
+    const dateKey = `${nowD.getFullYear()}-${p(nowD.getMonth() + 1)}-${p(nowD.getDate())}`;
+    const kids = G.childrenOf(payload).filter(cu => cu.homework && cu.homework[dateKey]);
+    for (const cu of kids) {
+      const hw = cu.homework[dateKey];
+      await upsertCheckinLog({
         _openid: OPENID,
+        childId: cu.id,
         date: dateKey,
         chinese: !!(hw.chinese && hw.chinese.done),
         math: !!(hw.math && hw.math.done),
@@ -181,28 +200,32 @@ exports.main = async (event) => {
         coins: cu.farm ? cu.farm.coins : 0,
         bears: cu.farm ? (cu.farm.bears || []).length : 0,
         updatedAt: now
-      };
-      // R4 自愈：hw_checkin_log 也可能不存在，缺失时建集合后写入
-      let old;
-      try {
-        old = await db.collection(LOG).where({ _openid: OPENID, date: dateKey }).limit(1).get();
-      } catch (e) {
-        if (isCollMissing(e)) { await ensureColl(LOG); old = { data: [] }; }
-        else throw e;
-      }
-      if (old.data.length) await db.collection(LOG).doc(old.data[0]._id).update({ data: row });
-      else await db.collection(LOG).add({ data: row });
-      // 清理历史孤儿日志（修复前未写 _openid 的脏数据，避免 overview 打卡率统计失真）
-      try {
-        await db.collection(LOG).where({ _openid: _.exists(false) }).remove();
-      } catch (e) {}
+      });
     }
+    // 清理历史孤儿日志（修复前未写 _openid 的脏数据，避免 overview 打卡率统计失真）
+    try {
+      await db.collection(LOG).where({ _openid: _.exists(false) }).remove();
+    } catch (e) {}
     // F10：回传本次落库后的云端版本，客户端存为下一轮的 CAS 基线
     return { ok: true, cloudUpdatedAt: now };
   }
 
   return { ok: false, msg: 'unknown action' };
 };
+
+/** 打卡明细 upsert：业务键 = openid + childId + date（每孩子每天一行，重试不产生重复行） */
+async function upsertCheckinLog(row) {
+  // R4 自愈：hw_checkin_log 也可能不存在，缺失时建集合后写入
+  let old;
+  try {
+    old = await db.collection(LOG).where({ _openid: row._openid, childId: row.childId, date: row.date }).limit(1).get();
+  } catch (e) {
+    if (isCollMissing(e)) { await ensureColl(LOG); old = { data: [] }; }
+    else throw e;
+  }
+  if (old.data.length) await db.collection(LOG).doc(old.data[0]._id).update({ data: row });
+  else await db.collection(LOG).add({ data: row });
+}
 
 /** 取 update / remove 的影响行数（wx-server-sdk 与 node-sdk 返回结构不同，双重兜底） */
 function affected(res) {

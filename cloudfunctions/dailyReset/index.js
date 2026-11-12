@@ -20,11 +20,19 @@
  *   现在：写回用 `where({_id, updatedAt: <刚读到的版本>}).update()`，受影响 0 行说明版本已变 →
  *   重新读取最新文档、在新快照上重算、再写，最多 CAS_MAX_ATTEMPT 轮。
  *   ⚠️ 只有写成功才计入 summary 与落 hw_farm_settle 记录 —— 否则重试会导致重复计数 / 重复结算记录。
+ *
+ * 【P0 多孩隔离·2026-10-28】结算单位从「每条文档里的当前孩子」改为 **文档里的每一个真实孩子**。
+ *   旧逻辑只取 currentUserId，一个家庭两个孩子时，非当前孩子既不会被结算、也不会被清空当日作业，
+ *   它的农场惩罚会一路拖欠到孩子自己打开小程序（云端兜底形同虚设），而 hw_farm_settle 行
+ *   又没有 childId —— 统计口径只能落到 openid 级。
+ *   现在：G.childrenOf(root)（排除占位/访客切片）逐个孩子走同一套 rollover，settle 行写 childId；
+ *   文档仍是一次 CAS 写回（孩子都在同一份 _root 里，拆写反而制造半结算状态）。
  */
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
+const G = require('./scopeGuard');
 
 const USER = 'hw_farm_user';
 const SETTLE = 'hw_farm_settle';
@@ -44,16 +52,11 @@ const PUNISH = {
 const MAX_STAGE = 3;
 const SUBS = ['chinese', 'math', 'english'];
 
-/** 取「当前孩子」切片：_root 里孩子级字段（homework/farm/settledDates/lastActiveDate）都在 users[currentUserId] 上 */
-function currentUser(root) {
-  const us = (root && Array.isArray(root.users)) ? root.users : [];
-  return us.find(x => x && x.id === (root && root.currentUserId)) || us[0] || {};
-}
-
 exports.main = async () => {
   const yest = dateKey(-1);
   const today = dateKey(0);
-  const summary = { date: yest, users: 0, punished: 0, skipped: 0, retried: 0, failed: 0, ocrDebugCleaned: 0 };
+  // users = 处理成功的家庭文档数；children = 其中被结算的孩子切片数（多孩家庭 > users）
+  const summary = { date: yest, users: 0, children: 0, punished: 0, skipped: 0, retried: 0, failed: 0, ocrDebugCleaned: 0 };
 
   // R5：先「只读」分页收集全部 _id（读阶段无写入，skip 不会漂移），再逐条取回处理，
   // 避免旧的「边遍历边写」在极端并发下漏处理/重复处理。
@@ -74,37 +77,53 @@ exports.main = async () => {
       const row = await db.collection(USER).doc(id).get();
       const doc = row.data;
       const root = doc && doc.data;   // 载荷就是整份 _root（含 users[]）——孩子级字段在切片里，顶层没有
-      const cu = currentUser(root);
-      if (!root || !cu || !cu.farm) { status = 'skip'; break; }
+      // 结算对象 = 所有真实孩子（占位/访客切片不算），且必须已有农场数据
+      const kids = (root ? G.childrenOf(root) : []).filter(u => u.farm);
+      if (!root || !kids.length) { status = 'skip'; break; }
       const openid = doc._openid;
 
-      cu.settledDates = cu.settledDates || [];
-      const already = cu.settledDates.indexOf(yest) >= 0;
-      const hw = (cu.homework || {})[yest];
-      const missing = hw ? SUBS.filter(k => !(hw[k] && hw[k].done)) : SUBS.slice();
+      const reports = [];   // 本次待落的结算记录（每个孩子至多一条）
+      kids.forEach((cu) => {
+        cu.settledDates = cu.settledDates || [];
+        const already = cu.settledDates.indexOf(yest) >= 0;
+        const hw = (cu.homework || {})[yest];
+        const missing = hw ? SUBS.filter(k => !(hw[k] && hw[k].done)) : SUBS.slice();
 
-      let report = null;
-      if (!already && missing.length > 0) report = settle(cu, yest, missing);
-      if (!already) cu.settledDates.push(yest);
+        if (!already && missing.length > 0) {
+          reports.push({ childId: cu.id, level: missing.length, missing: missing, report: settle(cu, yest, missing) });
+        }
+        if (!already) cu.settledDates.push(yest);
 
-      // 清空当日作业状态：为今天建立空白记录
-      if (!cu.homework) cu.homework = {};
-      if (!cu.homework[today]) {
-        cu.homework[today] = {};
-        SUBS.forEach(k => { cu.homework[today][k] = { done: false, minutes: 0, note: '', doneAt: 0 }; });
-      }
-      cu.lastActiveDate = today;
+        // 清空当日作业状态：为今天建立空白记录
+        if (!cu.homework) cu.homework = {};
+        if (!cu.homework[today]) {
+          cu.homework[today] = {};
+          SUBS.forEach(k => { cu.homework[today][k] = { done: false, minutes: 0, note: '', doneAt: 0 }; });
+        }
+        cu.lastActiveDate = today;
+      });
 
       const cas = await casWrite(id, doc.updatedAt, { data: root, updatedAt: Date.now() });
       if (cas !== 'ok') continue;         // 窗口内被人改过 → 重读重算，绝不用旧快照覆盖
 
       // 写成功后才计账/落记录（重试不产生重复计数、不产生重复结算记录）
       summary.users++;
+      summary.children += kids.length;
       if (attempt > 0) summary.retried++;
-      if (report) {
+      for (const r of reports) {
         summary.punished++;
         await db.collection(SETTLE).add({
-          data: { _openid: openid, date: yest, level: missing.length, missing, bears: report.bears, stolen: report.stolen, withered: report.withered, createdAt: Date.now() }
+          data: {
+            _openid: openid,
+            childId: r.childId,     // 归属：一行只属于一个孩子；历史无 childId 的行不回填、不认领
+            date: yest,
+            level: r.level,
+            missing: r.missing,
+            bears: r.report.bears,
+            stolen: r.report.stolen,
+            withered: r.report.withered,
+            createdAt: Date.now()
+          }
         });
       }
       status = 'ok';

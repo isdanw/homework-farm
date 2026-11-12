@@ -1,0 +1,84 @@
+<view class="pg-page">
+
+  <!-- ===== 加载中 ===== -->
+  <view wx:if="{{mode === 'loading'}}" class="pg-state">
+    <view class="pg-state-title">正在检查家长口令…</view>
+  </view>
+
+  <!-- ===== 云端不可用 ===== -->
+  <view wx:elif="{{mode === 'error'}}" class="pg-state">
+    <view class="pg-state-emoji">🔌</view>
+    <view class="pg-state-title">暂时连不上云端</view>
+    <view class="pg-state-sub">{{errMsg}}</view>
+    <view class="pg-btn pg-btn--primary" bindtap="refresh">重试</view>
+    <view class="pg-btn pg-btn--line" bindtap="goBack">返回</view>
+  </view>
+
+  <block wx:else>
+    <view class="pg-head">
+      <view class="pg-title">
+        {{mode === 'setup' ? '设置家长口令' : (mode === 'unlocked' ? '家长验证已通过' : (mode === 'change' ? '修改家长口令' : '家长验证'))}}
+      </view>
+      <view class="pg-sub" wx:if="{{mode === 'setup'}}">设置一次 4-8 位数字口令，用于签发/作废学习单、修改计划、增删打卡类型。</view>
+      <view class="pg-sub" wx:elif="{{mode === 'verify'}}">输入家长口令，验证通过后 2 小时内有效。</view>
+      <view class="pg-sub" wx:elif="{{mode === 'change'}}">先输入当前口令，再设置新口令；修改后其他设备上的验证会立即失效。</view>
+      <view class="pg-sub" wx:elif="{{mode === 'unlocked'}}">本次验证有效至 {{expiresText}}，到期后需要重新输入口令。</view>
+      <view class="pg-scope-tip" wx:if="{{scopeLabel && mode !== 'unlocked'}}">本次操作：{{scopeLabel}}</view>
+    </view>
+
+    <!-- ===== 首次设置 ===== -->
+    <view wx:if="{{mode === 'setup'}}" class="pg-card">
+      <view class="pg-label">口令</view>
+      <input class="pg-input" type="number" password="{{true}}" maxlength="8" value="{{pin}}"
+             bindinput="onPinInput" placeholder="4-8 位数字" placeholder-class="pg-ph" />
+      <view class="pg-label">再输一次</view>
+      <input class="pg-input" type="number" password="{{true}}" maxlength="8" value="{{pin2}}"
+             bindinput="onPin2Input" placeholder="再输一次" placeholder-class="pg-ph" />
+      <view wx:if="{{errMsg}}" class="pg-err">{{errMsg}}</view>
+      <view class="pg-btn pg-btn--primary {{submitting ? 'is-off' : ''}}" bindtap="submit">保存口令</view>
+      <view class="pg-btn pg-btn--line" bindtap="goBack">暂不设置，先返回</view>
+      <view class="pg-note">口令只在云端保存散列值，本机不保存明文；小程序里没有「忘记口令」的重置入口，请记牢。</view>
+    </view>
+
+    <!-- ===== 验证 ===== -->
+    <view wx:elif="{{mode === 'verify'}}" class="pg-card">
+      <view class="pg-label">家长口令</view>
+      <input class="pg-input" type="number" password="{{true}}" maxlength="8" value="{{pin}}"
+             bindinput="onPinInput" placeholder="4-8 位数字" placeholder-class="pg-ph" />
+      <view wx:if="{{errMsg}}" class="pg-err">{{errMsg}}</view>
+      <view wx:if="{{locked}}" class="pg-lock">尝试次数过多，{{countdown}} 后可再试</view>
+      <view class="pg-btn pg-btn--primary {{submitting || locked ? 'is-off' : ''}}" bindtap="submit">验证</view>
+      <view class="pg-btn pg-btn--line" bindtap="goBack">返回</view>
+    </view>
+
+    <!-- ===== 修改口令 ===== -->
+    <view wx:elif="{{mode === 'change'}}" class="pg-card">
+      <view class="pg-label">当前口令</view>
+      <input class="pg-input" type="number" password="{{true}}" maxlength="8" value="{{oldPin}}"
+             bindinput="onOldPinInput" placeholder="当前口令" placeholder-class="pg-ph" />
+      <view class="pg-label">新口令</view>
+      <input class="pg-input" type="number" password="{{true}}" maxlength="8" value="{{pin}}"
+             bindinput="onPinInput" placeholder="4-8 位数字" placeholder-class="pg-ph" />
+      <view class="pg-label">再输一次新口令</view>
+      <input class="pg-input" type="number" password="{{true}}" maxlength="8" value="{{pin2}}"
+             bindinput="onPin2Input" placeholder="再输一次" placeholder-class="pg-ph" />
+      <view wx:if="{{errMsg}}" class="pg-err">{{errMsg}}</view>
+      <view class="pg-btn pg-btn--primary {{submitting ? 'is-off' : ''}}" bindtap="submit">保存新口令</view>
+      <view class="pg-btn pg-btn--line" bindtap="cancelChange">取消</view>
+    </view>
+
+    <!-- ===== 已验证 ===== -->
+    <view wx:elif="{{mode === 'unlocked'}}" class="pg-card">
+      <view class="pg-ok">已验证</view>
+      <view class="pg-label">本次验证可做</view>
+      <view class="pg-scopes">
+        <text wx:for="{{scopes}}" wx:key="*this" class="pg-chip">{{item}}</text>
+      </view>
+      <view class="pg-btn pg-btn--primary" bindtap="goBack">返回</view>
+      <view class="pg-btn pg-btn--line" bindtap="openChange">修改口令</view>
+      <view class="pg-btn pg-btn--line" bindtap="doRevoke">结束本次验证</view>
+      <view class="pg-note">「结束本次验证」只清除本机的验证状态，不会改动口令。</view>
+    </view>
+  </block>
+
+</view>

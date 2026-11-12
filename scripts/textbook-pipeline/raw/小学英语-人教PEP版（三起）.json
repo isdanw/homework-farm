@@ -1,0 +1,1735 @@
+{
+ "stage": "小学",
+ "subject": "英语",
+ "version": "人教PEP版（三起）",
+ "order": 0,
+ "region": "厦门",
+ "source": {
+  "platform": "国家中小学智慧教育平台 · 同步课堂",
+  "version": "人教版（主编：吴欣）",
+  "crawledAt": "2026-09-27"
+ },
+ "note": "目录抓取自国家中小学智慧教育平台（同步课堂）；knowledge 为每节对应的知识点，由脚本生成，可手工校订后重新运行保留。",
+ "books": [
+  {
+   "name": "三年级 上册",
+   "grade": "三年级",
+   "edition": "新教材",
+   "sourceId": "8dabed50-6eed-40dd-8bea-c70f0718114d",
+   "chapters": [
+    {
+     "name": "Unit 1 Making friends",
+     "sections": [
+      {
+       "name": "part A How do we greet friends?",
+       "knowledge": [
+        "问候与告别",
+        "介绍与感谢",
+        "be动词的人称搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part B How can we be a good friend?",
+       "knowledge": [
+        "问候与告别",
+        "介绍与感谢",
+        "常见礼貌表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 Different families",
+     "sections": [
+      {
+       "name": "part A Who lives with you?",
+       "knowledge": [
+        "家庭主题词汇",
+        "This is…句式",
+        "人称代词主格"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part B How are families different?",
+       "knowledge": [
+        "家庭主题词汇",
+        "There is/are…句式",
+        "形容词性物主代词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Grammar",
+       "knowledge": [
+        "名词单复数初步",
+        "a/an的基本使用"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 Amazing animals",
+     "sections": [
+      {
+       "name": "part A What pets do you know?",
+       "knowledge": [
+        "动物主题词汇",
+        "I have…句式",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part B What wild animals do you know?",
+       "knowledge": [
+        "动物主题词汇",
+        "I like…句式",
+        "一般疑问句及简短回答"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Grammar",
+       "knowledge": [
+        "名词单复数初步",
+        "a/an的基本使用"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 Plants around us",
+     "sections": [
+      {
+       "name": "part A What do we get from plants?",
+       "knowledge": [
+        "食物主题词汇",
+        "自然及成长变化主题词汇",
+        "I like…句式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part B How can we help plants?",
+       "knowledge": [
+        "自然及成长变化主题词汇",
+        "can表示能力或许可",
+        "should表示建议"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Grammar",
+       "knowledge": [
+        "名词单复数初步",
+        "some/any的用法"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 The colourful world",
+     "sections": [
+      {
+       "name": "part A What colours do you see?",
+       "knowledge": [
+        "颜色主题词汇",
+        "This is…句式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part B How do colours help us?",
+       "knowledge": [
+        "颜色主题词汇",
+        "描述位置和提出建议",
+        "问路与说明规则"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Grammar",
+       "knowledge": [
+        "形容词性物主代词",
+        "指示代词的指示作用"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 Useful numbers",
+     "sections": [
+      {
+       "name": "part A When do we use numbers?",
+       "knowledge": [
+        "数字主题词汇",
+        "询问年龄、数量、价格、时间和位置",
+        "how many/how much的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part B How useful are numbers?",
+       "knowledge": [
+        "数字主题词汇",
+        "购物与点餐场景对话",
+        "There is/are…句式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Grammar",
+       "knowledge": [
+        "一般现在时的用法",
+        "do/does帮助提问与否定"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Revision Being a good guest",
+     "sections": [],
+     "knowledge": [
+      "问候与告别",
+      "介绍与感谢",
+      "常见礼貌表达",
+      "遵循课堂指令"
+     ],
+     "by": "llm"
+    }
+   ]
+  },
+  {
+   "name": "三年级 下册",
+   "grade": "三年级",
+   "edition": "新教材",
+   "sourceId": "cb26c613-b227-41c1-bd10-1e2022e46387",
+   "chapters": [
+    {
+     "name": "Unit 1 Meeting new people",
+     "sections": [
+      {
+       "name": "Part A How do we greet new people?",
+       "knowledge": [
+        "问候与告别",
+        "介绍与感谢",
+        "be动词的人称搭配",
+        "This is…句式",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How can we be polite?",
+       "knowledge": [
+        "常见礼貌表达",
+        "道歉与请求",
+        "遵循课堂指令"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 Expressing yourself",
+     "sections": [
+      {
+       "name": "Part A How do we describe things?",
+       "knowledge": [
+        "颜色主题词汇",
+        "形容词性物主代词",
+        "名词单复数初步",
+        "a/an的基本使用",
+        "I have…句式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How do we express our feelings?",
+       "knowledge": [
+        "身体主题词汇",
+        "I like…句式",
+        "一般疑问句及简短回答"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 Learning better",
+     "sections": [
+      {
+       "name": "Part A What tools help us learn?",
+       "knowledge": [
+        "学校主题词汇",
+        "There is/are…句式",
+        "指示代词的指示作用"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How do our senses help us learn?",
+       "knowledge": [
+        "can表示能力或许可",
+        "动词短语",
+        "固定搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 Healthy food",
+     "sections": [
+      {
+       "name": "Part A What do we eat?",
+       "knowledge": [
+        "食物主题词汇",
+        "可数与不可数名词",
+        "some/any的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B What shall we eat?",
+       "knowledge": [
+        "should表示建议",
+        "购物与点餐场景对话",
+        "询问年龄、数量、价格、时间和位置"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Grammar",
+       "knowledge": [
+        "肯定句与否定句",
+        "do/does帮助提问与否定"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 Old toys",
+     "sections": [
+      {
+       "name": "Part A What kinds of old things do you have?",
+       "knowledge": [
+        "数字主题词汇",
+        "how many/how much的用法",
+        "人称代词主格"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How can old things be reused?",
+       "knowledge": [
+        "自然及成长变化主题词汇",
+        "描述位置和提出建议"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Grammar",
+       "knowledge": [
+        "第三人称单数形式",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 Numbers in life",
+     "sections": [
+      {
+       "name": "Part A How do numbers help us count and sort?",
+       "knowledge": [
+        "数字主题词汇",
+        "时间地点介词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How do numbers help us make decisions?",
+       "knowledge": [
+        "问路与说明规则",
+        "be going to表达计划"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C (optional)",
+       "knowledge": [],
+       "by": "llm"
+      },
+      {
+       "name": "Grammar",
+       "knowledge": [
+        "频度副词与时间表达",
+        "时间线索与表达一致"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Revision Going to a school fair",
+     "sections": [],
+     "knowledge": [
+      "问候与告别",
+      "介绍与感谢",
+      "颜色主题词汇",
+      "食物主题词汇",
+      "数字主题词汇",
+      "学校主题词汇"
+     ],
+     "by": "llm"
+    }
+   ]
+  },
+  {
+   "name": "四年级 上册",
+   "grade": "四年级",
+   "edition": "新教材",
+   "sourceId": "94cadb99-b206-4954-8dab-62505dd266ca",
+   "chapters": [
+    {
+     "name": "Unit 1 Helping at home",
+     "sections": [
+      {
+       "name": "Part A How are families different?",
+       "knowledge": [
+        "家庭主题词汇",
+        "名词单复数初步",
+        "a/an的基本使用",
+        "be动词的人称搭配"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How can we help our family?",
+       "knowledge": [
+        "家庭主题词汇",
+        "can表示能力或许可",
+        "一般现在时的用法",
+        "第三人称单数形式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C Project: Make a poster of a happy family",
+       "knowledge": [
+        "写连贯的介绍性短句",
+        "规范抄写",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Reading time",
+       "knowledge": [
+        "推测图片和标题意思",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 My friends",
+     "sections": [
+      {
+       "name": "Part A Who are your friends?",
+       "knowledge": [
+        "个人信息主题词汇",
+        "身体主题词汇",
+        "形容词性物主代词",
+        "This is…句式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How do we choose our friends?",
+       "knowledge": [
+        "I like…句式",
+        "what、who、where提问",
+        "一般疑问句及简短回答"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C Project: Make a book about your friend",
+       "knowledge": [
+        "写介绍、计划、日记和经历",
+        "按要素整理短文"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 Places we live in",
+     "sections": [
+      {
+       "name": "Part A What can we see in a community?",
+       "knowledge": [
+        "There is/are…句式",
+        "时间地点介词",
+        "描述位置和提出建议"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B What do people do in a community?",
+       "knowledge": [
+        "职业主题词汇",
+        "一般现在时的用法",
+        "do/does帮助提问与否定"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C Project: Make a dream community mode",
+       "knowledge": [
+        "写介绍、计划、日记和经历",
+        "补全信息"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Reading time",
+       "knowledge": [
+        "识别简单连接词",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 Helping in the community",
+     "sections": [
+      {
+       "name": "Part A What jobs are important in a community?",
+       "knowledge": [
+        "职业主题词汇",
+        "what、who、where提问",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How can young people help their community?",
+       "knowledge": [
+        "should表示建议",
+        "问路与说明规则",
+        "动词短语"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C Project: Make a poster of your school helpers",
+       "knowledge": [
+        "写连贯的介绍性短句",
+        "规范抄写"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Reading time",
+       "knowledge": [
+        "推测图片和标题意思",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 The weather and us",
+     "sections": [
+      {
+       "name": "Part A How can the weather be different?",
+       "knowledge": [
+        "天气与时间主题词汇",
+        "形容词比较级",
+        "常见比较表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B What do we do in different weather?",
+       "knowledge": [
+        "天气与时间主题词汇",
+        "服装主题词汇",
+        "一般现在时的用法",
+        "频度副词与时间表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C Project: Make a bad weather reminder",
+       "knowledge": [
+        "写介绍、计划、日记和经历",
+        "补全信息"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Reading time",
+       "knowledge": [
+        "识别代词指代",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 Changing for the seasons",
+     "sections": [
+      {
+       "name": "Part A What do we wear in different seasons?",
+       "knowledge": [
+        "服装主题词汇",
+        "自然及成长变化主题词汇",
+        "指示代词的指示作用"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B What do we do in different seasons?",
+       "knowledge": [
+        "自然及成长变化主题词汇",
+        "节日兴趣健康主题词汇",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part C Project: Make a travel card",
+       "knowledge": [
+        "写介绍、计划、日记和经历",
+        "规范抄写"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Revision Let's help!",
+     "sections": [],
+     "knowledge": [
+      "家庭主题词汇",
+      "学校主题词汇",
+      "天气与时间主题词汇",
+      "服装主题词汇",
+      "职业主题词汇",
+      "一般现在时的用法"
+     ],
+     "by": "llm"
+    }
+   ]
+  },
+  {
+   "name": "四年级 下册",
+   "grade": "四年级",
+   "edition": "新教材",
+   "sourceId": "4901535c-9ae2-458e-bc0e-e5ed3f7a081d",
+   "chapters": [
+    {
+     "name": "Unit 1 Class rules",
+     "sections": [
+      {
+       "name": "Part A What are your class rules?",
+       "knowledge": [
+        "学校主题词汇",
+        "遵循课堂指令",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B Why do we follow class rules?",
+       "knowledge": [
+        "should表示建议",
+        "问路与说明规则",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 Family rules",
+     "sections": [],
+     "knowledge": [
+      "家庭主题词汇",
+      "形容词性物主代词",
+      "should表示建议",
+      "问路与说明规则"
+     ],
+     "by": "llm"
+    },
+    {
+     "name": "Unit 3 Time for school",
+     "sections": [],
+     "knowledge": [
+      "天气与时间主题词汇",
+      "询问年龄、数量、价格、时间和位置",
+      "be动词的人称搭配"
+     ],
+     "by": "llm"
+    },
+    {
+     "name": "Unit 4 Going shopping",
+     "sections": [
+      {
+       "name": "Part A What do we need to buy?",
+       "knowledge": [
+        "食物主题词汇",
+        "购物与点餐场景对话",
+        "可数与不可数名词",
+        "some/any的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How do we decide what to buy?",
+       "knowledge": [
+        "how many/how much的用法",
+        "常见比较表达",
+        "形容词比较级"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 Farms and us",
+     "sections": [
+      {
+       "name": "Part A What farm animals do you know?",
+       "knowledge": [
+        "动物主题词汇",
+        "名词单复数初步",
+        "There is/are…句式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B What can we learn on a farm?",
+       "knowledge": [
+        "自然及成长变化主题词汇",
+        "can表示能力或许可",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 From farm to table",
+     "sections": [
+      {
+       "name": "Part A What can we do on a farm?",
+       "knowledge": [
+        "动词短语",
+        "现在进行时的构成",
+        "现在进行时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Part B How should we eat?",
+       "knowledge": [
+        "食物主题词汇",
+        "should表示建议",
+        "固定搭配"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Revision A great weekend plan",
+     "sections": [],
+     "knowledge": [
+      "be going to表达计划",
+      "写介绍、计划、日记和经历",
+      "时间线索与表达一致"
+     ],
+     "by": "llm"
+    },
+    {
+     "name": "Appendix 2 Words in each unit",
+     "sections": [],
+     "knowledge": [],
+     "by": "llm"
+    },
+    {
+     "name": "Appendix 5 Pronunciation",
+     "sections": [],
+     "knowledge": [
+      "字母的发音规律",
+      "常见字母组合的发音规律",
+      "重音和语调的模仿"
+     ],
+     "by": "llm"
+    }
+   ]
+  },
+  {
+   "name": "五年级 上册",
+   "grade": "五年级",
+   "edition": "旧教材",
+   "sourceId": "755ed193-6bd9-b5a4-7022-df5ccfd38a1f",
+   "chapters": [
+    {
+     "name": "Unit 1 What's he like?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "个人信息主题词汇",
+        "be动词的人称搭配",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "形容词性物主代词",
+        "人称代词主格",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "写连贯的介绍性短句",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 My week",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "天气与时间主题词汇",
+        "频度副词与时间表达",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "第三人称单数形式",
+        "do/does帮助提问与否定",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "补全信息",
+        "规范抄写"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 What would you like?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "食物主题词汇",
+        "I like…句式",
+        "购物与点餐场景对话"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "可数与不可数名词",
+        "some/any的用法",
+        "询问年龄、数量、价格、时间和位置"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "推测图片和标题意思",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Recycle 1",
+     "sections": [],
+     "knowledge": [
+      "个人信息主题词汇",
+      "学校主题词汇",
+      "食物主题词汇",
+      "be动词的人称搭配",
+      "一般现在时的用法",
+      "There is/are…句式"
+     ],
+     "by": "llm"
+    },
+    {
+     "name": "Unit 4 What can you do?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "动词短语",
+        "can表示能力或许可",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "固定搭配",
+        "一般疑问句及简短回答",
+        "遵循课堂指令"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "识别简单连接词",
+        "写介绍、计划、日记和经历"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 There is a big bed",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "学校主题词汇",
+        "There is/are…句式",
+        "时间地点介词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "名词单复数初步",
+        "a/an的基本使用",
+        "指示代词的指示作用"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "按要素整理短文",
+        "识别代词指代"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 In a nature park",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "自然及成长变化主题词汇",
+        "There is/are…句式",
+        "描述位置和提出建议"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "问路与说明规则",
+        "should表示建议",
+        "肯定句与否定句"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "用英语介绍中国文化",
+        "常见礼貌表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Recycle 2",
+     "sections": [],
+     "knowledge": [
+      "个人信息主题词汇",
+      "家庭主题词汇",
+      "学校主题词汇",
+      "身体主题词汇",
+      "颜色主题词汇",
+      "数字主题词汇"
+     ],
+     "by": "llm"
+    }
+   ]
+  },
+  {
+   "name": "五年级 下册",
+   "grade": "五年级",
+   "edition": "",
+   "sourceId": "f76bb763-3652-46b0-8674-0d4e529ecc55",
+   "chapters": [
+    {
+     "name": "Unit 1 My day",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "天气与时间主题词汇",
+        "一般现在时的用法",
+        "第三人称单数形式",
+        "频度副词与时间表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "天气与时间主题词汇",
+        "do/does帮助提问与否定",
+        "what、who、where提问",
+        "遵循课堂指令"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "规范抄写",
+        "补全信息",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 My favourite season",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "自然及成长变化主题词汇",
+        "I like…句式",
+        "形容词性物主代词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "自然及成长变化主题词汇",
+        "节日兴趣健康主题词汇"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "写连贯的介绍性短句",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 My school calendar",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "数字主题词汇",
+        "节日兴趣健康主题词汇",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "节日兴趣健康主题词汇",
+        "一般现在时的用法",
+        "询问年龄、数量、价格、时间和位置"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "按要素整理短文",
+        "识别简单连接词"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Recycle 1",
+     "sections": [],
+     "knowledge": [
+      "一般现在时的用法",
+      "第三人称单数形式",
+      "频度副词与时间表达",
+      "自然及成长变化主题词汇",
+      "节日兴趣健康主题词汇"
+     ],
+     "by": "llm"
+    },
+    {
+     "name": "Unit 4 When is the art show?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "数字主题词汇",
+        "节日兴趣健康主题词汇",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "节日兴趣健康主题词汇",
+        "一般现在时的用法",
+        "询问年龄、数量、价格、时间和位置"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "按要素整理短文",
+        "识别简单连接词"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 Whose dog is it?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "动物主题词汇",
+        "形容词性物主代词",
+        "指示代词的指示作用"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "动物主题词汇",
+        "名词单复数初步",
+        "a/an的基本使用"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "推测图片和标题意思",
+        "提取明确信息"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 Work quietly!",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "动词短语",
+        "现在进行时的构成",
+        "am/is/are的选择"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "现在进行时的用法",
+        "should表示建议",
+        "问路与说明规则"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "写介绍、计划、日记和经历",
+        "识别代词指代"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Recycle 2",
+     "sections": [],
+     "knowledge": [
+      "现在进行时的构成",
+      "现在进行时的用法",
+      "形容词性物主代词",
+      "动词短语"
+     ],
+     "by": "llm"
+    },
+    {
+     "name": "其他",
+     "sections": [
+      {
+       "name": "Unit 4 When is Easter?",
+       "knowledge": [
+        "节日兴趣健康主题词汇",
+        "what、who、where提问",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "六年级 上册",
+   "grade": "六年级",
+   "edition": "旧教材",
+   "sourceId": "3dd0836b-749b-fe34-588c-29e553010f49",
+   "chapters": [
+    {
+     "name": "Unit 1 How can I get there?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "问路与说明规则",
+        "描述位置和提出建议",
+        "时间地点介词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "问路与说明规则",
+        "描述位置和提出建议",
+        "时间地点介词"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "问路与说明规则",
+        "描述位置和提出建议",
+        "时间地点介词"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 Ways to go to school",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "出行主题词汇",
+        "should表示建议",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "出行主题词汇",
+        "should表示建议",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "出行主题词汇",
+        "should表示建议",
+        "一般现在时的用法"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 My weekend plan",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "be going to表达计划",
+        "节日兴趣健康主题词汇",
+        "时间线索与表达一致"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "be going to表达计划",
+        "节日兴趣健康主题词汇",
+        "时间线索与表达一致"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "be going to表达计划",
+        "节日兴趣健康主题词汇",
+        "时间线索与表达一致"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Recycle 1",
+     "sections": [],
+     "knowledge": [
+      "问路与说明规则",
+      "出行主题词汇",
+      "be going to表达计划",
+      "一般现在时的用法",
+      "第三人称单数形式"
+     ],
+     "by": "llm"
+    },
+    {
+     "name": "Unit 4 I have a pen pal",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "职业主题词汇",
+        "一般现在时的用法",
+        "第三人称单数形式",
+        "do/does帮助提问与否定"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "职业主题词汇",
+        "一般现在时的用法",
+        "第三人称单数形式",
+        "do/does帮助提问与否定"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "职业主题词汇",
+        "一般现在时的用法",
+        "第三人称单数形式",
+        "do/does帮助提问与否定"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 5 What does he do?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "职业主题词汇",
+        "一般现在时的用法",
+        "第三人称单数形式",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "职业主题词汇",
+        "一般现在时的用法",
+        "第三人称单数形式",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "职业主题词汇",
+        "一般现在时的用法",
+        "第三人称单数形式",
+        "what、who、where提问"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 6 How do you feel?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "节日兴趣健康主题词汇",
+        "形容词比较级",
+        "常见比较表达",
+        "I like…句式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "节日兴趣健康主题词汇",
+        "形容词比较级",
+        "常见比较表达",
+        "I like…句式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "节日兴趣健康主题词汇",
+        "形容词比较级",
+        "常见比较表达",
+        "I like…句式"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Recycle 2",
+     "sections": [],
+     "knowledge": [
+      "问路与说明规则",
+      "出行主题词汇",
+      "be going to表达计划",
+      "职业主题词汇",
+      "一般现在时的用法",
+      "第三人称单数形式"
+     ],
+     "by": "llm"
+    }
+   ]
+  },
+  {
+   "name": "六年级 下册",
+   "grade": "六年级",
+   "edition": "",
+   "sourceId": "638a0cc9-69a5-4369-8472-69148c719583",
+   "chapters": [
+    {
+     "name": "Unit 1 How tall are you?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "形容词比较级",
+        "常见比较表达",
+        "身体主题词汇"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "形容词比较级",
+        "常见比较表达",
+        "数字主题词汇"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "形容词比较级",
+        "常见比较表达"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 2 Last weekend",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式",
+        "时间线索与表达一致"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式",
+        "节日兴趣健康主题词汇"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 3 Where did you go?",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式",
+        "出行主题词汇"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式",
+        "自然及成长变化主题词汇"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Unit 4 Then and now",
+     "sections": [
+      {
+       "name": "A",
+       "knowledge": [
+        "一般现在时",
+        "第三人称单数形式",
+        "频度副词与时间表达"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "B",
+       "knowledge": [
+        "一般现在时",
+        "do/does帮助提问与否定",
+        "职业主题词汇"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "C",
+       "knowledge": [
+        "一般现在时",
+        "现在进行时的构成"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Recycle Mike's happy days",
+     "sections": [
+      {
+       "name": "Day1 & Day2",
+       "knowledge": [
+        "形容词比较级",
+        "一般过去时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Day3 & Day4",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Day5 & Day6",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Day7 & Day8",
+       "knowledge": [
+        "一般现在时",
+        "be going to表达计划"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Story",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式"
+       ],
+       "by": "llm"
+      }
+     ]
+    },
+    {
+     "name": "Revision",
+     "sections": [
+      {
+       "name": "Revision 1",
+       "knowledge": [
+        "形容词比较级",
+        "一般过去时的用法"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Revision 2",
+       "knowledge": [
+        "一般过去时的用法",
+        "动词过去式"
+       ],
+       "by": "llm"
+      },
+      {
+       "name": "Revision 3",
+       "knowledge": [
+        "一般现在时",
+        "现在进行时的构成"
+       ],
+       "by": "llm"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

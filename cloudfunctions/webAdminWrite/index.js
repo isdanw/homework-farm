@@ -2,9 +2,9 @@
  * 云函数 webAdminWrite —— 家长数据看板·写入代理（与 webAdminQuery 对称，T3 工作台→云 push）
  *
  * 职责（不可破坏的红线）：
- *   · 写。但只写「导学镜像」五类集合（tutor_sessions/mistakes/evidence/reviews/cards）+「试卷库」
+ *   · 写。但只写「导学镜像」四类集合（tutor_sessions/mistakes/reviews/cards）+「试卷库」
  *     （exam_resources）+ 孩子切片（learner / subjectProfiles / nickname / grade）+「导学单」
- *     （tutor_orders，见下方 orders 专用通道）；
+ *     （tutor_orders，见下方 orders 专用通道）；tutor_evidence **不可写**（见 P0 说明）；
  *     绝不触碰 homework/checkin/schedule/农场等小程序权威数据，避免镜像写回污染主链路。
  *   · 身份解析：复用 webAdminQuery 的 token→openid 机制（web_portal_bindings），不接收微信上下文。
  *   · 去重：tutor_* 与 exam_resources 均按 openid+clientId 查重。**T5 起 tutor_* 改为三路合并**
@@ -21,16 +21,26 @@
  *     因此**只允许走动作层**，永不允许「批量覆盖写」。
  *
  * 入参：
- *   { token:'xxx', sessions:[], mistakes:[], evidence:[], reviews:[], exams:[],
+ *   { token:'xxx', sessions:[], mistakes:[], reviews:[], cards:[], exams:[], childId?,
  *     profile:{ nickname, grade, learner, subjectProfiles, baseUpdatedAt } }
  *   （每条 tutor 记录可带 baseUpdatedAt = 上次下拉时的云端 updatedAt，不落库；
  *     exams 每条的 clientId = resourceId）
  *   { token:'xxx', orders:{ action:'issue'|'submit'|'void'|…, ...payload } }
- * 出参：{ ok:true, scope, openid, added, skipped, updated, exams?, conflictCount, conflicts[], profile }
+ *   { token:'xxx', action:'migrateChildScope', confirm?, assignments?, parentSessionToken? }
+ *     （历史 childId 迁移：默认 dry-run；单孩家庭才自动归属，多孩须逐行 assignments；
+ *      confirm:true 是家长动作 → per-user 口令必须同时带家长口令会话 token）
+ * 出参：{ ok:true, scope, openid, added, skipped, updated, rejected, exams?, conflictCount, conflicts[], profile }
  *       或 { ok:false, code, msg }
+ *
+ * P0（作用域收口）：
+ *   · 客户端传来的 openid/_openid 一律剥离，身份只由 token→bindings 解析；
+ *   · evidence 通道已关闭（证据单写者 = tutorRetest 服务端判分），收到即计入 rejected；
+ *   · childId 由服务端从该 openid 的 users[] 解析：跨家庭 → 整单拒绝，
+ *     未指定 → 取 currentUserId（不回落 users[0]）。
  */
 
 const tcb = require('@cloudbase/node-sdk');
+const G = require('./scopeGuard');
 
 const kit = require('./orderKit');
 const orderActions = require('./orderActions').createActions(kit);
@@ -42,7 +52,6 @@ const COLLS = {
   sessions: 'tutor_sessions',
   mistakes: 'tutor_mistakes',
   reviews: 'tutor_reviews',
-  evidence: 'tutor_evidence',
   exams: 'exam_resources',
   orders: 'tutor_orders',
   cards: 'tutor_cards',
@@ -65,12 +74,6 @@ function db() { return app().database(); }
  *   · 小程序 tutorStore.addMistake：只对「非法/缺失」兜底，合法值（含 manual）原样保留；
  *   · tutorChat：保留 'manual'（对话诊断归档，语义真实且不可用 tutor 替代）。
  * 对应地，小程序 utils/tutorStore.js 的 MISTAKE_SOURCES 是同一份口径，改这里要同步改那里。 */
-
-/* ---------- 工具：取「当前孩子」切片 ---------- */
-function currentUser(data) {
-  const us = (data && Array.isArray(data.users)) ? data.users : [];
-  return us.find(x => x && x.id === (data && data.currentUserId)) || us[0] || {};
-}
 
 /* ---------- 身份解析：token → openid（与 webAdminQuery 一致）---------- */
 async function resolveBinding(token) {
@@ -112,7 +115,7 @@ const PUBLISH_FIELDS = {
   //   两端白名单必须镜像，本文件头已声明：改一边必须同步另一边。
   mistakes: ['topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'source',
     'questionText', 'childAnswer', 'markSource'],
-  evidence: ['total', 'correct', 'rate', 'passed'],
+  // evidence 不在此列：证据只能由 tutorRetest 服务端判分写入（单写者），网页端已无该通道
   reviews: ['stage', 'dueAt', 'done'],
   // 闪卡（tutor_cards）：与 reviews 平行，可发布字段即 Leitner 盒子进度；不发布 front/back（内容不变）
   cards: ['box', 'dueAt', 'done', 'lastResult'],
@@ -159,7 +162,18 @@ function carryOver(kind, patch, cloud) {
   return patch;
 }
 
-async function writeTutor(kind, collName, openid, items) {
+/** 读家庭根数据（users[]/currentUserId），用于服务端解析 childId；无档案返回 null */
+async function loadRootData(openid) {
+  try {
+    const res = await db().collection(COLLS.user).where({ _openid: openid }).limit(1).get();
+    const u = (res && res.data && res.data[0]) || null;
+    return (u && u.data && typeof u.data === 'object') ? u.data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function writeTutor(kind, collName, openid, items, childId) {
   const dbh = db();
   let added = 0, skipped = 0, updated = 0;
   const conflicts = [];
@@ -167,9 +181,11 @@ async function writeTutor(kind, collName, openid, items) {
     if (!raw || typeof raw !== 'object') continue;
     const clientId = str(raw.clientId || raw.id, 60);
     if (!clientId) continue;
-    const doc = Object.assign({}, raw);
+    const doc = G.stripIdentity(Object.assign({}, raw));
     doc.clientId = clientId;
     delete doc.id; delete doc.cloudId; delete doc._id;
+    delete doc.childId;         // 归属只认服务端解析结果
+    doc.childId = childId;
     const base = Number(doc.baseUpdatedAt) || 0;
     delete doc.baseUpdatedAt;   // 本地基线元数据，不落云
 
@@ -349,20 +365,48 @@ async function writeProfile(openid, profile) {
   let ci = arr.findIndex(x => x && x.id === rootData.currentUserId);
   if (ci < 0) ci = 0;
 
+  let wroteLearner = false, wroteProfiles = false;
   const P = `data.users.${ci}`;
   const patch = {};
   if (profile.nickname) patch[`${P}.nickname`] = profile.nickname;
   if (profile.grade) patch[`${P}.grade`] = profile.grade;
   // learner 由工作台独占（小程序侧只读展示），整对象写不会与端上打架
-  if (profile.learner && typeof profile.learner === 'object') patch[`${P}.learner`] = profile.learner;
+  if (profile.learner && typeof profile.learner === 'object') {
+    patch[`${P}.learner`] = profile.learner;
+    wroteLearner = true;
+  }
   // subjectProfiles 逐学科写：只覆盖本次送来的学科，未送到的学科保持云端现值
   if (profile.subjectProfiles && typeof profile.subjectProfiles === 'object') {
     for (const k of Object.keys(profile.subjectProfiles)) {
       if (profile.subjectProfiles[k] === undefined) continue;
       patch[`${P}.subjectProfiles.${k}`] = profile.subjectProfiles[k];
+      wroteProfiles = true;
     }
   }
   if (!Object.keys(patch).length) return 'noop';
+
+  /* 网页端写入留痕（2026-10-27 修复：此前两处都不留痕 → 小程序整片覆盖）
+   * 小程序推 profile 只有一条路：store.js:927 doUpload → syncData action:'upload'，
+   * 服务端是 `update({ data: { data: payload, updatedAt: now } })`（syncData/index.js:143）
+   * —— **整份 data 覆盖**，没有任何字段白名单。两道闸原本都拦不住它：
+   *
+   *  ① CAS 闸（syncData/index.js:141 `prev !== base`）：靠文档级 updatedAt 判断
+   *     「云端是否被别人改过」。网页写入不刷新 updatedAt → 版本原地不动 → 闸放行。
+   *     ⇒ 这里补 `updatedAt: Date.now()`，让小程序下一次推送判为 conflict。
+   *
+   *  ② F14 LWW 闸（store.js:1060-1082 f14MergeUser，cmp `_ts.<field>`）：
+   *     只在 `cTs > lTs` 时采纳云端。网页写入不打 _ts → 判「本地更新」→ 保留本地旧值。
+   *     而小程序冲突后走 reconcileWithCloud（store.js:1110 同样调 f14MergeUser）
+   *     **本地优先重推**，所以只靠 ① 挡不住，必须同时补 ②。
+   *     ⇒ 这里按 F14_FIELDS（store.js:1032）补 `_ts.learner` / `_ts.subjectProfiles`。
+   *
+   * ⚠️ nickname / grade 不在 F14 白名单，只能靠 ① 触发冲突提示（工作台侧已有
+   *    baseUpdatedAt 语义，冲突即要求 sync-pull 重建基线），属 F10/F14 的已知边界。
+   * ⚠️ 副作用可接受：dailyReset 的 CAS（dailyReset/index.js:146）自带多轮重读重算，
+   *    updatedAt 被改只会让它多试一次，不会跳过结算。 */
+  patch['updatedAt'] = Date.now();
+  if (wroteLearner) patch[`${P}._ts.learner`] = Date.now();
+  if (wroteProfiles) patch[`${P}._ts.subjectProfiles`] = Date.now();
 
   try {
     await dbh.collection(COLLS.user).doc(u._id).update(patch);
@@ -450,6 +494,224 @@ async function cleanupE2E() {
     scopes, removed: removedTotal };
 }
 
+/* ---------- 教学计划导入（2026-10-26）：网页端专属，字段级写 ----------
+ * 只写 `data.users.<ci>.subjectProfiles.<key>.teachingPlan` 一个子字段，不整对象替换
+ * subjectProfiles（与小程序 typeProfile 保存的整 profile 写互不踩脚）。
+ * 冲突闸与 writeProfile 同语义：base=网页加载 profile 时的文档 updatedAt，
+ * 云端被小程序更新过 → conflict 拒写，提示刷新，绝不静默覆盖。 */
+async function writeTeachingPlan(openid, tp) {
+  if (!tp || typeof tp !== 'object') return { result: 'noop' };
+  const key = String(tp.key || '').trim().slice(0, 30);
+  if (!key) return { result: 'bad_param', hint: '缺少学科 key' };
+  const raw = String(tp.raw || '').slice(0, 20000);
+  const title = String(tp.title || '').trim().slice(0, 60);
+  const format = String(tp.format || 'text').slice(0, 10);
+  const base = Number(tp.base) || 0;
+  const dbh = db();
+  let users = [];
+  try {
+    const res = await dbh.collection(COLLS.user).where({ _openid: openid }).limit(1).get();
+    users = (res && res.data) || [];
+  } catch (e) { users = []; }
+  if (!users.length) return { result: 'no_user', hint: '找不到该孩子的主文档' };
+  const u = users[0];
+  const theirs = Number(u.updatedAt) || 0;
+  if (base > 0 && theirs > base) {
+    return { result: 'conflict', reason: 'cloud_changed_after_pull', base, theirs,
+      hint: '云端数据在网页加载后被小程序更新过，请刷新页面后重试（教学计划未写入）。' };
+  }
+  // 与 writeProfile 同口径：本函数写入后会刷新文档级 updatedAt（见下方留痕说明），
+  // 所以「本地基线为 0」只可能是页面加载后云端已被写过，一律拒写而不是静默覆盖。
+  if (!base && theirs > 0) {
+    return { result: 'conflict', reason: 'no_baseline', theirs,
+      hint: '本地缺少云端版本基线（页面数据已过期），请刷新页面后重试（教学计划未写入）。' };
+  }
+  const rootData = (u.data && typeof u.data === 'object') ? u.data : {};
+  const arr = Array.isArray(rootData.users) ? rootData.users : [];
+  if (!arr.length) return { result: 'no_slot', hint: '云端 users[] 为空，请先在小程序打开一次导学功能' };
+  let ci = arr.findIndex(x => x && x.id === rootData.currentUserId);
+  if (ci < 0) ci = 0;
+  /* 学科画像必须已存在：点号路径 `subjectProfiles.<key>.teachingPlan` 在画像不存在时
+   * 会凭空造出只有 teachingPlan 一个键的残缺结构，而小程序 ensureUserFields
+   * （store.js:258-276）**不会**补全 subjectProfiles 内部结构 → 端上读 dimensions 为
+   * undefined 可能崩。宁可明确报错，也不写残缺数据。 */
+  const curUser = arr[ci] || {};
+  const curSp = (curUser.subjectProfiles && typeof curUser.subjectProfiles === 'object')
+    ? curUser.subjectProfiles[key] : null;
+  if (!curSp || typeof curSp !== 'object') {
+    return { result: 'no_profile', key: key,
+      hint: '云端还没有「' + key + '」的学科画像，请先在小程序端打开一次该学科的画像页，再回到网页导入。' };
+  }
+  const rec = { title: title, raw: raw, format: format, updatedAt: Date.now() };
+  const now = Date.now();
+  const patch = {};
+  patch['data.users.' + ci + '.subjectProfiles.' + key + '.teachingPlan'] = rec;
+  /* 留痕（2026-10-27 修复）：与 writeProfile 完全同理由，缺一不可 ——
+   *   ① updatedAt → syncData CAS 闸（syncData/index.js:141）判定冲突；
+   *   ② _ts.subjectProfiles → 小程序 F14 LWW（store.js:1074）判定「云端更新」并采纳。
+   * 只补 ① 不够：小程序冲突后 reconcileWithCloud 本地优先重推，仍会把 teachingPlan 抹掉。 */
+  patch['updatedAt'] = now;
+  patch['data.users.' + ci + '._ts.subjectProfiles'] = now;
+  try {
+    await dbh.collection(COLLS.user).doc(u._id).update(patch);
+  } catch (e) { return { result: 'err', hint: (e && e.message) || String(e) }; }
+  return { result: 'ok', key: key, chars: raw.length, cleared: raw === '', updatedAt: now };
+}
+
+/* ---------- 教材库导入（2026-10-26）：网页端代理 examService ----------
+ * 为什么代理而不是复制解析代码：parseTextbookText/searchTextbook 的 hy3 链路、
+ * normalizeTextbook、官方种子保护（撞官方 id 自动换新 id 复制）都在 examService，
+ * 复制必然分叉。身份：共享密钥 EXAM_ADMIN_KEY + 显式 openid（服务端对服务端，
+ * 网页端不持有密钥；两函数 env 必须同值，见 examService resolveOpenid 的 admin 分支）。 */
+const EXAM_SVC_NAME = 'examService';
+const TB_ACTION_MAP = {
+  list: 'listTextbooks', get: 'getTextbook', parseText: 'parseTextbookText',
+  parsePdf: 'parseTextbookPdf',
+  save: 'saveTextbook', search: 'searchTextbook', delete: 'deleteTextbook'
+};
+async function callExamService(app2, action, openid, payload) {
+  const adminKey = (process.env.EXAM_ADMIN_KEY || '').trim();
+  if (!adminKey) return { ok: false, code: 'no_admin_key', msg: '本函数未配置 EXAM_ADMIN_KEY，教材代理不可用' };
+  const res = await app2.callFunction({
+    name: EXAM_SVC_NAME,
+    data: Object.assign({}, payload || {}, { action: action, openid: openid, adminKey: adminKey })
+  });
+  return (res && res.result) || { ok: false, code: 'no_result', msg: 'examService 无返回' };
+}
+
+/* ---------- R3：childId 历史数据迁移（P0-8，默认 dry-run）----------
+ * 背景：多孩遍历（P0-2/3）之后新行都带 childId，但历史行没有 —— 看板同一天会同时出现
+ * 「孩子级行」和「legacy 行」两条（webAdminQuery 已按 replaced/unattributed 区分展示）。
+ *
+ * 铁律（架构设计 §11 P0-8）：**不做任何自动归属**。
+ *   · 只有「恰好 1 个真实孩子」的家庭才存在唯一答案，且仍须调用方显式 confirm:true
+ *     （家长确认）；不传 confirm 一律 dry-run，只出报告、一个字都不写；
+ *   · 多孩家庭一律跳过并计入 ambiguous —— 由家长在确认页逐行指定 assignments
+ *     （键：`<collection>:<_id>`，也接受裸 `_id`），未指定的行永远不动；
+ *   · 占位切片（guest/__placeholder）不算孩子；跨家庭 childId 直接判冲突、不采纳；
+ *   · 已有 childId 的行不动（幂等：可反复跑）。
+ * 审计：每次 confirm 运行都往 tutor_migrations 追加一条（含计数、归属与冲突数）。
+ * 只动 `_openid` 归口的农场日志集合；tutor_* 镜像的归属另议（见文件头）。 */
+const MIGRATION_AUDIT = 'tutor_migrations';
+const MIGRATABLE = [
+  { coll: 'hw_checkin_log', owner: '_openid' },
+  { coll: 'hw_farm_settle', owner: '_openid' }
+];
+const MIGRATION_PAGE = 100;
+const MIGRATION_MAX_PAGES = 20;
+const MIGRATION_SAMPLE = 100;
+
+async function scanLegacyRows(collName, owner, openid) {
+  const dbh = db();
+  const rows = [];
+  for (let page = 0; page < MIGRATION_MAX_PAGES; page++) {
+    let batch = [];
+    try {
+      const res = await dbh.collection(collName)
+        .where({ [owner]: openid })
+        .skip(page * MIGRATION_PAGE)
+        .limit(MIGRATION_PAGE)
+        .get();
+      batch = (res && res.data) || [];
+    } catch (e) {
+      return { rows: rows, error: (e && e.message) || String(e) };
+    }
+    for (const row of batch) rows.push(row);
+    if (batch.length < MIGRATION_PAGE) return { rows: rows };
+  }
+  return { rows: rows, truncated: true };
+}
+
+/* ---------- 家长会话校验（迁移确认是家长动作）----------
+ * 语义只有一份：parentAuth。本函数据此判断，不自己算散列、不读 parent_sessions，
+ * 否则两处规则迟早分叉。管理员口令不走家长口令：它是部署者身份，不是某个家长。
+ */
+async function requireParentSession(appObj, webToken, parentSessionToken) {
+  const t = str(parentSessionToken, 200);
+  if (!t) return { ok: false, code: 'need_parent_pin', msg: '需要先验证家长口令' };
+  let r = {};
+  try {
+    const res = await appObj.callFunction({
+      name: 'parentAuth',
+      data: { action: 'status', webToken: webToken, sessionToken: t }
+    });
+    r = (res && res.result) || {};
+  } catch (e) {
+    return { ok: false, code: 'parent_auth_error', msg: '家长口令校验失败：' + ((e && e.message) || e) };
+  }
+  if (!r.ok) return { ok: false, code: r.code || 'parent_auth_error', msg: r.msg || '家长口令校验失败' };
+  if (!(r.session && r.session.active === true)) {
+    return { ok: false, code: 'parent_session_invalid', msg: '家长验证已失效，请重新输入家长口令' };
+  }
+  return { ok: true, expiresAt: Number(r.session.expiresAt) || 0 };
+}
+
+async function migrateChildScope(openid, req) {
+  const root = await loadRootData(openid);
+  const kids = G.childrenOf(root).map(u => u.id);
+  if (!kids.length) {
+    return { ok: false, code: 'no_children', msg: '该账号还没有真实孩子档案，无法确定归属（占位切片不算孩子）' };
+  }
+  const dryRun = req.confirm !== true;
+  const rawAssign = (req.assignments && typeof req.assignments === 'object' && !Array.isArray(req.assignments))
+    ? req.assignments : {};
+  const validAssign = {};
+  const conflicts = [];
+  for (const key of Object.keys(rawAssign)) {
+    const cid = str(rawAssign[key], 40);
+    if (G.isChildOf(root, cid)) validAssign[key] = cid;
+    else conflicts.push({ key: key, reason: 'child_not_in_family' });
+  }
+  const out = {
+    ok: true, action: 'migrateChildScope', dryRun: dryRun,
+    children: kids, autoChildId: kids.length === 1 ? kids[0] : '',
+    pending: 0, updated: 0, ambiguous: 0,
+    scopes: [], samples: [], conflicts: conflicts
+  };
+  const dbh = db();
+  for (const scope of MIGRATABLE) {
+    const scan = await scanLegacyRows(scope.coll, scope.owner, openid);
+    const stat = { coll: scope.coll, scanned: scan.rows.length, pending: 0, plan: 0, updated: 0, ambiguous: 0, errors: [] };
+    if (scan.error) stat.errors.push(scan.error);
+    if (scan.truncated) stat.truncated = true;
+    for (const row of scan.rows) {
+      if (row.childId) continue;
+      stat.pending++;
+      const target = validAssign[scope.coll + ':' + row._id] || validAssign[row._id] || out.autoChildId;
+      if (!target) {
+        stat.ambiguous++;
+        if (out.samples.length < MIGRATION_SAMPLE) {
+          out.samples.push({ coll: scope.coll, id: row._id, date: row.date || row.createdAt || 0, candidates: kids });
+        }
+        continue;
+      }
+      stat.plan++;
+      if (dryRun) continue;
+      try {
+        await dbh.collection(scope.coll).doc(row._id).update({ childId: target });
+        stat.updated++;
+        out.updated++;
+      } catch (e) {
+        stat.errors.push(scope.coll + ':' + row._id + ' ' + ((e && e.message) || String(e)));
+      }
+    }
+    out.pending += stat.pending;
+    out.ambiguous += stat.ambiguous;
+    out.scopes.push(stat);
+  }
+  if (!dryRun) {
+    const audit = {
+      openid: openid, at: Date.now(),
+      children: kids, autoChildId: out.autoChildId,
+      assignments: Object.keys(validAssign), conflicts: conflicts.length,
+      pending: out.pending, updated: out.updated, ambiguous: out.ambiguous,
+      scopes: out.scopes.map(s => ({ coll: s.coll, scanned: s.scanned, pending: s.pending, updated: s.updated, ambiguous: s.ambiguous }))
+    };
+    try { await dbh.collection(MIGRATION_AUDIT).add(audit); } catch (e) { out.auditError = (e && e.message) || String(e); }
+  }
+  return out;
+}
+
 /* ---------- 主入口 ---------- */
 exports.main = async (event) => {
   const token = (event && event.token) || '';
@@ -465,10 +727,12 @@ exports.main = async (event) => {
   }
 
   let openid = null;
+  let adminCall = false;
   const expect = process.env.WEB_DASHBOARD_TOKEN;
   if (expect && token === expect && process.env.WEB_ADMIN_ALLOW_WRITE === '1') {
     // 管理员口令仅在显式开启写权限时才可写；否则一律走 per-user 绑定
     openid = event.openid || null;
+    adminCall = true;
   } else {
     const bind = await resolveBinding(token);
     if (!bind) return { ok: false, code: 'auth', msg: '访问口令无效或已撤销' };
@@ -479,6 +743,29 @@ exports.main = async (event) => {
   let app2;
   try { app2 = tcb.init({ env: ENV }); } catch (e) {
     return { ok: false, code: 'init', msg: '云函数初始化失败：' + ((e && e.message) || e) };
+  }
+
+  /* ---------- childId 历史数据迁移（家长确认）----------
+   * 与 orders / teachingPlan 同款：失败必须返回 {ok:false}，不能让云函数直接 reject。
+   * 默认 dry-run（confirm !== true），只出报告不写库；归属规则见 migrateChildScope 注释。 */
+  if (event.action === 'migrateChildScope') {
+    /* 确认写入 = 家长动作：必须先有该家庭的家长口令会话（管理员身份除外，它没有家长可言）。 */
+    if (event.confirm === true && !adminCall) {
+      const gate = await requireParentSession(app2, token, event.parentSessionToken);
+      if (!gate.ok) {
+        return { ok: false, code: gate.code, msg: gate.msg, action: 'migrateChildScope', gated: true };
+      }
+    }
+    let r;
+    try {
+      r = await migrateChildScope(openid, event);
+    } catch (e) {
+      return { ok: false, code: 'migrate_error', msg: '迁移失败：' + ((e && e.message) || e) };
+    }
+    if (r && r.ok && !r.dryRun) {
+      try { await db().collection(COLLS.bindings).where({ token, revoked: false }).limit(1).update({ lastUsed: Date.now() }); } catch (e) {}
+    }
+    return r;
   }
 
   /* ---------- 导学单（tutor_orders）专用通道 ----------
@@ -515,22 +802,69 @@ exports.main = async (event) => {
     }
   }
 
+  /* ---------- 教学计划导入通道（网页端「教材·计划」页专用，字段级写） ---------- */
+  if (event.teachingPlan !== undefined) {
+    if (Array.isArray(event.teachingPlan) || typeof event.teachingPlan !== 'object' || event.teachingPlan === null) {
+      return { ok: false, code: 'bad_param', msg: 'teachingPlan 必须是对象 { key, title, raw, format, base }' };
+    }
+    let r;
+    try {
+      r = await writeTeachingPlan(openid, event.teachingPlan);
+    } catch (e) {
+      // 与 orders / textbook 两个通道同款兜底：db() 或点号路径 update 抛错时也要返回
+      // {ok:false}，不能让云函数直接 reject（端上拿到的会是平台错误而非业务错误）。
+      return { ok: false, code: 'tp_error', msg: '教学计划写入失败：' + ((e && e.message) || e) };
+    }
+    if (r && r.result === 'ok') {
+      try { await db().collection(COLLS.bindings).where({ token, revoked: false }).limit(1).update({ lastUsed: Date.now() }); } catch (e) {}
+      return { ok: true, scope: 'user', openid, teachingPlan: r };
+    }
+    return { ok: false, code: (r && r.result) || 'tp_error', msg: (r && r.hint) || '教学计划写入失败' };
+  }
+
+  /* ---------- 教材库代理通道（网页端「教材·计划」页专用，转发 examService） ---------- */
+  if (event.textbook !== undefined) {
+    const tb = event.textbook;
+    if (Array.isArray(tb) || typeof tb !== 'object' || tb === null) {
+      return { ok: false, code: 'bad_param', msg: 'textbook 必须是对象 { action, ...payload }' };
+    }
+    const act = String(tb.action || '');
+    if (!TB_ACTION_MAP[act]) return { ok: false, code: 'bad_action', msg: '未知教材 action: ' + (act || '(空)') };
+    try {
+      const payload = Object.assign({}, tb);
+      delete payload.action;
+      const res = await callExamService(app2, TB_ACTION_MAP[act], openid, payload);
+      if (res && res.ok) {
+        try { await db().collection(COLLS.bindings).where({ token, revoked: false }).limit(1).update({ lastUsed: Date.now() }); } catch (e) {}
+      }
+      return res;
+    } catch (e) {
+      return { ok: false, code: 'proxy_error', msg: '教材服务调用失败：' + ((e && e.message) || e) };
+    }
+  }
+
   try {
     const input = {
       sessions: Array.isArray(event.sessions) ? event.sessions : [],
       mistakes: Array.isArray(event.mistakes) ? event.mistakes : [],
-      evidence: Array.isArray(event.evidence) ? event.evidence : [],
       reviews: Array.isArray(event.reviews) ? event.reviews : [],
       cards: Array.isArray(event.cards) ? event.cards : []
     };
+    /* evidence 通道已关闭：证据只能由 tutorRetest 服务端判分写入。
+     * 收到即计数拒绝，不落库（旧工作台版本继续推也只是被拒，不会写坏数据）。 */
+    const rejectedEvidence = Array.isArray(event.evidence) ? event.evidence.length : 0;
+    const kid = G.resolveChildId(await loadRootData(openid), event.childId);
+    if (kid.source === 'invalid') {
+      return { ok: false, code: 'child_scope_invalid', msg: '指定的孩子不属于该家庭，已拒绝写入' };
+    }
     const map = {
       sessions: 'tutor_sessions', mistakes: 'tutor_mistakes',
-      evidence: 'tutor_evidence', reviews: 'tutor_reviews', cards: 'tutor_cards'
+      reviews: 'tutor_reviews', cards: 'tutor_cards'
     };
-    const tally = { added: 0, skipped: 0, updated: 0 };
+    const tally = { added: 0, skipped: 0, updated: 0, rejected: rejectedEvidence };
     const conflicts = [];
     for (const kind of Object.keys(map)) {
-      const r = await writeTutor(kind, map[kind], openid, input[kind]);
+      const r = await writeTutor(kind, map[kind], openid, input[kind], kid.childId);
       tally.added += r.added; tally.skipped += r.skipped; tally.updated += r.updated;
       if (r.conflicts && r.conflicts.length) conflicts.push(...r.conflicts);
     }

@@ -35,6 +35,8 @@
 .opt-input-min { width: 160rpx; text-align: right; font-size: 28rpx; color: #2A3340; }
 .opt-unit { font-size: 24rpx; color: #9AA5B1; }
 .opt-input-full { margin-top: 10rpx; background: #F6F9FC; border-radius: 16rpx; padding: 18rpx 20rpx; font-size: 28rpx; color: #2A3340; }
+.opt-textarea { margin-top: 10rpx; width: 100%; min-height: 120rpx; background: #F6F9FC; border-radius: 16rpx; padding: 18rpx 20rpx; font-size: 28rpx; color: #2A3340; line-height: 1.6; box-sizing: border-box; }
+.opt-hint { margin-top: 8rpx; font-size: 22rpx; color: #9AA5B1; line-height: 1.5; }
 
 /* 多选 chips */
 .opt-label { font-size: 26rpx; color: #6B7682; margin: 18rpx 0 10rpx; }

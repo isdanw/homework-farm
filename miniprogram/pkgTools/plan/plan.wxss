@@ -30,7 +30,14 @@
 /* 区块标题 */
 .sec-head { display: flex; align-items: center; margin-bottom: 20rpx; }
 .sec-dot { width: 18rpx; height: 18rpx; border-radius: 50%; margin-right: 12rpx; }
-.sec-title { font-size: 32rpx; font-weight: 600; }
+.sec-title { font-size: 32rpx; font-weight: 600; flex: 1; }
+.entry-go { font-size: 26rpx; color: #3FA9F5; font-weight: 700; }
+.muted { font-size: 24rpx; color: #9AA5B1; line-height: 1.6; }
+
+/* 教学参考卡（与成长计划关联） */
+.tp-ref-card { margin-top: 20rpx; }
+.tp-ref-body { margin-top: 4rpx; }
+.tp-ref-title { font-size: 28rpx; font-weight: 800; color: #2A3340; margin-bottom: 8rpx; }
 
 /* 表单（已改为画像信息只读展示） */
 .meta-row { display: flex; align-items: flex-start; margin-bottom: 18rpx; }

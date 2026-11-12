@@ -7,6 +7,7 @@
 const store = require('../../utils/store.js');
 const studyPlan = require('../../utils/studyPlan.js');
 const util = require('../../utils/util.js');
+const parentAuth = require('../../utils/parentAuth.js');
 
 const STATUS_STYLE = {
   ahead: { color: '#5FBF6B', bg: '#E7F6E8' },
@@ -44,6 +45,10 @@ Page({
 
     /* 状态卡 */
     prog: null,
+
+    /* 教学计划参考（与成长计划关联） */
+    tpTitle: '',
+    tpFormat: '',
 
     /* 阶段视图模型 */
     stageList: []
@@ -124,6 +129,7 @@ Page({
     }
 
     const style = prog ? (STATUS_STYLE[prog.status] || STATUS_STYLE.notstarted) : STATUS_STYLE.notstarted;
+    const tp = profile.teachingPlan || null;
     this.setData({
       typeName: t.name || '',
       typeEmoji: t.emoji || '📘',
@@ -136,7 +142,9 @@ Page({
       prog: prog,
       statusColor: style.color,
       statusBg: style.bg,
-      stageList: stageList
+      stageList: stageList,
+      tpTitle: tp ? tp.title : '',
+      tpFormat: tp ? tp.format : ''
     }, () => this.scrollToFocusTask());
   },
 
@@ -155,7 +163,12 @@ Page({
   },
 
   /* ======================= 生成（年级/学期/教材/提示词均自动取自画像） ======================= */
-  generate() {
+  /** 去学科画像导入/查看教学计划（与成长计划关联） */
+  goTpProfile() { wx.navigateTo({ url: '/pkgGuide/typeProfile/typeProfile?key=' + this.data.key }); },
+
+  async generate() {
+    // 改计划是家长特权动作（§7.6 审批矩阵）
+    if (!(await parentAuth.requireScope('planEdit'))) return;
     if (this.data.generating) return;
     const grade = store.resolveGrade();
     if (!grade) {
@@ -182,8 +195,11 @@ Page({
     const grade = store.resolveGrade();
     if (!grade) return util.toast('请先设置年级');
     const term = studyPlan.getTerm(this.data.key);
-    const textbook = (store.getSubjectProfile(this.data.key).textbook || '').trim();
+    const profile = store.getSubjectProfile(this.data.key);
+    const textbook = (profile.textbook || '').trim();
+    const textbookId = (profile.textbookId || '').trim();   // 教材库锚点（选用后按单元目录编排）
     const prompt = studyPlan.getPrompt(this.data.key);
+    const teachingPlanRaw = (profile.teachingPlan && profile.teachingPlan.raw) || '';  // 教学计划参考（与教材目录同为学科画像设定）
 
     this.setData({ generating: true });
     wx.showLoading({ title: '编排中…', mask: true });
@@ -194,7 +210,9 @@ Page({
         grade: grade,
         term: term,
         textbook: textbook,
-        planPrompt: prompt
+        textbookId: textbookId,
+        planPrompt: prompt,
+        teachingPlan: teachingPlanRaw
       }
     }).then(res => {
       wx.hideLoading();
@@ -209,9 +227,11 @@ Page({
         if (!plan) return util.toast('生成结果不完整，请重试一次');
         studyPlan.savePlan(this.data.key, plan);
         this.render();
+        const anchored = !!(r.textbookAnchored && textbook);
         wx.showModal({
           title: '计划已生成',
-          content: '共 ' + plan.stages.length + ' 个阶段。点「开始计划」起算排期；之后每日打卡会自动带出当前待完成任务，任务完成请在此勾选。',
+          content: (anchored ? '已按《' + textbook + '》单元目录编排。\n' : '') +
+            '共 ' + plan.stages.length + ' 个阶段。点「开始计划」起算排期；之后每日打卡会自动带出当前待完成任务，任务完成请在此勾选。',
           showCancel: false, confirmText: '好的'
         });
       } else {
@@ -300,7 +320,8 @@ Page({
     wx.navigateTo({ url: url });
   },
 
-  clearPlan() {
+  async clearPlan() {
+    if (!(await parentAuth.requireScope('planEdit'))) return;
     wx.showModal({
       title: '清除计划',
       content: '将删除该科目当前计划（不影响打卡记录）。确定吗？',

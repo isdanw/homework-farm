@@ -302,3 +302,42 @@ page {
   border-radius: 999rpx;
   border: 2rpx solid rgba(255, 255, 255, 0.5);
 }
+
+/* ---------------- 证据覆盖程度（只读） ----------------
+ * 刻意做得比「复习状态」标签更弱：纸底 + 虚线描边 + 小字，
+ * 避免被读成能力徽章；深浅只表示「记录攒到第几层」，不给百分比。 */
+.lv-card {
+  margin: 16rpx 28rpx 0;
+  padding: 20rpx 22rpx;
+  background: #FBF4E4;
+  border: 2rpx dashed #E0D2AE;
+  border-radius: 20rpx;
+}
+.lv-ti { font-size: 26rpx; font-weight: 700; color: #6B5E3F; }
+.lv-sub { margin-top: 8rpx; font-size: 21rpx; color: #9A8F7D; line-height: 1.5; }
+.lv-dist { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 14rpx; }
+.lv-pill {
+  font-size: 21rpx;
+  color: #B3A995;
+  background: #fff;
+  border: 2rpx solid #EDE3CC;
+  border-radius: 999rpx;
+  padding: 4rpx 14rpx;
+}
+.lv-pill.on { color: #6B5E3F; border-color: #D8C79E; font-weight: 700; }
+
+.lv-tag {
+  font-size: 20rpx;
+  font-weight: 700;
+  padding: 3rpx 12rpx;
+  border-radius: 8rpx;
+  border: 2rpx dashed #DCD2BE;
+  color: #8A7F6B;
+  background: #FDFBF5;
+}
+.lv-1 { color: #8A7F6B; }
+.lv-2 { color: #7E93A8; border-color: #CDDAE6; background: #F7FAFD; }
+.lv-3 { color: #6E88A6; border-color: #C3D4E6; background: #F4F8FC; }
+.lv-4 { color: #4F8A5B; border-color: #C6E0CB; background: #F4FAF5; }
+.lv-5 { color: #4F8A5B; border-color: #B6D9BD; background: #F1F9F2; }
+.lv-6 { color: #3F7A4E; border-color: #A8D2B0; background: #EEF7EF; }

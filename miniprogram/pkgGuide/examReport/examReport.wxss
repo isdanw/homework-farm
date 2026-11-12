@@ -1,0 +1,71 @@
+.page { padding: 24rpx 24rpx 60rpx; background: #FFF9F0; min-height: 100vh; box-sizing: border-box; }
+
+/* 兜底 */
+.empty { padding-top: 200rpx; text-align: center; }
+.empty-emoji { font-size: 96rpx; }
+.empty-tip { color: #9AA5B1; margin: 20rpx 0 40rpx; font-size: 30rpx; }
+
+/* 总评卡 */
+.summary-card { background: #fff; border-radius: 24rpx; padding: 32rpx 28rpx; box-shadow: 0 6rpx 20rpx rgba(63,169,245,0.08); }
+.sum-head { margin-bottom: 20rpx; }
+.sum-name { font-size: 36rpx; font-weight: 700; color: #1f2d3d; }
+.sum-meta { font-size: 24rpx; color: #9AA5B1; margin-top: 8rpx; }
+
+.rate-row { display: flex; align-items: center; border-top: 1rpx solid #f0f2f5; border-bottom: 1rpx solid #f0f2f5; padding: 24rpx 0; }
+.rate-main { width: 220rpx; text-align: center; }
+.rate-num { font-size: 80rpx; font-weight: 800; color: #3FA9F5; }
+.rate-pct { font-size: 34rpx; color: #3FA9F5; }
+.rate-sub { font-size: 24rpx; color: #9AA5B1; margin-top: 4rpx; }
+.rate-side { flex: 1; display: flex; justify-content: space-around; }
+.rs-item { display: flex; flex-direction: column; align-items: center; }
+.rs-num { font-size: 32rpx; font-weight: 700; color: #1f2d3d; }
+.rs-label { font-size: 22rpx; color: #9AA5B1; margin-top: 6rpx; }
+
+.advice { margin-top: 22rpx; font-size: 28rpx; color: #44505f; line-height: 1.6; background: #F1F8FF; border-radius: 16rpx; padding: 20rpx 22rpx; }
+
+.weak { margin-top: 22rpx; }
+.weak-title { font-size: 26rpx; color: #9AA5B1; margin-bottom: 12rpx; }
+.weak-tags { display: flex; flex-wrap: wrap; }
+.weak-tag { font-size: 24rpx; color: #E85A9B; background: #FFEAF2; border-radius: 999rpx; padding: 8rpx 20rpx; margin: 0 12rpx 12rpx 0; }
+
+/* 逐题 */
+.sec-title { font-size: 30rpx; font-weight: 700; color: #1f2d3d; margin: 36rpx 8rpx 16rpx; }
+.q-card { background: #fff; border-radius: 20rpx; padding: 24rpx 24rpx; margin-bottom: 20rpx; border-left: 8rpx solid #e5e9ef; }
+.q-card.ok { border-left-color: #3E9B4F; }
+.q-card.bad { border-left-color: #FF6F6F; }
+
+.q-top { display: flex; align-items: center; flex-wrap: wrap; margin-bottom: 14rpx; }
+.q-no { font-weight: 700; color: #1f2d3d; font-size: 30rpx; margin-right: 10rpx; }
+.q-type { font-size: 20rpx; color: #6E63A8; background: #F0ECFF; border-radius: 6rpx; padding: 4rpx 12rpx; margin-right: 12rpx; }
+.q-kp { font-size: 22rpx; color: #2E86DE; background: #E3F2FF; border-radius: 6rpx; padding: 4rpx 12rpx; margin-right: 12rpx; }
+.q-pts { font-size: 22rpx; color: #9AA5B1; }
+.q-flag { margin-left: auto; font-size: 24rpx; font-weight: 700; padding: 4rpx 16rpx; border-radius: 999rpx; }
+.q-flag.on { color: #3E9B4F; background: #E7F6E8; }
+.q-flag.off { color: #FF6F6F; background: #FFEDED; }
+
+.q-stem { font-size: 28rpx; color: #1f2d3d; line-height: 1.6; margin-bottom: 16rpx; }
+.q-fig { width: 100%; margin: -6rpx 0 16rpx; display: block; }
+
+.opts { margin-bottom: 12rpx; }
+.opt { font-size: 26rpx; color: #44505f; padding: 12rpx 16rpx; border-radius: 12rpx; background: #F6F8FB; margin-bottom: 10rpx; position: relative; }
+.opt.correct { background: #E7F6E8; color: #2e7d32; }
+.opt.picked { border: 1rpx solid #3FA9F5; }
+.mark { position: absolute; right: 16rpx; top: 50%; transform: translateY(-50%); font-size: 20rpx; padding: 2rpx 10rpx; border-radius: 6rpx; }
+.mark.r { color: #fff; background: #3E9B4F; }
+.mark.w { color: #fff; background: #3FA9F5; }
+
+.ans-line { font-size: 26rpx; margin-top: 8rpx; display: flex; }
+.ans-k { color: #9AA5B1; flex-shrink: 0; }
+.ans-v { color: #1f2d3d; flex: 1; }
+.ans-v.on { color: #3E9B4F; }
+.ans-v.right { color: #2e7d32; }
+
+.diag { margin-top: 16rpx; background: #FFF6F6; border-radius: 14rpx; padding: 16rpx 18rpx; }
+.diag-tag { display: inline-block; font-size: 22rpx; font-weight: 700; border-radius: 999rpx; padding: 4rpx 16rpx; margin-bottom: 10rpx; }
+.diag-desc { font-size: 25rpx; color: #7a4a4a; line-height: 1.5; }
+.diag-sug { font-size: 25rpx; color: #44505f; line-height: 1.5; margin-top: 6rpx; }
+
+/* 按钮 */
+.actions { margin-top: 40rpx; }
+.btn-primary { background: #3FA9F5; color: #fff; border-radius: 999rpx; font-size: 30rpx; margin-bottom: 18rpx; }
+.btn-ghost { background: #fff; color: #3FA9F5; border: 1rpx solid #3FA9F5; border-radius: 999rpx; font-size: 28rpx; margin-bottom: 18rpx; }

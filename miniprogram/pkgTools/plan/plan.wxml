@@ -17,6 +17,20 @@
     </view>
   </scroll-view>
 
+  <!-- 教学参考（与成长计划关联；置于 wx:if 之前，两种状态都可见） -->
+  <view class="card tp-ref-card" bindtap="goTpProfile">
+    <view class="sec-head">
+      <view class="sec-dot" style="background:#FF9F40"></view>
+      <text class="sec-title">教学参考</text>
+      <view class="entry-go">{{tpTitle ? '去学科画像 ›' : '去导入 ›'}}</view>
+    </view>
+    <view wx:if="{{tpTitle}}" class="tp-ref-body">
+      <view class="tp-ref-title">{{tpTitle}}</view>
+      <view class="muted">已关联：生成成长计划与日常导学会参考其教学目标与重点。</view>
+    </view>
+    <view wx:else class="muted">还没导入教学计划。去学科画像导入学校/老师的 Markdown 或 HTML 教学计划，成长计划会更贴合真实教学进度与目标。</view>
+  </view>
+
   <!-- ==================== 无计划：按画像生成 ==================== -->
   <view wx:if="{{!plan}}" class="card">
     <view class="sec-head">

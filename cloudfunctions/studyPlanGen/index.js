@@ -6,15 +6,25 @@
  *   grade:      string,  // 年级（如 一年级）
  *   term:       string,  // 学期（上学期/下学期）
  *   textbook:   string,  // 教材版本（如 人教版）
+ *   textbookId: string,  // 教材库锚点（选用教材后按单元目录编排；空 = 维持现状）
  *   planPrompt: string   // 家长自定义计划提示词（该科目的编排要求）
  * }
- * 出参：{ ok:true, plan: {stages:[{name,weeks,goal,tasks:[{name,days}]}]} }
+ * 出参：{ ok:true, plan: {stages:[{name,weeks,goal,tasks:[{name,days}]}]}, textbookAnchored: bool }
  *       { ok:false, code, msg }
  *
  * 大模型：CloudBase 内置 AI（cloudbase 组，hy3）。与 analyzeComment 同套错误兜底。
  * 输出严格 JSON；首轮解析失败走「会话内纠正重试」一次（与 ocrSchedule 同策略）。
+ *
+ * textbookId 锚定（#19）：从 textbook_library 读单元目录注入 user prompt（官方库或本人库；
+ * 他人私有/不存在/读取异常一律 fail-open 不注入，保证计划生成主链路不被教材库拖挂）。
  */
 const tcb = require('@cloudbase/node-sdk');
+
+const TEXTBOOK_COLL = 'textbook_library';
+const UNITKPS_COLL = 'tutor_unit_kps';   // 单元必会库（含依赖边 prereqs）
+const MISTAKES_COLL = 'tutor_mistakes';  // 错题本（E1-E9）
+const CARDS_COLL = 'tutor_cards';        // 复习卡（Leitner 毕业态 = 掌握度）
+const MAX_TOC_CHARS = 4000;   // 目录块总长上限（超了截断，hy3 上下文充裕但防 prompt 膨胀）
 
 /* —— R2：轻量每用户频控（单实例内存级；多实例时为近似限制，足以防误触与脚本刷量）——
  * 计划生成是重调用（大 prompt + 长输出），限得更紧：10 秒内最多 1 次、每小时最多 10 次。
@@ -59,6 +69,47 @@ function extractJson(text) {
   }
 }
 
+/** 教材记录 → 「单元目录（权威）」文本块（纯函数；空 units 返回空串 = 不注入）。
+ *  读取侧已保证 units 结构合法（normalizeTextbook），这里只做展示层截断。 */
+function buildTocBlock(tb) {
+  if (!tb || !Array.isArray(tb.units) || !tb.units.length) return '';
+  const title = String(tb.title || '').slice(0, 60);
+  const meta = [tb.version, tb.grade, tb.term].filter(Boolean).map(s => String(s).slice(0, 20)).join('·');
+  const head = '《' + title + (meta ? '（' + meta + '）' : '') + '》共 ' + tb.units.length + ' 个单元：';
+  const lines = [head];
+  let used = head.length;
+  let truncated = false;
+  tb.units.forEach((u, i) => {
+    const name = String((u && u.name) || '').slice(0, 40) || ('第' + (i + 1) + '单元');
+    const secs = (u && Array.isArray(u.sections) ? u.sections : []).map(s => String(s).slice(0, 30)).join('、');
+    const line = (i + 1) + '. ' + name + (secs ? '\n   小节：' + secs : '');
+    if (used + line.length + 1 > MAX_TOC_CHARS) { truncated = true; return; }   // 将超即跳（整行不进）
+    used += line.length + 1;
+    lines.push(line);
+  });
+  if (truncated) lines.push('……（目录过长已截断，余下单元按该教材常规教学进度补充）');
+  return '【教材单元目录（权威，必须严格遵循）】\n' + lines.join('\n') + '\n\n' +
+    '编排铁律：\n' +
+    '1. 阶段划分与上方单元一一对应（仅可合并相邻小单元，不得自创、跳过或跨科目混排单元）；\n' +
+    '2. 阶段名采用「第N单元 + 单元名」，单元名与目录逐字一致；\n' +
+    '3. 每个阶段的任务必须从该单元的小节展开，并覆盖该单元全部小节；\n' +
+    '4. 目录未列小节时，按该单元名的常见教学顺序拆 3-6 个任务。';
+}
+
+/** 读教材库锚点：官方库（openid=''）或本人库可读；他人私有/不存在/异常 → null（fail-open） */
+async function loadTextbookForPlan(app, openid, textbookId) {
+  if (!app || !textbookId) return null;
+  try {
+    const res = await app.database().collection(TEXTBOOK_COLL).where({ textbookId: textbookId }).limit(1).get();
+    const rec = (res && res.data && res.data[0]) || null;
+    if (!rec) return null;
+    if (rec.openid && rec.openid !== openid) return null;   // 他人私有不给看
+    return rec;
+  } catch (e) {
+    return null;
+  }
+}
+
 function buildSystemPrompt(subject) {
   return '你是一位资深的小学课程编排专家，擅长把一学期的' + subject + '内容拆解成可执行、可核对的阶段计划。\n' +
     '只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块、不要多余文字。你的回答第一个字符必须是 {。\n\n' +
@@ -72,7 +123,96 @@ function buildSystemPrompt(subject) {
     '5. 每个阶段最后安排 1 个可展示的成果任务（朗读 / 口算闯关 / 小制作等）。';
 }
 
-function buildUserPrompt(input) {
+/** toc 为空时输出与旧版逐字一致（无 textbookId 时零变化，保证不回归） */
+/** 教学计划参考块：teachingPlan raw 文本（自由文本，非结构化）。
+ *  空 → 返回空串（零回归：不注入，buildUserPrompt 输出与现状逐字一致）。
+ *  超长 → 截断到预算并注记（自由文本无法"整行跳过"，按字符截断）。
+ *  优先级：仅作「目标与重点」参考，不得违背教材单元目录的权威划分。 */
+const MAX_PLAN_REF_CHARS = 3000;
+function buildPlanRefBlock(text) {
+  const raw = (text || '').trim();
+  if (!raw) return '';
+  let body = raw;
+  let truncated = false;
+  if (body.length > MAX_PLAN_REF_CHARS) {
+    body = body.slice(0, MAX_PLAN_REF_CHARS);
+    truncated = true;
+  }
+  return '【教学计划参考（教学目标与重点，仅供参考，不得违背教材单元目录的权威划分）】\n' +
+    body + (truncated ? '\n……（教学计划过长已截断）' : '');
+}
+
+/* Path A S4：知识点依赖边 → 让计划「先补前置、再上新课」。
+ * 读该学科 unitKps 的 prereqs（硬依赖=必须先会 / 软依赖=建议先会），注入编排约束。
+ * 空 → 返回空串（零回归）。 */
+const MAX_PREREQ_CHARS = 2000;
+function buildPrereqBlock(units) {
+  if (!Array.isArray(units) || !units.length) return '';
+  const lines = [];
+  let used = 0;
+  units.forEach(u => {
+    (Array.isArray(u.points) ? u.points : []).forEach(p => {
+      (p.prereqs || []).forEach(r => {
+        if (!r || !r.topic) return;
+        const line = '「' + (p.topic || '') + '」依赖「' + r.topic + '」' +
+          (r.strength === 'hard' ? '（必须先会）' : '（建议先会）');
+        if (used + line.length + 1 > MAX_PREREQ_CHARS) return;
+        used += line.length + 1;
+        lines.push(line);
+      });
+    });
+  });
+  if (!lines.length) return '';
+  return '【知识点依赖（编排顺序必须遵循：先安排前置知识点，达标后再进入依赖它的点）】\n' + lines.join('\n');
+}
+
+/** 读该学科必会库（tutor_unit_kps，按 openid + subject）。异常 → []（fail-open，不拖挂主链路）。 */
+async function readUnitKps(app, openid, subject) {
+  if (!app || !openid) return [];
+  try {
+    const where = { openid: openid };
+    if (subject) where.subject = subject;
+    const res = await app.database().collection(UNITKPS_COLL).where(where).limit(200).get();
+    return (res && res.data) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/** 读该学科学情（错题 + 复习卡毕业态）。异常 → 空（fail-open）。 */
+async function readWeakness(app, openid, subject) {
+  const out = { mistakes: [], cards: [] };
+  if (!app || !openid) return out;
+  try {
+    const m = await app.database().collection(MISTAKES_COLL)
+      .where({ openid: openid, subject: subject }).limit(20).get();
+    out.mistakes = (m && m.data) || [];
+  } catch (e) {}
+  try {
+    const c = await app.database().collection(CARDS_COLL)
+      .where({ openid: openid, subject: subject }).limit(50).get();
+    out.cards = (c && c.data) || [];
+  } catch (e) {}
+  return out;
+}
+
+/* P1：学情薄弱点块 —— 未订正错题 + 未毕业复习卡，让计划「先补薄弱前置、再推进新课」。
+ * 空 → 返回空串（零回归）。 */
+function buildWeaknessBlock(mistakes, cards) {
+  const lines = [];
+  (Array.isArray(mistakes) ? mistakes : [])
+    .filter(m => m && m.topic && String(m.status || '').toLowerCase() !== 'corrected')
+    .slice(0, 5)
+    .forEach(m => lines.push('错题「' + m.topic + '」' + (m.errorType ? '（错因 ' + m.errorType + '）' : '')));
+  const notDone = [...new Set((Array.isArray(cards) ? cards : [])
+    .filter(c => c && c.topic && !c.done)
+    .map(c => c.topic))].slice(0, 5);
+  notDone.forEach(t => lines.push('未掌握「' + t + '」'));
+  if (!lines.length) return '';
+  return '【孩子学情（优先编排这些薄弱点：先补牢前置，再推进新课）】\n' + lines.join('\n');
+}
+
+function buildUserPrompt(input, toc, planRef, prereq, weakness) {
   let requirement = input.planPrompt || '按默认规则编排';
   // 长提示词（内置学科角色全文）附加框架说明，避免模型被角色里的输出格式要求带偏
   if (requirement.length > 800) {
@@ -83,8 +223,12 @@ function buildUserPrompt(input) {
     '科目：' + input.subject + '\n' +
     '年级：' + (input.grade || '未填写') + '\n' +
     '学期：' + (input.term || '上学期') + '\n' +
-    '教材：' + (input.textbook || '未指定（按统编主流版本）') + '\n\n' +
-    '编排要求（务必遵守）：\n' + requirement;
+    '教材：' + (input.textbook || '未指定（按统编主流版本）') + '\n' +
+    (toc ? toc + '\n' : '') +
+    (planRef ? planRef + '\n' : '') +
+    (prereq ? prereq + '\n' : '') +
+    (weakness ? weakness + '\n' : '') +
+    '\n编排要求（务必遵守）：\n' + requirement;
 }
 
 const CORRECTION = '你上一次的回答不符合要求（不是纯 JSON）。重新回答：只输出 JSON 对象本身，第一个字符必须是 {，最后一个字符必须是 }，不要任何其他字符。';
@@ -110,7 +254,9 @@ exports.main = async (event) => {
     grade: String(event.grade || '').trim().slice(0, 20),
     term: String(event.term || '').trim().slice(0, 10),
     textbook: String(event.textbook || '').trim().slice(0, 30),
-    planPrompt: String(event.planPrompt || '').trim().slice(0, 12000)
+    textbookId: String(event.textbookId || '').trim().slice(0, 60),
+    planPrompt: String(event.planPrompt || '').trim().slice(0, 12000),
+    teachingPlan: String(event.teachingPlan || '').trim().slice(0, 20000)
   };
   if (!input.subject) return { ok: false, code: 'empty', msg: '缺少科目信息' };
   if (!input.grade) return { ok: false, code: 'no_grade', msg: '请先在资料里填写年级' };
@@ -122,8 +268,20 @@ exports.main = async (event) => {
     return { ok: false, code: 'init', msg: '云函数初始化失败：' + ((e && e.message) || e) };
   }
 
+  // 教材库锚点（#19）：官方/本人可读注入目录；其余情况静默不注入（fail-open）
+  const tbRec = await loadTextbookForPlan(app, openid, input.textbookId);
+  const toc = buildTocBlock(tbRec);
+  // 教学计划参考：来自学科画像 teachingPlan 字段（客户端按 subject 透传），空则零回归
+  const planRef = buildPlanRefBlock(input.teachingPlan);
+  // Path A S4：读该学科 unitKps 依赖边 → 注入「先补前置」编排约束（失败静默跳过）
+  const units = await readUnitKps(app, openid, input.subject);
+  const prereq = buildPrereqBlock(units);
+  // P1：读该学科学情（错题 + 复习卡毕业态）→ 注入「优先补薄弱点」（失败静默跳过）
+  const weak = await readWeakness(app, openid, input.subject);
+  const weakness = buildWeaknessBlock(weak.mistakes, weak.cards);
+
   const sys = buildSystemPrompt(input.subject);
-  const user = buildUserPrompt(input);
+  const user = buildUserPrompt(input, toc, planRef, prereq, weakness);
 
   try {
     const ai = app.ai();
@@ -139,7 +297,7 @@ exports.main = async (event) => {
       text = (result && result.text) || '';
       const obj = extractJson(text);
       if (validPlan(obj)) {
-        return { ok: true, plan: obj };
+        return { ok: true, plan: obj, textbookAnchored: !!toc };
       }
       // 解析失败：会话内纠正后重试一次
       messages.push({ role: 'assistant', content: text.slice(0, 2000) });
@@ -157,3 +315,12 @@ exports.main = async (event) => {
     return { ok: false, code: 'ai_error', msg: '计划生成失败：' + msg };
   }
 };
+
+/* 测试导出（EXAM_TEST=1 时生效，生产 exports.main 不受影响） */
+if (process.env.EXAM_TEST) {
+  module.exports.__test = {
+    TEXTBOOK_COLL, MAX_TOC_CHARS, MAX_PLAN_REF_CHARS,
+    buildTocBlock, buildPlanRefBlock, buildPrereqBlock, buildWeaknessBlock, buildUserPrompt, buildSystemPrompt,
+    loadTextbookForPlan, readUnitKps, readWeakness, extractJson, validPlan
+  };
+}

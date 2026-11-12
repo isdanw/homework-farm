@@ -128,63 +128,6 @@
 }
 .section-title { font-size: 30rpx; font-weight: 700; color: #333; flex: 1; }
 
-/* 孩子列表（Hero 卡内「其他孩子」，点击整行切换） */
-.ulist { display: flex; flex-direction: column; gap: 12rpx; }
-.urow {
-  display: flex; align-items: center; gap: 16rpx;
-  padding: 18rpx 20rpx; border-radius: 20rpx;
-  background: #F9FAFB;
-  transition: all .15s;
-}
-.urow-hover { background: #EEF7F0; }
-.u-avatar {
-  width: 76rpx; height: 76rpx; border-radius: 22rpx; background: #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 42rpx;
-  box-shadow: 0 3rpx 10rpx rgba(150,180,210,.12);
-  flex-shrink: 0;
-}
-.u-info { flex: 1; min-width: 0; }
-.u-name { font-size: 30rpx; font-weight: 800; color: #222; }
-.u-grade {
-  font-size: 21rpx; font-weight: 700; color: #fff; background: #5FBF6B;
-  border-radius: 14rpx; padding: 2rpx 10rpx; margin-left: 10rpx;
-}
-.u-sub { font-size: 24rpx; color: #999; margin-top: 4rpx; }
-.u-switch {
-  font-size: 23rpx; font-weight: 700; color: #3FA9F5;
-  background: #fff; border: 1rpx solid #B5D4F4; border-radius: 18rpx;
-  padding: 7rpx 18rpx; flex-shrink: 0;
-}
-
-/* ===== Hero 卡内「其他孩子」区块 ===== */
-.kid-others {
-  margin-top: 20rpx; padding-top: 18rpx;
-  border-top: 1rpx solid #F0F2F5;
-}
-.kid-others-head {
-  font-size: 25rpx; font-weight: 700; color: #8A93A0;
-  margin-bottom: 14rpx;
-}
-
-/* ===== Hero 卡内孩子管理操作 ===== */
-.kid-actions {
-  margin-top: 20rpx; padding-top: 18rpx;
-  border-top: 1rpx solid #F0F2F5;
-  display: flex; flex-direction: column; gap: 8rpx;
-}
-.kid-add {
-  height: 84rpx; border-radius: 18rpx;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28rpx; font-weight: 700; color: #4AA857;
-  background: #F6FDF7; border: 2rpx dashed #A8DDB2;
-}
-.kid-add:active { background: #EAF9EC; }
-.kid-del {
-  text-align: center; font-size: 25rpx; color: #C97878;
-  padding: 12rpx 0 2rpx;
-}
-.kid-del:active { color: #E05555; }
-
 /* ===== 家长工具 ===== */
 .tools-card { margin-bottom: 16rpx; }
 .tools-desc { font-size: 25rpx; color: #999; margin-bottom: 16rpx; line-height: 1.6; }

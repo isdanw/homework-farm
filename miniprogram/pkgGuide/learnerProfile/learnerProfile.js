@@ -1,6 +1,7 @@
 /**
  * 儿童全局画像（参考 导学画像）
- *  · 学段 / 每周可学习时间 / 常用时段 / 讲解偏好 / 期望内容 / 自我感受 / 学校进度
+ *  · 学段 / 每周可学习时间 / 常用时段 / 讲解偏好 / 讲解长度 / 期望内容 / 辅导备忘 / 自我感受 / 学校进度
+ *  · 讲解长度与辅导备忘只影响导学「怎么讲」，不作为学习成果记录（成果只认复测证据）
  *  · 年级(grade)沿用「我的」里的孩子资料，这里只读展示，避免重复维护
  */
 const store = require('../../utils/store.js');
@@ -16,6 +17,7 @@ Page({
     // 选项池（单选 picker 用）
     stages: P.STAGES,
     teachStyles: P.TEACH_STYLES,
+    replyLengths: P.REPLY_LENGTHS,
     selfFeelings: P.SELF_FEELINGS,
     // 多选 chips 视图（含选中态 on；WXML 表达式不支持 indexOf，故在 JS 预计算）
     timeSlots: [],
@@ -23,11 +25,13 @@ Page({
     // 表单
     stageIndex: -1,
     teachIndex: -1,
+    lengthIndex: -1,
     feelingIndex: -1,
     weeklyMinutes: '',
     timeSlotsSel: [],
     expectationsSel: [],
-    schoolProgress: ''
+    schoolProgress: '',
+    coachNote: ''
   },
 
   onLoad() {
@@ -39,11 +43,13 @@ Page({
       grade: u.grade || '',
       stageIndex: lr.stage ? P.STAGES.indexOf(lr.stage) : -1,
       teachIndex: lr.teachStyle ? P.TEACH_STYLES.indexOf(lr.teachStyle) : -1,
+      lengthIndex: lr.replyLength ? P.REPLY_LENGTHS.indexOf(lr.replyLength) : -1,
       feelingIndex: lr.selfFeeling ? P.SELF_FEELINGS.indexOf(lr.selfFeeling) : -1,
       weeklyMinutes: lr.weeklyMinutes ? String(lr.weeklyMinutes) : '',
       timeSlotsSel: (lr.timeSlots || []).slice(),
       expectationsSel: (lr.expectations || []).slice(),
-      schoolProgress: lr.schoolProgress || ''
+      schoolProgress: lr.schoolProgress || '',
+      coachNote: lr.coachNote || ''
     });
     this.refreshChips();
   },
@@ -61,6 +67,7 @@ Page({
   /* ---- 单选类（picker） ---- */
   onStage(e) { this.setData({ stageIndex: Number(e.detail.value) }); },
   onTeach(e) { this.setData({ teachIndex: Number(e.detail.value) }); },
+  onLength(e) { this.setData({ lengthIndex: Number(e.detail.value) }); },
   onFeeling(e) { this.setData({ feelingIndex: Number(e.detail.value) }); },
 
   /* ---- 每周可学习时间 ---- */
@@ -89,6 +96,9 @@ Page({
   /* ---- 学校进度 ---- */
   onProgress(e) { this.setData({ schoolProgress: e.detail.value }); },
 
+  /* ---- 家长辅导备忘 ---- */
+  onNote(e) { this.setData({ coachNote: e.detail.value }); },
+
   /* ---- 保存 ---- */
   save() {
     const d = this.data;
@@ -98,7 +108,9 @@ Page({
       weeklyMinutes: isNaN(minutes) || minutes < 0 ? 0 : minutes,
       timeSlots: d.timeSlotsSel.slice(),
       teachStyle: d.teachIndex >= 0 ? P.TEACH_STYLES[d.teachIndex] : '',
+      replyLength: d.lengthIndex >= 0 ? P.REPLY_LENGTHS[d.lengthIndex] : '',
       expectations: d.expectationsSel.slice(),
+      coachNote: (d.coachNote || '').trim().slice(0, 120),
       selfFeeling: d.feelingIndex >= 0 ? P.SELF_FEELINGS[d.feelingIndex] : '',
       schoolProgress: (d.schoolProgress || '').trim()
     };

@@ -24,27 +24,35 @@ global.wx = {
     callFunction: (o) => {
       calls.push(o);
       if (o.name === 'tutorRetest' && o.data.action === 'generate') {
-        return Promise.resolve({ result: { ok: true, questions: FIVE } });
+        // attempt 契约：只回题面，answer/analysis 留在服务端
+        return Promise.resolve({ result: {
+          ok: true, attemptId: 'at_test', expiresAt: Date.now() + 3600000,
+          questions: FIVE.map(q => ({ q: q.q, options: q.options }))
+        }});
       }
-      if (o.name === 'tutorRetest' && o.data.action === 'judge') {
-        // 本地比对（模拟云函数判定逻辑）
-        const qs = o.data.questions;
+      if (o.name === 'tutorRetest' && o.data.action === 'submit') {
+        // 模拟服务端判分：答案来自「服务端」的 FIVE，客户端交上来的只有 answers
         const ans = o.data.answers;
-        const results = qs.map((q, i) => {
+        const results = FIVE.map((q, i) => {
           const your = String(ans[i] || '').trim().toUpperCase().slice(0, 1);
-          return { index: i, correct: your === q.answer, your: your, answer: q.answer };
+          return { index: i, correct: your === q.answer, your: your, answer: q.answer, analysis: q.analysis };
         });
         const correct = results.filter(r => r.correct).length;
-        const rate = qs.length ? correct / qs.length : 0;
+        const rate = FIVE.length ? correct / FIVE.length : 0;
+        const pass = FIVE.length >= 5 && rate >= 0.8;
+        const evidenced = o.data.independence === 'self_declared_no_hint';
         return Promise.resolve({ result: {
-          ok: true, results, total: qs.length, correct, rate,
-          pass: qs.length >= 5 && rate >= 0.8, reason: ''
+          ok: true, attemptId: o.data.attemptId, results, total: FIVE.length, correct, rate, pass,
+          reason: pass ? '' : '通过率未达 80%',
+          independence: o.data.independence || 'unknown',
+          evidenceProduced: evidenced,
+          evidenceId: evidenced ? 'ev_cloud_1' : ''
         }});
       }
       return Promise.resolve({ result: { ok: true } });
     }
   },
-  showToast: (t) => { lastToast = t; },
+  showToast: (t) => { lastToast = (t && t.title) || t; },
   showModal: () => {},
   showLoading: () => {}, hideLoading: () => {},
   navigateTo: () => {},
@@ -93,6 +101,12 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   ok('生成 5 题', rt.data.questions.length === 5);
   ok('进入答题态', rt.data.phase === 'answering');
   ok('每题含字母选项', rt.data.questions[0].letters.join('') === 'ABCD');
+  ok('题面不含答案（attempt 契约）', !('answer' in rt.data.questions[0]) && !('analysis' in rt.data.questions[0]));
+  ok('出题带 attempt 能力声明，且不再传 childId（单孩子模型）', (() => {
+    const g = calls.find(c => c.data.action === 'generate');
+    return g && g.data.features === 'attempt_v1' && !('childId' in g.data);
+  })());
+  ok('记下 attemptId', rt.data.attemptId === 'at_test');
 
   // 逐题作答（全对 B C A D B）
   const picks = ['B', 'C', 'A', 'D', 'B'];
@@ -107,17 +121,30 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   rt.setData({ answers: ['B', 'C', '', '', ''] });
   rt.submit();
   await sleep(10);
-  ok('未答满提交被拦截（无 judge 调用）', !calls.some(c => c.name === 'tutorRetest' && c.data.action === 'judge'));
+  ok('未答满提交被拦截（无 submit 调用）', !calls.some(c => c.name === 'tutorRetest' && c.data.action === 'submit'));
 
-  // 答满提交
+  // 没声明独立性也要拦：预选等于替孩子回答
   rt.setData({ answers: picks.slice() });
   rt.submit();
+  await sleep(10);
+  ok('未声明独立性被拦截', !calls.some(c => c.name === 'tutorRetest' && c.data.action === 'submit'));
+  ok('拦截有提示语', /独立完成|提示/.test(lastToast), lastToast);
+
+  // 声明「独立完成」后再交卷
+  rt.pickIndependence({ currentTarget: { dataset: { value: 'self_declared_no_hint' } } });
+  rt.submit();
   await sleep(30);
-  ok('提交触发 judge', calls.some(c => c.name === 'tutorRetest' && c.data.action === 'judge'));
+  const sub = calls.find(c => c.name === 'tutorRetest' && c.data.action === 'submit');
+  ok('提交触发 submit', !!sub);
+  ok('交卷只带 attemptId + answers（不重复上传题面）', !!sub && sub.data.attemptId === 'at_test' && !('questions' in sub.data));
   ok('结果达标 pass=true', rt.data.result && rt.data.result.pass === true);
   ok('进入结果态', rt.data.phase === 'result');
   ok('错题被标记已订正', tutorStore.getMistakes().find(m => m.topic === '20以内进位加法').status === 'corrected');
   ok('本地证据已记录', tutorStore.getEvidence().some(e => e.passed === true && e.topic === '20以内进位加法'));
+  ok('本地证据带 attemptId 与独立性', (() => {
+    const e = tutorStore.getEvidence().find(x => x.topic === '20以内进位加法');
+    return e && e.attemptId === 'at_test' && e.independence === 'self_declared_no_hint';
+  })());
 
   /* ============ 报告页 ============ */
   console.log('=== 报告页 ===');

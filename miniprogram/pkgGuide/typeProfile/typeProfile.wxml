@@ -23,6 +23,20 @@
     <view class="btn btn-green btn-block" bindtap="goPlan">🗓 进入 {{typeName}} 成长计划</view>
   </view>
 
+  <!-- 教学计划（与成长计划关联：导入后生成计划/导学会参考其目标与重点） -->
+  <view class="card">
+    <view class="section-head">
+      <view class="dot" style="background:#FF9F40"></view><text class="section-title">教学计划</text>
+      <view class="entry-go" wx:if="{{tpTitle}}" bindtap="clearTp">清除</view>
+    </view>
+    <view wx:if="{{tpTitle}}" class="tp-info">
+      <view class="tp-title">{{tpTitle}}</view>
+      <view class="tp-meta">{{tpFormat}} · 已关联成长计划</view>
+    </view>
+    <view wx:else class="muted tp-tip">把学校/老师发的教学计划（Markdown 或 HTML）导入，生成成长计划与日常导学会参考其教学目标与重点。</view>
+    <view class="btn btn-line btn-block" bindtap="openTpSheet">{{tpTitle ? '重新导入 / 编辑' : '📥 导入教学计划'}}</view>
+  </view>
+
   <!-- 智能识别：粘贴画像提示词自动填入 -->
   <view class="card">
     <view class="section-head" bindtap="togglePaste">
@@ -46,6 +60,11 @@
       <view class="opt-name">教材版本</view>
       <input class="opt-input-full" placeholder="如：人教版" placeholder-class="opt-ph"
              value="{{textbook}}" bindinput="onTextbook" maxlength="20" cursor-spacing="20" />
+      <view class="opt-sub-row">
+        <view class="link-btn" hover-class="op-hover" bindtap="goTextbookLib">📚 从教材库选择</view>
+        <text wx:if="{{textbookId}}" class="opt-hint">已选用结构化教材，计划将按单元目录编排</text>
+        <text wx:elif="{{!textbookId}}" class="opt-hint">手动填版本即可；选用教材库条目后编排更贴近真实课本</text>
+      </view>
     </view>
     <view class="opt-row col">
       <view class="opt-name">当前进度</view>
@@ -102,5 +121,29 @@
   </view>
 
   <view class="btn btn-block btn-green tp-save" bindtap="save">保存画像</view>
+
+  <!-- 教学计划导入 sheet -->
+  <view wx:if="{{showTpSheet}}" class="sheet-mask" bindtap="closeTpSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <text class="sheet-title">导入教学计划</text>
+        <view class="sheet-close" bindtap="closeTpSheet">✕</view>
+      </view>
+      <view class="muted sheet-tip">粘贴文本，或从聊天/文件选择 .md / .html / .txt。系统会自动清洗并预览。导入后生成成长计划与导学会参考其目标与重点。</view>
+      <input class="opt-input-full" placeholder="教学计划标题（可空，自动取首行）" placeholder-class="opt-ph"
+             value="{{tpTitle}}" bindinput="onTpTitle" maxlength="60" cursor-spacing="20" />
+      <view class="sheet-opt">
+        <view class="link-btn" hover-class="op-hover" bindtap="chooseTpFile">📎 选择文件</view>
+        <text class="opt-hint">{{tpFormat === 'html' ? 'HTML' : (tpFormat === 'md' ? 'Markdown' : '纯文本')}}</text>
+      </view>
+      <textarea class="paste-area" placeholder="在此粘贴教学计划全文（Markdown / HTML / 纯文本）…" placeholder-class="opt-ph"
+                value="{{tpPaste}}" bindinput="onTpPaste" maxlength="20000" auto-height />
+      <view wx:if="{{tpHasPreview}}" class="tp-preview">
+        <view class="tp-preview-head">预览（清洗后，前 800 字）</view>
+        <scroll-view scroll-y class="tp-preview-body"><text>{{tpPreviewShort}}</text></scroll-view>
+      </view>
+      <view class="btn btn-green btn-block" bindtap="saveTp">保存教学计划</view>
+    </view>
+  </view>
 
 </view>

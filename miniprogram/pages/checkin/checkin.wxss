@@ -21,7 +21,6 @@
   box-shadow: 0 2rpx 8rpx rgba(150,180,210,.15);
 }
 .ck-child-name { font-size: 26rpx; font-weight: 700; color: #333; }
-.ck-switch-hint { font-size: 22rpx; color: #378ADD; font-weight: 600; }
 
 /* ===== TOOLBAR：Tab + 日期选择 合并行 ===== */
 .ck-toolbar {

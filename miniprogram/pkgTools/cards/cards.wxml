@@ -1,7 +1,7 @@
 <view class="page">
   <view class="topbar">
     <text class="title">复习卡</text>
-    <text class="sub">提取式记忆 · 间隔重复</text>
+    <text class="sub">{{filterLabel ? '筛选 · ' + filterLabel : '提取式记忆 · 间隔重复'}}</text>
   </view>
 
   <view class="stat">

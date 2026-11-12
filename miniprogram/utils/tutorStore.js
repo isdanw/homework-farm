@@ -19,9 +19,13 @@
  *     id, subject, subjectName, topic, errorType(E1-E9), errorDesc, suggestion,
  *     status: 'pending'|'corrected', createdAt
  *   }],
- *   evidence: [{     // 复测证据（P3）：复测 ≥5 题且 ≥80% 才形成
- *     id, subject, subjectName, topic, errorType, total, correct, rate,
- *     passed: true|false, createdAt
+ *   evidence: [{     // 复测证据（P3/P0）：服务端判分 + 声明独立完成，≥5 题且 ≥80% 才算达标的「已验证」
+ *     id, attemptId, subject, subjectName, topic, errorType, total, correct, rate,
+ *     passed: true|false, independence: 'self_declared_no_hint'|'prompted'|'unknown',
+ *     factGrade: 'server_recorded'|'client_claimed',
+ *     unitId, kpId,                    // 知识点归属（证据阶梯按它精确关联）
+ *     evidenceKind: 'retest'|'variant', context: ''|白名单情境,   // 变式标签（L5/L6 记录源）
+ *     createdAt
  *   }],
  *   reviews: [{      // 复习窗口（闭环 S2）：归档诊断派生，复测证据驱动推进
  *     id, mistakeId, subject, subjectName, topic, errorType,
@@ -63,6 +67,68 @@ function storageKey() {
   return oid ? `${BASE_KEY}_${oid}` : `${BASE_KEY}_guest`;
 }
 
+/* ======================= 孩子维度（P0 多孩） =======================
+ * 云端 tutorSync / tutorRetest / syncData 已按 childId 落库（服务端解析，客户端不可指定归属），
+ * 端上必须同口径，否则「切换孩子」只换了主数据、导学数据仍是全家混在一起：
+ *   · 写：新条目一律盖当前孩子 childId；
+ *   · 读：只返回当前孩子的条目（切换孩子即切换视图）；
+ *   · 历史：无 childId / 落在占位 'guest' 下的老条目无法事后判定归属，归第一个真实孩子
+ *     （这些数据产生时家族基本只有一个孩子；不归的话切到任何孩子都看不见，是真丢数据）。
+ * 导学单（orders）不参与：它锚定成长计划（planId），云端也未按孩子归属。
+ */
+const CHILD_SCOPED = ['sessions', 'mistakes', 'evidence', 'reviews', 'cards', 'unitKps'];
+const LEGACY_CHILD = 'guest';
+
+function firstRealChildId() {
+  let root = null;
+  try { root = store.getRoot(); } catch (e) { return ''; }
+  const users = (root && Array.isArray(root.users)) ? root.users : [];
+  const u = users.find(x => x && typeof x.id === 'string' && x.id &&
+    x.id !== LEGACY_CHILD && x.__placeholder !== true);
+  return u ? u.id : '';
+}
+
+/** 当前孩子 id；未建档/占位切片 → ''（此时不做过滤，本地体验数据照常可见） */
+function currentChildId() {
+  let u = null;
+  try { u = store.get(); } catch (e) { return ''; }
+  if (!u || !u.id || u.id === LEGACY_CHILD || u.__placeholder === true) return '';
+  return String(u.id);
+}
+
+/** 条目的归属：显式 childId 优先；历史条目落到第一个真实孩子 */
+function ownerOf(item) {
+  const c = item && item.childId;
+  if (c && c !== LEGACY_CHILD) return c;
+  return firstRealChildId();
+}
+
+function ofCurrentChild(list) {
+  const cur = currentChildId();
+  if (!cur) return (list || []).slice();
+  return (list || []).filter(x => x && ownerOf(x) === cur);
+}
+
+let _scopeStampKey = '';
+
+/** 历史条目补归属（每个存储空间每进程只做一次，落盘后不再重复） */
+function ensureChildScope(all) {
+  const key = storageKey();
+  if (_scopeStampKey === key) return all;
+  _scopeStampKey = key;
+  const owner = firstRealChildId();
+  if (!owner) return all;
+  let changed = false;
+  CHILD_SCOPED.forEach(kind => {
+    (all[kind] || []).forEach(x => {
+      if (!x) return;
+      if (!x.childId || x.childId === LEGACY_CHILD) { x.childId = owner; changed = true; }
+    });
+  });
+  if (changed) writeAll(all);
+  return all;
+}
+
 function blank() {
   return { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], cards: [], unitKps: [], removed: [], pushQueue: [], lastSyncAt: 0 };
 }
@@ -86,9 +152,9 @@ function readAll() {
   const oid = store.getOpenid() || '';
   if (oid && _probeOid !== oid) {
     _probeOid = oid;
-    return adoptGuestData(all);
+    return ensureChildScope(adoptGuestData(all));
   }
-  return all;
+  return ensureChildScope(all);
 }
 
 /**
@@ -187,16 +253,16 @@ function commit(all, queues, buries) {
   return all;
 }
 
-/** 全部会话（按创建时间倒序） */
+/** 全部会话（当前孩子，按创建时间倒序） */
 function getSessions() {
   const all = readAll();
-  return all.sessions.slice().sort((a, b) => b.createdAt - a.createdAt);
+  return ofCurrentChild(all.sessions).sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /** 某学科「进行中」（未关闭）的会话；没有则 null */
 function getActive(subject) {
   const all = readAll();
-  return all.sessions.find(s => s.subject === subject && !s.closed) || null;
+  return ofCurrentChild(all.sessions).find(s => s.subject === subject && !s.closed) || null;
 }
 
 /** 新建会话（同一学科同时只保留一个进行中会话；已有进行中则直接返回它） */
@@ -206,6 +272,7 @@ function newSession(subject, subjectName) {
   const all = readAll();
   const s = {
     id: util.uid('ts'),
+    childId: currentChildId(),
     subject: subject,
     subjectName: subjectName || subject,
     messages: [],
@@ -284,10 +351,10 @@ function archiveCount() {
 const MISTAKE_SOURCES = ['photo', 'tutor', 'manual'];
 const MISTAKE_MARK_SOURCES = ['marked', 'ai', 'none'];
 
-/** 全部错题（按创建时间倒序） */
+/** 全部错题（当前孩子，按创建时间倒序） */
 function getMistakes() {
   const all = readAll();
-  return (all.mistakes || []).slice().sort((a, b) => b.createdAt - a.createdAt);
+  return ofCurrentChild(all.mistakes).sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /** 新增一条错题（E1-E9 归因；可传 m.id 预生成 uid，保证与云端 clientId 一致）
@@ -297,6 +364,7 @@ function addMistake(m) {
   const all = readAll();
   const item = {
     id: m.id || util.uid('mk'),
+    childId: currentChildId(),
     subject: m.subject || '',
     subjectName: m.subjectName || '',
     topic: m.topic || '',
@@ -319,7 +387,7 @@ function addMistake(m) {
 /** 更新错题状态（pending 待重测 / corrected 已订正） */
 function setMistakeStatus(id, status) {
   const all = readAll();
-  const m = all.mistakes.find(x => x.id === id);
+  const m = ofCurrentChild(all.mistakes).find(x => x.id === id);
   if (!m) return false;
   m.status = status;
   // 自动登记上云（修 P1-2：此前 mistakes.js 只写本地，标记「已订正」换设备即回退）
@@ -334,19 +402,22 @@ function mistakeCount() {
 
 /* ======================= 复测证据（P3） ======================= */
 
-/** 全部复测记录（按创建时间倒序） */
+/** 全部复测记录（当前孩子，按创建时间倒序） */
 function getEvidence() {
   const all = readAll();
-  return (all.evidence || []).slice().sort((a, b) => b.createdAt - a.createdAt);
+  return ofCurrentChild(all.evidence).sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /** 新增一条复测记录（passed=true 才是「已验证」证据）
  *  可传 e.id 预生成 uid：必须与 tutorRetest 落库时的 clientId 一致，
- *  否则云端会存在「一条无 clientId 的直写记录 + 一条 push 回补记录」两份（P0-5 重复写）。 */
+ *  否则云端会存在「一条无 clientId 的直写记录 + 一条 push 回补记录」两份（P0-5 重复写）。
+ *  attemptId / independence / factGrade 是溯源字段：事后要能回答「这份证据凭什么算数」。 */
 function addEvidence(e) {
   const all = readAll();
   const item = {
     id: e.id || util.uid('ev'),
+    childId: currentChildId(),
+    attemptId: e.attemptId || '',
     subject: e.subject || '',
     subjectName: e.subjectName || '',
     topic: e.topic || '',
@@ -355,6 +426,14 @@ function addEvidence(e) {
     correct: e.correct || 0,
     rate: e.rate || 0,
     passed: !!e.passed,
+    independence: e.independence || 'unknown',
+    factGrade: e.factGrade || 'server_recorded',
+    // 知识点归属与变式标签：证据阶梯靠它们把记录归到某个必会点、点亮 L5/L6。
+    // 值一律取服务端 submit 回传的那份（客户端不自造标签），旧数据缺字段按普通复测兜底。
+    unitId: e.unitId || '',
+    kpId: e.kpId || '',
+    evidenceKind: e.evidenceKind || 'retest',
+    context: e.context || '',
     createdAt: Date.now()
   };
   all.evidence.unshift(item);
@@ -369,10 +448,10 @@ function evidencePassedCount() {
 
 /* ======================= 复习窗口（闭环 S2） ======================= */
 
-/** 全部复习窗口（按到期时间正序：最紧急的在前） */
+/** 全部复习窗口（当前孩子，按到期时间正序：最紧急的在前） */
 function getReviews() {
   const all = readAll();
-  return (all.reviews || []).slice().sort((a, b) => (a.dueAt || 0) - (b.dueAt || 0));
+  return ofCurrentChild(all.reviews).sort((a, b) => (a.dueAt || 0) - (b.dueAt || 0));
 }
 
 /** 今日到期（dueAt ≤ now 且未关闭），最早到期的在前 */
@@ -390,9 +469,14 @@ function reviewPendingCount() {
 function upsertReview(rv) {
   if (!rv || !rv.id) return null;
   const all = readAll();
-  const i = (all.reviews || []).findIndex(x => x.id === rv.id);
+  const cid = currentChildId();
+  // 去重只在当前孩子的窗口里做：两个孩子的窗口 id 若撞了不能互相覆盖
+  const mine = ofCurrentChild(all.reviews);
+  let i = mine.findIndex(x => x.id === rv.id);
+  if (i >= 0) i = all.reviews.indexOf(mine[i]);
   const item = {
     id: rv.id,
+    childId: (rv.childId && rv.childId !== LEGACY_CHILD) ? rv.childId : cid,
     mistakeId: rv.mistakeId || '',
     subject: rv.subject || '',
     subjectName: rv.subjectName || '',
@@ -420,7 +504,8 @@ function upsertReview(rv) {
 function advanceReview(mistakeId, passed) {
   if (!mistakeId) return null;
   const all = readAll();
-  const r = (all.reviews || []).find(x => x.mistakeId === mistakeId && !x.done);
+  // 只在当前孩子的窗口里找：跨孩子的 mistakeId 不该推进别人的复习节奏
+  const r = ofCurrentChild(all.reviews).find(x => x.mistakeId === mistakeId && !x.done);
   if (!r) return null;
   if (passed) {
     r.done = true;
@@ -437,10 +522,10 @@ function advanceReview(mistakeId, passed) {
 
 /* ======================= 复习卡（G2 提取式记忆实体，与 reviews 平行） ======================= */
 
-/** 全部复习卡（按到期时间正序） */
+/** 全部复习卡（当前孩子，按到期时间正序） */
 function getCards() {
   const all = readAll();
-  return (all.cards || []).slice().sort((a, b) => (a.dueAt || 0) - (b.dueAt || 0));
+  return ofCurrentChild(all.cards).sort((a, b) => (a.dueAt || 0) - (b.dueAt || 0));
 }
 
 /** 今日到期（dueAt ≤ now 且未毕业），最早到期的在前 */
@@ -469,13 +554,18 @@ function upsertCard(c) {
   const all = readAll();
   // kpId 主键优先：**同一单元内** kpId 唯一 → 必须叠加 unitId 条件，
   // 否则不同单元各自生成的 p1/p2 会互相误去重（跨会话推通同一点时 upsert 到原卡，保留盒子进度）
+  // 去重只在当前孩子的卡里做：两个孩子在同一个单元里都有 p1 时不能互相覆盖。
+  const cid = currentChildId();
+  const mine = ofCurrentChild(all.cards);
   let i = -1;
   if (c.kpId) {
-    i = (all.cards || []).findIndex(x => x.kpId && x.kpId === c.kpId && x.unitId === (c.unitId || ''));
+    i = mine.findIndex(x => x.kpId && x.kpId === c.kpId && x.unitId === (c.unitId || ''));
+    if (i >= 0) i = all.cards.indexOf(mine[i]);
   }
-  if (i < 0) i = (all.cards || []).findIndex(x => x.id === c.id);        // 否则 id 主键
+  if (i < 0) i = all.cards.findIndex(x => x.id === c.id && (!cid || ownerOf(x) === cid));        // 否则 id 主键
   const item = {
     id: c.id,
+    childId: c.childId || cid,
     subject: c.subject || '',
     subjectName: c.subjectName || '',
     topic: c.topic || '',
@@ -513,7 +603,7 @@ function addCards(list) {
 function advanceCard(cardId, good) {
   if (!cardId) return null;
   const all = readAll();
-  const c = (all.cards || []).find(x => x.id === cardId && !x.done);
+  const c = ofCurrentChild(all.cards).find(x => x.id === cardId && !x.done);
   if (!c) return null;
   const now = Date.now();
   if (good) {
@@ -557,33 +647,133 @@ function getDueItems(now) {
 function getUnitKps(unitId) {
   const t = String(unitId || '');
   if (!t) return null;
-  return readAll().unitKps.find(u => u.id === t) || null;
+  return ofCurrentChild(readAll().unitKps).find(u => u.id === t) || null;
 }
 
-/** 某学科最新一份必会库（建库后最新 updatedAt 的那份；无则 null） */
+/** 某学科最新一份必会库（当前孩子；建库后最新 updatedAt 的那份，无则 null） */
 function getUnitKpsBySubject(subject) {
-  const list = readAll().unitKps.filter(u => u.subject === subject);
+  const list = ofCurrentChild(readAll().unitKps).filter(u => u.subject === subject);
   if (!list.length) return null;
   return list.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+}
+
+/** 某学科全部必会库（新→旧），供讲解召回跨单元检索用；只读，不做任何写操作 */
+function getUnitKpsListBySubject(subject) {
+  return ofCurrentChild(readAll().unitKps)
+    .filter(u => u.subject === subject)
+    .slice()
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}
+
+/**
+ * 盲区诊断（Path A S3）：读该学科最新必会库 + 复习卡毕业态，反查「前置欠账」与「下游拖累」。
+ * 掌握度判据 = 该 topic 下存在 done=true 的卡（Leitner 毕业）；无卡视为未达标（保守）。
+ * 返回：
+ *   mastery    每个必会点的达标状态 [{pointId, topic, mastered}]
+ *   blindSpots 有欠账/拖累的点 [{pointId, topic, mastered,
+ *               missingPrereqs:[{topic,strength,reason}], blocks:[topic]}]
+ * 无该学科必会库时返回 null。
+ */
+/** 知识点达标判定（P2）：有全局 kpId 时只按 unitId::kpId 精确匹配（防跨单元 topic 撞名误判）；
+ *  无 kpId（旧数据）才 fallback topic。 */
+function kpMastered(cards, target) {
+  if (!target) return false;
+  const tid = target.kpId || '';
+  if (tid) {
+    return cards.some(c => c && c.done && c.kpId && (c.unitId || '') + '::' + c.kpId === tid);
+  }
+  return cards.some(c => c && c.done && c.topic === target.topic);
+}
+
+function diagnoseBlindSpot(subject) {
+  const units = ofCurrentChild(readAll().unitKps).filter(u => u.subject === subject);
+  if (!units.length) return null;
+  const cards = getCards().filter(c => c.subject === subject);
+  const mastered = (target) => kpMastered(cards, target);
+
+  // 合并该学科**所有单元**的点（跨单元依赖边用 topic 弱引用，mastered 全局匹配）
+  const points = [];
+  units.forEach(u => {
+    (Array.isArray(u.points) ? u.points : []).forEach(p => {
+      points.push(Object.assign({}, p, { _unitId: u.id, _unitTitle: u.title || '' }));
+    });
+  });
+
+  // 前置 topic → 依赖它的后置点列表（用于算「它拖累谁」）
+  const deps = {};
+  points.forEach(p => {
+    (p.prereqs || []).forEach(r => {
+      if (!r.topic) return;
+      (deps[r.topic] = deps[r.topic] || []).push({ topic: p.topic, pointId: p.id });
+    });
+  });
+
+  const mastery = points.map(p => ({
+    pointId: p.id, unitId: p._unitId, unitTitle: p._unitTitle,
+    kpId: p.kpId || '', topic: p.topic, mastered: mastered(p)
+  }));
+
+  const blindSpots = [];
+  points.forEach(p => {
+    const prereqs = p.prereqs || [];
+    const missing = prereqs.filter(r => r && !mastered(r));
+    const blocks = (deps[p.topic] || []).map(d => d.topic);
+    const selfNotMastered = !mastered(p);
+    if (missing.length || (selfNotMastered && blocks.length)) {
+      blindSpots.push({
+        pointId: p.id, unitId: p._unitId, unitTitle: p._unitTitle,
+        kpId: p.kpId || (p._unitId + '::' + p.id),
+        topic: p.topic, mastered: !selfNotMastered,
+        missingPrereqs: missing.map(r => ({ topic: r.topic, kpId: r.kpId || '', strength: r.strength, reason: r.reason })),
+        blocks: blocks
+      });
+    }
+  });
+
+  return {
+    subject: subject,
+    subjectName: units[0].subjectName || '',
+    unitCount: units.length,
+    pointCount: points.length,
+    mastery: mastery,
+    blindSpots: blindSpots
+  };
+}
+
+/** 规整一个必会点的新增图谱字段（pathA：type/prereqs/evidence/assessmentPrompt）。
+ *  字段只增不改；prereqs 元素规整为 {topic, strength:'hard'|'soft', reason}。 */
+function normPointMeta(p) {
+  return {
+    type: String((p && p.type) || ''),
+    prereqs: Array.isArray(p && p.prereqs) ? p.prereqs.map(r => ({
+      topic: String((r && r.topic) || ''),
+      strength: (r && r.strength) === 'soft' ? 'soft' : 'hard',
+      reason: String((r && r.reason) || '')
+    })).filter(r => r.topic) : [],
+    evidence: Array.isArray(p && p.evidence) ? p.evidence.map(e => String(e)).filter(Boolean) : [],
+    assessmentPrompt: String((p && p.assessmentPrompt) || '')
+  };
 }
 
 /** 新增/更新一份单元必会库（按 id 去重；返回该条，自动登记上云） */
 function upsertUnitKp(unit) {
   if (!unit || !unit.id) return null;
   const all = readAll();
-  const i = (all.unitKps || []).findIndex(x => x.id === unit.id);
+  const cid = currentChildId();
+  const i = all.unitKps.findIndex(x => x.id === unit.id && (!cid || ownerOf(x) === cid));
   const item = {
     id: unit.id,
+    childId: unit.childId || cid,
     subject: unit.subject || '',
     grade: unit.grade || '',
     title: unit.title || '',
-    points: Array.isArray(unit.points) ? unit.points.map(p => ({
+    points: Array.isArray(unit.points) ? unit.points.map(p => Object.assign({
       id: String(p.id || ''),
       topic: String(p.topic || ''),
       front: String(p.front || ''),
       back: String(p.back || ''),
       order: Number(p.order) || 0
-    })).filter(p => p.id) : [],
+    }, normPointMeta(p))).filter(p => p.id) : [],
     createdAt: unit.createdAt || Date.now(),
     updatedAt: unit.updatedAt || Date.now()
   };
@@ -596,13 +786,18 @@ function upsertUnitKp(unit) {
 /** 改一个必会点（front/back/topic；按 id 定位，找不到返回 false） */
 function updateUnitKpPoint(unitId, pointId, patch) {
   const all = readAll();
-  const u = (all.unitKps || []).find(x => x.id === unitId);
+  const u = ofCurrentChild(all.unitKps).find(x => x.id === unitId);
   if (!u || !Array.isArray(u.points)) return false;
   const p = u.points.find(x => x.id === pointId);
   if (!p) return false;
   if (patch && patch.front !== undefined) p.front = String(patch.front);
   if (patch && patch.back !== undefined) p.back = String(patch.back);
   if (patch && patch.topic !== undefined) p.topic = String(patch.topic);
+  // pathA 图谱字段：只在显式给出时覆盖（patch 部分字段语义）
+  if (patch && patch.type !== undefined) p.type = String(patch.type);
+  if (patch && patch.prereqs !== undefined) p.prereqs = normPointMeta(patch).prereqs;
+  if (patch && patch.evidence !== undefined) p.evidence = normPointMeta(patch).evidence;
+  if (patch && patch.assessmentPrompt !== undefined) p.assessmentPrompt = String(patch.assessmentPrompt);
   u.updatedAt = Date.now();
   commit(all, [{ kind: 'unitKps', id: u.id }]);
   return true;
@@ -611,7 +806,7 @@ function updateUnitKpPoint(unitId, pointId, patch) {
 /** 删一个必会点（只删清单条目；已挂该 kpId 的卡保留，只是不再计入单元统计） */
 function removeUnitKpPoint(unitId, pointId) {
   const all = readAll();
-  const u = (all.unitKps || []).find(x => x.id === unitId);
+  const u = ofCurrentChild(all.unitKps).find(x => x.id === unitId);
   if (!u || !Array.isArray(u.points)) return false;
   const i = u.points.findIndex(x => x.id === pointId);
   if (i < 0) return false;
@@ -624,19 +819,19 @@ function removeUnitKpPoint(unitId, pointId) {
 /** 加一个必会点（id 自动生成避开冲突；返回新点或 null） */
 function addUnitKpPoint(unitId, point) {
   const all = readAll();
-  const u = (all.unitKps || []).find(x => x.id === unitId);
+  const u = ofCurrentChild(all.unitKps).find(x => x.id === unitId);
   if (!u) return null;
   if (!Array.isArray(u.points)) u.points = [];
   const maxOrder = u.points.reduce((m, p) => Math.max(m, Number(p.order) || 0), 0);
   let n = maxOrder + 1, id = 'p' + n;
   while (u.points.some(p => p.id === id)) { n++; id = 'p' + n; }
-  const np = {
+  const np = Object.assign({
     id: id,
     topic: String((point && point.topic) || ''),
     front: String((point && point.front) || ''),
     back: String((point && point.back) || ''),
     order: n
-  };
+  }, normPointMeta(point));
   u.points.push(np);
   u.updatedAt = Date.now();
   commit(all, [{ kind: 'unitKps', id: u.id }]);
@@ -709,7 +904,8 @@ const CLOUD_DEFAULTS = {
   },
   evidence: {
     subject: '', subjectName: '', topic: '', errorType: '',
-    total: 0, correct: 0, rate: 0, passed: false, createdAt: 0
+    total: 0, correct: 0, rate: 0, passed: false, createdAt: 0,
+    unitId: '', kpId: '', evidenceKind: 'retest', context: ''
   },
   reviews: {
     mistakeId: '', subject: '', subjectName: '', topic: '', errorType: '',
@@ -775,7 +971,15 @@ function mergeFromCloud(remote) {
       const local = cloudToLocal(kind, cloud);
       if (!local) return;
       if (isBuried(all, kind, local.id)) return;
-      if (all[kind].some(x => x.id === local.id)) return;
+      const cur = all[kind].find(x => x.id === local.id);
+      if (cur) {
+        // 云端的 childId 是服务端解析的权威归属：与本地不同就采纳云端
+        // （本地可能是历史盖章或另一台设备的推断；云端一定比端上猜得准）
+        if (local.childId && local.childId !== LEGACY_CHILD && cur.childId !== local.childId) {
+          cur.childId = local.childId;
+        }
+        return;
+      }
       all[kind].push(local);
       added++;
     });
@@ -874,29 +1078,36 @@ function pushQueued() {
       if (!queue.length) return resolve({ ok: true, added: 0 });
       if (typeof wx === 'undefined' || !wx.cloud || !wx.cloud.callFunction) return resolve({ ok: false });
 
-      const payload = { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], cards: [], unitKps: [] };
+      // 队列里的条目可能属于不同孩子（切孩子后旧队列还在）：按 childId 分组各推一次，
+      // 服务端把 childId 当「想要的归属」校验（跨家庭拒绝），不依赖云端 currentUserId 是否已同步。
+      const groups = {};
       queue.forEach(q => {
         const arrName = { sessions: 'sessions', mistakes: 'mistakes', evidence: 'evidence', reviews: 'reviews', orders: 'orders', cards: 'cards', unitKps: 'unitKps' }[q.kind];
         if (!arrName) return;
         const item = (all[arrName] || []).find(x => x.id === q.id);
-        if (item) payload[q.kind].push(Object.assign({}, item, { clientId: item.id, id: undefined }));
+        if (!item) return;
+        const cid = (item.childId && item.childId !== LEGACY_CHILD) ? item.childId : '';
+        const g = groups[cid] || (groups[cid] = { keys: [], payload: { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], cards: [], unitKps: [] } });
+        g.keys.push(q);
+        g.payload[q.kind].push(Object.assign({}, item, { clientId: item.id, id: undefined }));
       });
 
-      wx.cloud.callFunction({
+      const send = (cid, keys, body) => wx.cloud.callFunction({
         name: 'tutorSync',
-        data: Object.assign({ action: 'push' }, payload)
-      }).then(res => {
-        const r = res && res.result;
-        if (r && r.ok) {
-          const rest = readAll();
-          const doneIds = {};
-          queue.forEach(q => { doneIds[q.kind + ':' + q.id] = true; });
-          rest.pushQueue = (rest.pushQueue || []).filter(q => !doneIds[q.kind + ':' + q.id]);
-          writeAll(rest);
-          resolve({ ok: true, added: r.added || 0, skipped: r.skipped || 0, updated: r.updated || 0 });
-        } else {
-          resolve({ ok: false });
-        }
+        data: Object.assign({ action: 'push' }, cid ? { childId: cid } : {}, body)
+      }).then(res => ({ res: res, keys: keys })).catch(() => ({ res: null, keys: keys }));
+
+      const gids = Object.keys(groups);
+      if (!gids.length) return resolve({ ok: true, added: 0 });
+      Promise.all(gids.map(cid => send(cid, groups[cid].keys, groups[cid].payload))).then(list => {
+        const doneKeys = [];
+        list.forEach(x => { if (x.res && x.res.result && x.res.result.ok) doneKeys.push.apply(doneKeys, x.keys); });
+        const rest = readAll();
+        const doneIds = {};
+        doneKeys.forEach(q => { doneIds[q.kind + ':' + q.id] = true; });
+        rest.pushQueue = (rest.pushQueue || []).filter(q => !doneIds[q.kind + ':' + q.id]);
+        writeAll(rest);
+        resolve({ ok: doneKeys.length === queue.length });
       }).catch(() => resolve({ ok: false }));
     } catch (e) {
       resolve({ ok: false });
@@ -1030,7 +1241,8 @@ module.exports = {
   getEvidence, addEvidence, evidencePassedCount,
   getReviews, getDueReviews, reviewPendingCount, upsertReview, advanceReview,
   getCards, getDueCards, cardPendingCount, upsertCard, addCards, advanceCard, getDueItems,
-  getUnitKps, getUnitKpsBySubject, upsertUnitKp, updateUnitKpPoint, removeUnitKpPoint, addUnitKpPoint,
+  getUnitKps, getUnitKpsBySubject, getUnitKpsListBySubject, upsertUnitKp, updateUnitKpPoint, removeUnitKpPoint, addUnitKpPoint,
+  diagnoseBlindSpot,
   getOrders, getOrder, getOrdersByPlan, getPendingOrders, orderCounts, planOrderAggregate,
   orderApi, saveOrderFromCloud, queueOrderPush,
   getLearnerContext,

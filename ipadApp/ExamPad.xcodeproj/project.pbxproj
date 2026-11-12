@@ -1,0 +1,481 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05632B2106F6F7AA9CB8BC8F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 146EA4935F781D9355CABD73 /* Assets.xcassets */; };
+		05A650E0EBDA1E1EC8F96168 /* QuestionTypeMixEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FEB2803200B70264D22E65F /* QuestionTypeMixEditor.swift */; };
+		068A5003FCD628AE14A13A95 /* FigureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABB34834A1E094AA84338856 /* FigureView.swift */; };
+		0C4C6B94A0044E88320E850B /* AnswerLinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 950E67BBBD64C939FDA063A8 /* AnswerLinesView.swift */; };
+		11FCECECDECC1654E4B1C1EC /* Identity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F38B95DBBB1C7E9462AAAE /* Identity.swift */; };
+		1209D2E157EA17C3398A5C14 /* DocxExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6870C779C54E8EE8A8F1FE /* DocxExtractor.swift */; };
+		1C518F5FEBB36F08A54BF448 /* QuestionTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7C2CFFFB279AA3D8A01120 /* QuestionTypes.swift */; };
+		1FA419D4370EBCA76BCA7A14 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE89B0ADCCF709979982C0A4 /* APIClient.swift */; };
+		2D36F2F9206971157845B005 /* ImportPaperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 214B5D1D2942E892ADADAD22 /* ImportPaperView.swift */; };
+		34E67342935C962D178AFD32 /* StudyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC28DAFDD6F55497613BBAD /* StudyPlanView.swift */; };
+		3789D865196D9FB7A77DE824 /* ExamPadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7885973EC0AFF9E0E90E6CAD /* ExamPadTests.swift */; };
+		3E427FD14BE004B0BF1ECFDB /* GenerateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1D3079A3D9F850AF6A9FA8 /* GenerateSheet.swift */; };
+		4216BC29D32517F24BE160F1 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5218549706AE1BB5F13E95F /* Settings.swift */; };
+		5618F68843FDD0C3084C81DB /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 822A7C2B65176BB189BA7060 /* Models.swift */; };
+		7A6EF4E44F2F0B89530B7FBD /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A699EED940F99E47A53FC8 /* ReviewView.swift */; };
+		90555B0DCCAED1DE0188D1A9 /* ExamAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF709131287BECF27379C18F /* ExamAPI.swift */; };
+		974B64A9BFDCC605A68EE9CE /* PDFWriteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9BEC31D5C8D3CDC1135DC44 /* PDFWriteView.swift */; };
+		9C88CC644A558DAFB5E5F2D4 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830C03C1F238FF174F4FF6D6 /* LibraryView.swift */; };
+		AC3DBC91BD3A93A7CD459423 /* PaperPagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 074224E77EF1A511B9F75E25 /* PaperPagesView.swift */; };
+		B18CE0A6876859D91FB8EB41 /* PencilCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD36ED8B5BA5640C59FD268D /* PencilCanvas.swift */; };
+		C00D490726228862B79D3FF0 /* ExamPadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D7C1793C27ADBFC3C2EE20 /* ExamPadApp.swift */; };
+		C154B2EC3BF3FADFB1B42999 /* AnswerDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102CE3A5A1F0651CE4DD3040 /* AnswerDraft.swift */; };
+		DAA88E4423500B2ECFA8856B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D853605709B84AA30B3D4ABC /* SettingsView.swift */; };
+		E6D5F418A8F330B2E98994FB /* AnswerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A562E348CFC8C8F593FE272 /* AnswerView.swift */; };
+		E99CC4ED00328C7265A85F0C /* ReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2E6AE501861E6842EDDA67 /* ReportView.swift */; };
+		F0CE992E2E0009314A49138A /* CardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315D3E70A89A76AA07F966F6 /* CardsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1FE51D3EAD5F1FAF08E1EC21 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B10EBA8BFBD84BEA772379BD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 526B5024B061A6B53E2ECE59;
+			remoteInfo = ExamPad;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		074224E77EF1A511B9F75E25 /* PaperPagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperPagesView.swift; sourceTree = "<group>"; };
+		102CE3A5A1F0651CE4DD3040 /* AnswerDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnswerDraft.swift; sourceTree = "<group>"; };
+		146EA4935F781D9355CABD73 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		14F38B95DBBB1C7E9462AAAE /* Identity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Identity.swift; sourceTree = "<group>"; };
+		1FEB2803200B70264D22E65F /* QuestionTypeMixEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionTypeMixEditor.swift; sourceTree = "<group>"; };
+		214B5D1D2942E892ADADAD22 /* ImportPaperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportPaperView.swift; sourceTree = "<group>"; };
+		22E3C02949793C72AFFB58BD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2B7C2CFFFB279AA3D8A01120 /* QuestionTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionTypes.swift; sourceTree = "<group>"; };
+		2FC28DAFDD6F55497613BBAD /* StudyPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyPlanView.swift; sourceTree = "<group>"; };
+		315D3E70A89A76AA07F966F6 /* CardsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardsView.swift; sourceTree = "<group>"; };
+		4D1D3079A3D9F850AF6A9FA8 /* GenerateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateSheet.swift; sourceTree = "<group>"; };
+		5A562E348CFC8C8F593FE272 /* AnswerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnswerView.swift; sourceTree = "<group>"; };
+		5A6870C779C54E8EE8A8F1FE /* DocxExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocxExtractor.swift; sourceTree = "<group>"; };
+		6CD7E621C05800F0B8375D5E /* ExamPadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ExamPadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		73A699EED940F99E47A53FC8 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		7885973EC0AFF9E0E90E6CAD /* ExamPadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamPadTests.swift; sourceTree = "<group>"; };
+		822A7C2B65176BB189BA7060 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		830C03C1F238FF174F4FF6D6 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		950E67BBBD64C939FDA063A8 /* AnswerLinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnswerLinesView.swift; sourceTree = "<group>"; };
+		99D7C1793C27ADBFC3C2EE20 /* ExamPadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamPadApp.swift; sourceTree = "<group>"; };
+		A67C962B5141E2B76C096AC5 /* ExamPad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ExamPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABB34834A1E094AA84338856 /* FigureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigureView.swift; sourceTree = "<group>"; };
+		AF709131287BECF27379C18F /* ExamAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamAPI.swift; sourceTree = "<group>"; };
+		B5218549706AE1BB5F13E95F /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		B9BEC31D5C8D3CDC1135DC44 /* PDFWriteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFWriteView.swift; sourceTree = "<group>"; };
+		CD36ED8B5BA5640C59FD268D /* PencilCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PencilCanvas.swift; sourceTree = "<group>"; };
+		D853605709B84AA30B3D4ABC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		EA2E6AE501861E6842EDDA67 /* ReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportView.swift; sourceTree = "<group>"; };
+		FE89B0ADCCF709979982C0A4 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		058834D16B1E0868564805CF /* App */ = {
+			isa = PBXGroup;
+			children = (
+				99D7C1793C27ADBFC3C2EE20 /* ExamPadApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		1294A43E09104A76889A6ED5 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A67C962B5141E2B76C096AC5 /* ExamPad.app */,
+				6CD7E621C05800F0B8375D5E /* ExamPadTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		19AE54C83350CA409BCCC422 /* Import */ = {
+			isa = PBXGroup;
+			children = (
+				214B5D1D2942E892ADADAD22 /* ImportPaperView.swift */,
+				074224E77EF1A511B9F75E25 /* PaperPagesView.swift */,
+				B9BEC31D5C8D3CDC1135DC44 /* PDFWriteView.swift */,
+			);
+			path = Import;
+			sourceTree = "<group>";
+		};
+		285FD8CDCE524B33C0DE3C2D /* StudyPlan */ = {
+			isa = PBXGroup;
+			children = (
+				2FC28DAFDD6F55497613BBAD /* StudyPlanView.swift */,
+			);
+			path = StudyPlan;
+			sourceTree = "<group>";
+		};
+		354840C67014546C055B6950 /* Cards */ = {
+			isa = PBXGroup;
+			children = (
+				315D3E70A89A76AA07F966F6 /* CardsView.swift */,
+			);
+			path = Cards;
+			sourceTree = "<group>";
+		};
+		3AFF36509E473DFB611FE2BC /* Answer */ = {
+			isa = PBXGroup;
+			children = (
+				950E67BBBD64C939FDA063A8 /* AnswerLinesView.swift */,
+				5A562E348CFC8C8F593FE272 /* AnswerView.swift */,
+				ABB34834A1E094AA84338856 /* FigureView.swift */,
+				CD36ED8B5BA5640C59FD268D /* PencilCanvas.swift */,
+			);
+			path = Answer;
+			sourceTree = "<group>";
+		};
+		5DB52B14C0DF53A6B2671E61 /* Report */ = {
+			isa = PBXGroup;
+			children = (
+				EA2E6AE501861E6842EDDA67 /* ReportView.swift */,
+			);
+			path = Report;
+			sourceTree = "<group>";
+		};
+		6687830ED9456395712D5627 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				D853605709B84AA30B3D4ABC /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		6D9E24D7B9DFF658AE309B44 = {
+			isa = PBXGroup;
+			children = (
+				C7E337FD6C3BFD5CDFD38BE5 /* ExamPad */,
+				7E85B37627D68C1498446039 /* ExamPadTests */,
+				1294A43E09104A76889A6ED5 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		6E04545F3BB9C51A8C806F2B /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				102CE3A5A1F0651CE4DD3040 /* AnswerDraft.swift */,
+				FE89B0ADCCF709979982C0A4 /* APIClient.swift */,
+				5A6870C779C54E8EE8A8F1FE /* DocxExtractor.swift */,
+				AF709131287BECF27379C18F /* ExamAPI.swift */,
+				14F38B95DBBB1C7E9462AAAE /* Identity.swift */,
+				822A7C2B65176BB189BA7060 /* Models.swift */,
+				2B7C2CFFFB279AA3D8A01120 /* QuestionTypes.swift */,
+				B5218549706AE1BB5F13E95F /* Settings.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		7E85B37627D68C1498446039 /* ExamPadTests */ = {
+			isa = PBXGroup;
+			children = (
+				7885973EC0AFF9E0E90E6CAD /* ExamPadTests.swift */,
+			);
+			path = ExamPadTests;
+			sourceTree = "<group>";
+		};
+		A521C7E6F14AD6D7D50EF356 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				4D1D3079A3D9F850AF6A9FA8 /* GenerateSheet.swift */,
+				830C03C1F238FF174F4FF6D6 /* LibraryView.swift */,
+				1FEB2803200B70264D22E65F /* QuestionTypeMixEditor.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		ADE74A4E9F0B0CE0ECD83864 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				3AFF36509E473DFB611FE2BC /* Answer */,
+				354840C67014546C055B6950 /* Cards */,
+				19AE54C83350CA409BCCC422 /* Import */,
+				A521C7E6F14AD6D7D50EF356 /* Library */,
+				5DB52B14C0DF53A6B2671E61 /* Report */,
+				DC8F352D015A45864EF1206D /* Review */,
+				6687830ED9456395712D5627 /* Settings */,
+				285FD8CDCE524B33C0DE3C2D /* StudyPlan */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		C7E337FD6C3BFD5CDFD38BE5 /* ExamPad */ = {
+			isa = PBXGroup;
+			children = (
+				058834D16B1E0868564805CF /* App */,
+				6E04545F3BB9C51A8C806F2B /* Core */,
+				ADE74A4E9F0B0CE0ECD83864 /* Features */,
+				146EA4935F781D9355CABD73 /* Assets.xcassets */,
+				22E3C02949793C72AFFB58BD /* Info.plist */,
+			);
+			path = ExamPad;
+			sourceTree = "<group>";
+		};
+		DC8F352D015A45864EF1206D /* Review */ = {
+			isa = PBXGroup;
+			children = (
+				73A699EED940F99E47A53FC8 /* ReviewView.swift */,
+			);
+			path = Review;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		526B5024B061A6B53E2ECE59 /* ExamPad */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 38BF3C1145A7BC3CD720702C /* Build configuration list for PBXNativeTarget "ExamPad" */;
+			buildPhases = (
+				DD58173005568CB7038D0D47 /* Sources */,
+				FBF2A0D09F574F3592AD02C8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ExamPad;
+			packageProductDependencies = (
+			);
+			productName = ExamPad;
+			productReference = A67C962B5141E2B76C096AC5 /* ExamPad.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8B4E82F76B9B78EA27C189AE /* ExamPadTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1460BF515DF5FFBF653133C /* Build configuration list for PBXNativeTarget "ExamPadTests" */;
+			buildPhases = (
+				09C9A7DFECD08E8F4FC1A118 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A315428BA3534687B9C07871 /* PBXTargetDependency */,
+			);
+			name = ExamPadTests;
+			packageProductDependencies = (
+			);
+			productName = ExamPadTests;
+			productReference = 6CD7E621C05800F0B8375D5E /* ExamPadTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B10EBA8BFBD84BEA772379BD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					526B5024B061A6B53E2ECE59 = {
+						DevelopmentTeam = ADN92Z5HXK;
+						ProvisioningStyle = Automatic;
+					};
+					8B4E82F76B9B78EA27C189AE = {
+						DevelopmentTeam = ADN92Z5HXK;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 81D9DED6D5FCB5C0A8B87BA1 /* Build configuration list for PBXProject "ExamPad" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = 6D9E24D7B9DFF658AE309B44;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				526B5024B061A6B53E2ECE59 /* ExamPad */,
+				8B4E82F76B9B78EA27C189AE /* ExamPadTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FBF2A0D09F574F3592AD02C8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05632B2106F6F7AA9CB8BC8F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		09C9A7DFECD08E8F4FC1A118 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3789D865196D9FB7A77DE824 /* ExamPadTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DD58173005568CB7038D0D47 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1FA419D4370EBCA76BCA7A14 /* APIClient.swift in Sources */,
+				C154B2EC3BF3FADFB1B42999 /* AnswerDraft.swift in Sources */,
+				0C4C6B94A0044E88320E850B /* AnswerLinesView.swift in Sources */,
+				E6D5F418A8F330B2E98994FB /* AnswerView.swift in Sources */,
+				F0CE992E2E0009314A49138A /* CardsView.swift in Sources */,
+				1209D2E157EA17C3398A5C14 /* DocxExtractor.swift in Sources */,
+				90555B0DCCAED1DE0188D1A9 /* ExamAPI.swift in Sources */,
+				C00D490726228862B79D3FF0 /* ExamPadApp.swift in Sources */,
+				068A5003FCD628AE14A13A95 /* FigureView.swift in Sources */,
+				3E427FD14BE004B0BF1ECFDB /* GenerateSheet.swift in Sources */,
+				11FCECECDECC1654E4B1C1EC /* Identity.swift in Sources */,
+				2D36F2F9206971157845B005 /* ImportPaperView.swift in Sources */,
+				9C88CC644A558DAFB5E5F2D4 /* LibraryView.swift in Sources */,
+				5618F68843FDD0C3084C81DB /* Models.swift in Sources */,
+				974B64A9BFDCC605A68EE9CE /* PDFWriteView.swift in Sources */,
+				AC3DBC91BD3A93A7CD459423 /* PaperPagesView.swift in Sources */,
+				B18CE0A6876859D91FB8EB41 /* PencilCanvas.swift in Sources */,
+				05A650E0EBDA1E1EC8F96168 /* QuestionTypeMixEditor.swift in Sources */,
+				1C518F5FEBB36F08A54BF448 /* QuestionTypes.swift in Sources */,
+				E99CC4ED00328C7265A85F0C /* ReportView.swift in Sources */,
+				7A6EF4E44F2F0B89530B7FBD /* ReviewView.swift in Sources */,
+				4216BC29D32517F24BE160F1 /* Settings.swift in Sources */,
+				DAA88E4423500B2ECFA8856B /* SettingsView.swift in Sources */,
+				34E67342935C962D178AFD32 /* StudyPlanView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A315428BA3534687B9C07871 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 526B5024B061A6B53E2ECE59 /* ExamPad */;
+			targetProxy = 1FE51D3EAD5F1FAF08E1EC21 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2612BF58619790ADE5E9A578 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.yiyo.exampad.tests;
+				PRODUCT_NAME = ExamPadTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ExamPad.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ExamPad";
+			};
+			name = Debug;
+		};
+		38728B13975AEFC42E1DBBB9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ExamPad/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.yiyo.exampad;
+				PRODUCT_NAME = ExamPad;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		4A0B22A5962B0BFE56BA795D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ExamPad/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.yiyo.exampad;
+				PRODUCT_NAME = ExamPad;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		9A013A88C7AC486700376241 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = ADN92Z5HXK;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E7800879C8BBBFB61EB3A2A0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.yiyo.exampad.tests;
+				PRODUCT_NAME = ExamPadTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ExamPad.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ExamPad";
+			};
+			name = Release;
+		};
+		EE95D064A5B7DE73F8F9B658 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = ADN92Z5HXK;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		38BF3C1145A7BC3CD720702C /* Build configuration list for PBXNativeTarget "ExamPad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38728B13975AEFC42E1DBBB9 /* Debug */,
+				4A0B22A5962B0BFE56BA795D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		81D9DED6D5FCB5C0A8B87BA1 /* Build configuration list for PBXProject "ExamPad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9A013A88C7AC486700376241 /* Debug */,
+				EE95D064A5B7DE73F8F9B658 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A1460BF515DF5FFBF653133C /* Build configuration list for PBXNativeTarget "ExamPadTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2612BF58619790ADE5E9A578 /* Debug */,
+				E7800879C8BBBFB61EB3A2A0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B10EBA8BFBD84BEA772379BD /* Project object */;
+}

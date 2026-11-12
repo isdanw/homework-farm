@@ -70,12 +70,24 @@
     <view wx:for="{{messages}}" wx:key="index"
           class="msg-row {{item.role === 'user' ? 'from-user' : 'from-ai'}}">
       <view class="msg-avatar">{{item.role === 'user' ? '🐯' : '🤖'}}</view>
-      <view class="msg-bubble">{{item.content}}</view>
+      <view class="msg-main">
+        <view class="msg-bubble">{{item.content}}</view>
+        <!-- 本轮讲解材料出处（可溯源，不是学习成果；无召回则整行不出现） -->
+        <view wx:if="{{item.refs && item.refs.length}}" class="msg-refs">
+          <text class="mr-label">本轮讲解材料</text>
+          <text wx:for="{{item.refs}}" wx:for-item="r" wx:key="uid" class="mr-chip">{{r.unitTitle}} · {{r.topic}}</text>
+        </view>
+        <!-- 朗读：只读 AI 回复，同一条再点一次停止 -->
+        <view wx:if="{{item.role !== 'user'}}" class="speak-btn {{speakingIdx === index ? 'on' : ''}}"
+              data-index="{{index}}" bindtap="toggleSpeak">{{speakingIdx === index ? '⏸ 停止朗读' : '🔊 朗读'}}</view>
+      </view>
     </view>
 
     <view wx:if="{{sending}}" class="msg-row from-ai">
       <view class="msg-avatar">🤖</view>
-      <view class="msg-bubble typing">老师正在想…</view>
+      <view class="msg-main">
+        <view class="msg-bubble typing">老师正在想…</view>
+      </view>
     </view>
 
     <view id="msg-bottom" style="height:4rpx"></view>

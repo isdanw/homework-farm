@@ -12,7 +12,8 @@
  *   §2 导航与视图接线：nav / section / switchView / .view 四处齐全
  *   §3 数据接线：DATA 声明 / refreshAll 查询 / 解构 6 项 / renderOrders 被调用
  *   §4 写边界：**只有 orders 一路可写**（决策 3）——
- *       云函数白名单（读 2 + 写 1）/ 读走 query() 单一出口 / 写走 callWrite() 单一出口 /
+ *       云函数白名单（query / visionConfig / write / parentAuth）/ 读走 query() 单一出口 /
+ *       写走 4 个登记出口（orders / cards / tbed / childId 迁移）/
  *       保留键 5 个双层防御 / 写动作恰 2 种（issue+submit）/ 块外无写 /
  *       文案如实说明写边界（不得残留「本页只读」）
  *   §5 三端文案一致：状态表 / 事件表 / 操作者表 与 小程序、工作台逐字一致
@@ -372,7 +373,7 @@ section('3. 数据接线');
   }
 })();
 
-section('4. 写边界：**只有 orders 一路可写**，其余严格只读（决策 3）');
+section('4. 写边界：导学单区只允许 orders 写；看板另有 cards / tbed / 迁移 三个登记出口（各自独立）');
 (function writeBoundary() {
   ok(appCode.length > 1000, '应用脚本已取出并剥注释（' + appCode.length + ' 字节）');
 
@@ -393,8 +394,10 @@ section('4. 写边界：**只有 orders 一路可写**，其余严格只读（�
    *     · 除该出口外，全文不得出现第二个 webAdminWrite 调用点
    *   ───────────────────────────────────────────────────────────── */
 
-  /* —— 4.1 云函数白名单：读 2 个 + 写 1 个，多一个都不行 —— */
-  const ALLOWED_FN = ['webAdminQuery', 'webVisionConfig', 'webAdminWrite'];
+  /* —— 4.1 云函数白名单：多一个都不行 ——
+   * 读：webAdminQuery（唯一读）、webVisionConfig（视觉模型配置读写代理）。
+   * 写：webAdminWrite。身份：parentAuth（家长口令，2026-10-29 网页端家长 PIN 入口）。 */
+  const ALLOWED_FN = ['webAdminQuery', 'webVisionConfig', 'webAdminWrite', 'parentAuth'];
   const fnNames = [];
   {
     const re = /name\s*:\s*'([A-Za-z]+)'/g;
@@ -405,15 +408,33 @@ section('4. 写边界：**只有 orders 一路可写**，其余严格只读（�
   ok(used.length > 0, '能枚举出应用脚本调用的云函数（' + used.join(', ') + '）');
   const extra = used.filter(function (x) { return ALLOWED_FN.indexOf(x) < 0; });
   ok(extra.length === 0, '调用的云函数都在白名单内（越界：' + (extra.join(', ') || '无') + '）');
-  ok(used.indexOf('webAdminWrite') >= 0, 'webAdminWrite 在白名单内 —— 导学单是唯一破例的写通道（决策 3）');
+  ok(used.indexOf('webAdminWrite') >= 0, 'webAdminWrite 在白名单内 —— 登记的写通道（orders / cards / tbed / childId 迁移）');
 
   /* —— 4.2 读通道只有 query() 一个出口 —— */
   const qCount = (appCode.match(/name\s*:\s*'webAdminQuery'/g) || []).length;
   ok(qCount === 1, '整个应用脚本只有 1 处 webAdminQuery 调用点（实际 ' + qCount + '）—— 读通道只有 query() 一个出口');
 
-  /* —— 4.3 写通道只有 callWrite() 一个出口 —— */
+  /* —— 4.3 写通道出口恰为 3 个（2026-10-29 收成单孩子后）——
+   * 判据演进史：T21「只有 callWrite 一个出口」→ cards 写加入后未同步（断言失真 3 天）
+   * → 2026-10-26 tbed（教材/教学计划导入）加入
+   * → 2026-10-29 childId 迁移 UI 随多孩下线移除，回到三个出口：
+   *   callWrite(orders) / callWriteCards(cards) / callTbedWrite(tbed)，
+   *   每个出口恰含 1 处 webAdminWrite 调用，全文不得出现第 4 处。 */
+  const WRITE_EXITS = ['callWrite', 'callWriteCards', 'callTbedWrite'];
   const wCount = (appCode.match(/name\s*:\s*'webAdminWrite'/g) || []).length;
-  ok(wCount === 1, '整个应用脚本只有 1 处 webAdminWrite 调用点（实际 ' + wCount + '）—— 写通道只有 callWrite() 一个出口');
+  ok(wCount === WRITE_EXITS.length,
+    '整个应用脚本恰有 ' + WRITE_EXITS.length + ' 处 webAdminWrite 调用点（实际 ' + wCount + '）—— orders / cards / tbed 三路写出口');
+  WRITE_EXITS.forEach(function (fn) {
+    const body = fnBody(webSrc, fn);
+    ok(body.length > 200, fn + ' 函数体已定位（' + body.length + ' 字节）');
+    ok(/name\s*:\s*'webAdminWrite'/.test(body), fn + ' 内恰含 webAdminWrite 调用（唯一出口原则）');
+  });
+
+  /* —— 4.3b 单孩子模型：网页端不再有 childId 迁移入口 ——
+   * 服务端 webAdminWrite.migrateChildScope 保留（历史数据兼容），但产品已收成单孩，
+   * 网页端不得再出现迁移 UI / 调用点 —— 否则等于把已删的多孩入口偷偷加回来。 */
+  ok(!/migrateChildScope/.test(appCode), '网页端不再出现 migrateChildScope 调用（单孩子模型）');
+  ok(!/id\s*=\s*['"]mig(Scan|Confirm|Result|Card|Msg)['"]/.test(webSrc), '迁移 UI 元素（migScan/migConfirm/migResult）已下线');
 
   const callWriteBody = fnBody(webSrc, 'callWrite');
   ok(callWriteBody.length > 300, 'callWrite 函数体已定位（' + callWriteBody.length + ' 字节）');
@@ -422,10 +443,16 @@ section('4. 写边界：**只有 orders 一路可写**，其余严格只读（�
   ok(/by\s*:\s*'web'/.test(stripComments(callWriteBody)),
      "callWrite 固定 by:'web'（三端留痕口径 mp / web / workbench）");
 
-  /* webAdminWrite 调用点必须**落在 callWrite 里**：若出现在别处，就是绕开唯一出口的第二条写路径 */
-  const callWriteIdx = webSrc.indexOf('function callWrite(');
-  const wCallIdx = appCode.search(/name\s*:\s*'webAdminWrite'/);
-  ok(callWriteIdx > 0 && wCallIdx > 0, '能同时定位 callWrite 定义与 webAdminWrite 调用点');
+  /* —— 4.6 导学单区域之外不得有任何写（2026-10-26 扩：tbed 区内的 callTbedWrite 例外）——
+   * 写出口只允许出现在三个已定位的函数体内（4.3 已逐个验证）；
+   * 这里反过来验证：把三个出口函数体挖掉后，全文不得再剩任何 webAdminWrite 调用点。 */
+  let outsideOrders = appCode;
+  WRITE_EXITS.forEach(function (fn) {
+    outsideOrders = outsideOrders.replace(fnBody(outsideOrders, fn), '');
+  });
+  outsideOrders = outsideOrders.replace(stripComments(ordersBlock), '');
+  ok(!/name\s*:\s*'webAdminWrite'/.test(outsideOrders),
+     'webAdminWrite 调用点全部落在 callWrite / callWriteCards / callTbedWrite 三出口内（块外出现 = 越权写其它模块）');
 
   /* —— 4.4 保留键双层防御（与云函数 / 工作台同名门禁）—— */
   /* 注意：ORDER_RESERVED_KEYS 是**数组**字面量，不能用 objLiteralAfter（那是给 {} 用的）——
@@ -452,10 +479,7 @@ section('4. 写边界：**只有 orders 一路可写**，其余严格只读（�
   const leaked = forbidden.filter(function (x) { return (doIssueBody + doSubmitBody).indexOf(x) >= 0; });
   ok(leaked.length === 0, '不实现作废/重开/勾任务/归档等动作（越界：' + (leaked.join(', ') || '无') + '）');
 
-  /* —— 4.6 导学单区域之外不得有任何写 —— */
-  const outsideOrders = appCode.replace(stripComments(ordersBlock), '');
-  ok(!/name\s*:\s*'webAdminWrite'/.test(outsideOrders),
-     'webAdminWrite 调用点全部落在「导学单」代码块内（块外出现 = 越权写其它模块）');
+  /* —— 4.6（旧版块判断据已于 2026-10-26 前移到 4.3/4.6 新版：多出口白名单制）—— */
   ok(/renderOrdersBody|^$/.test(renderOrdersBody) || !/\.callFunction\s*\(/.test(renderOrdersBody),
      'renderOrders 内不直连 callFunction（渲染与写入分离：写只在 doIssue / doSubmitReceipt）');
   ok(!/\.add\s*\(|\.update\s*\(|\.remove\s*\(/.test(ordersCode),
@@ -466,15 +490,19 @@ section('4. 写边界：**只有 orders 一路可写**，其余严格只读（�
 
   /* —— 4.7 文案必须如实说明写边界（说反了比不写更糟）—— */
   ok(ordersSection.length > 300, '导学单界面区块已取出（' + ordersSection.length + ' 字节）');
-  ok(/本页是本看板唯一的可写区域/.test(ordersSection), '导学单界面文案明写「本页是本看板唯一的可写区域」');
+  ok(/本页与「教材·计划」页是本看板仅有的两个可写区域/.test(ordersSection), '导学单界面文案如实标注两个可写区域（orders + tbed，2026-10-26 扩）');
   ok(!/本页只读/.test(ordersSection), '不再残留「本页只读」的旧文案（与实现相反）');
   ok(/出单/.test(ordersSection) && /交回执/.test(ordersSection), '界面文案点明两个写动作（出单 / 交回执）');
   ok(!/只读回放/.test(ordersSection), '不再把本页描述为「只读回放」');
   ok(/导学单可写/.test(webSrc), '品牌栏文案标出写边界（HW-FARM · 导学单可写）');
-  const subSuffix = webSrc.match(/suffix\s*=\s*\(v === 'orders'\)\s*\?\s*'([^']*)'\s*:\s*'([^']*)'/);
-  ok(!!subSuffix, 'switchView 的副标题按视图区分写/读');
-  ok(!!subSuffix && subSuffix[1].indexOf('可写') >= 0 && subSuffix[2].indexOf('只读') >= 0,
-     '副标题：orders = 可写，其余 = 只读（实际 ' + (subSuffix ? subSuffix[1] + ' | ' + subSuffix[2] : '未解析') + '）');
+  /* 副标题分段 ternary（orders 可写 / tbed 可写 / tutor 只读 / 其余只读） */
+  const subSuffix = webSrc.match(/suffix\s*=\s*\(v === 'orders'\)\s*\?\s*'([^']*)'\s*:\s*\(v === 'tbed'\)\s*\?\s*'([^']*)'/);
+  const subTail = subSuffix ? webSrc.slice(subSuffix.index, subSuffix.index + 400) : '';
+  ok(!!subSuffix, 'switchView 的副标题按视图区分写/读（orders / tbed 段可解析）');
+  ok(!!subSuffix && subSuffix[1].indexOf('可写') >= 0 && subSuffix[2].indexOf('可写') >= 0,
+     '副标题：orders / tbed = 可写（实际 ' + (subSuffix ? subSuffix[1] + ' | ' + subSuffix[2] : '未解析') + '）');
+  ok(!!subSuffix && /只读'\s*;/.test(subTail),
+     '副标题收尾回落到「只读」（其余视图默认只读）');
 })();
 
 section('8. 写路径语义（O1 锚点 / O2 两步选择 / O3 不产证据）');

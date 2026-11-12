@@ -8,12 +8,14 @@
  */
 const store = require('../../utils/store.js');
 const tutorStore = require('../../utils/tutorStore.js');
+const kpRecall = require('../../utils/kpRecall.js');
 const studyPlan = require('../../utils/studyPlan.js');
 const util = require('../../utils/util.js');
 const tutorSubjects = require('../../utils/tutorSubjects.js');
 const mistakeRules = require('../../utils/mistakeRules.js');
 const engine = require('../../utils/farmEngine.js');
 const tutorGate = require('../../utils/tutorGate.js');
+const speech = require('../../utils/speech.js');
 
 /** 导学支持的九科（与云函数 SUBJECT_PROMPTS 对齐） */
 const TUTOR_SUBJECTS = tutorSubjects.TUTOR_SUBJECTS;
@@ -33,10 +35,12 @@ Page({
     sessionId: '',
     input: '',
     sending: false,
+    speakingIdx: -1,       // 正在朗读的消息下标（同一条再点一次停止）
     archivedCount: 0,
     scrollTo: '',
     taskContext: null,     // 成长计划任务上下文 { key, si, ti, task, stage, goal }
     mistakeContext: null,  // 错题订正上下文 { key, topic, errorType }
+    recommendationId: '',  // 来源建议（复习窗口/导学单号），仅作溯源，不参与判分
     locked: false,         // 门禁（2026-09-22）：未添加孩子或未建计划时禁用导学
     lockReason: '',
     checkinNote: '',
@@ -60,9 +64,11 @@ Page({
     let taskContext = null;
     let mistakeContext = null;
     let checkinNote = '';
+    let recommendationId = '';
     if (options) {
       if (options.key || options.subject) initSubject = options.key || options.subject;
       if (options.checkinNote) checkinNote = decodeURIComponent(options.checkinNote || '');
+      recommendationId = decodeURIComponent(options.recommendationId || '');
       if (options.task) {
         taskContext = {
           key: initSubject,
@@ -83,7 +89,12 @@ Page({
     }
     if (!TUTOR_SUBJECTS.some(s => s.key === initSubject)) initSubject = 'math';
 
-    this.setData({ taskContext: taskContext, mistakeContext: mistakeContext, checkinNote: checkinNote });
+    this.setData({
+      taskContext: taskContext,
+      mistakeContext: mistakeContext,
+      checkinNote: checkinNote,
+      recommendationId: recommendationId
+    });
     this.switchSubject(initSubject);
 
     // 从打卡 / 计划任务 / 错题订正进入：把建议开场语预填进输入框，
@@ -157,8 +168,59 @@ Page({
     return snap ? snap.ctx : null;
   },
 
+  /**
+   * 本轮讲解材料召回（只读）：在该学科各单元必会清单里做结构化匹配，命中必会点就把它自己的
+   * 自测问法 / 讲解抓手 / 孩子推通过的卡 / 先修欠账 / 上次订正动作拼成一块素材注入导学。
+   * 不相关返回 null（宁可不注入）；sources 是材料出处，回复落地时挂到消息上供家长核对，
+   * 属「教什么」的溯源，不是学习成果记录，不参与判分、不写 evidence。
+   */
+  _buildRecall(content) {
+    try {
+      const units = tutorStore.getUnitKpsListBySubject(this.data.subject).slice(0, 8);
+      if (!units.length) return null;
+      return kpRecall.buildRecall({
+        query: content,
+        subject: this.data.subject,
+        units: units,
+        cards: tutorStore.getCards(),
+        mistakes: tutorStore.getMistakes(),
+        errorType: (this.data.mistakeContext || {}).errorType || ''
+      });
+    } catch (e) {
+      console.warn('[tutor] 讲解召回异常，本轮不注入', e);
+      return null;
+    }
+  },
+
   /** 离页标记：限流延时重试的定时器可能在页面卸载后触发，需丢弃 */
-  onUnload() { this._destroyed = true; },
+  onUnload() {
+    this._destroyed = true;
+    speech.stop(true);
+  },
+
+  /** 离开导学页（切 Tab / 进下层页面）就停止朗读，避免声音跟着人走 */
+  onHide() {
+    speech.stop(true);
+    if (this.data.speakingIdx !== -1) this.setData({ speakingIdx: -1 });
+  },
+
+  /* ---------------- 朗读（同声传译插件，端上不录音） ---------------- */
+  toggleSpeak(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const msg = this.data.messages[idx];
+    if (!msg || msg.role === 'user') return;
+    if (!speech.isAvailable()) {
+      util.toast('朗读暂不可用，请先在小程序后台启用语音插件');
+      return;
+    }
+    // 语文：拼音不念成英文（只读汉字）；英语：apple 照读
+    const started = speech.play('m' + idx, msg.content, (state, key) => {
+      if (state === 'playing') { this.setData({ speakingIdx: idx }); return; }
+      if (state === 'error') util.toast('朗读失败，请再试一次');
+      if (this.data.speakingIdx === idx) this.setData({ speakingIdx: -1 });
+    }, { pinyin: this.data.subject === 'chinese' });
+    if (!started) util.toast('这条主要是拼音，暂时读不了');
+  },
 
   /* ---------------- 学科切换 ---------------- */
   pickSubject(e) {
@@ -171,6 +233,8 @@ Page({
 
   switchSubject(key) {
     if (this._locked) return;
+    // 消息列表整个换掉 → 正在朗读的内容和下标都失效
+    speech.stop(true);
     const sub = TUTOR_SUBJECTS.find(s => s.key === key);
     const active = tutorStore.getActive(key);
     this.setData({
@@ -181,6 +245,7 @@ Page({
       sessionId: active ? active.id : '',
       input: '',
       sending: false,
+      speakingIdx: -1,
       scrollTo: ''
     }, () => this.scrollBottom());
     // 切学科后必会库不同 → 刷新覆盖进度
@@ -274,21 +339,31 @@ Page({
     const userMsg = { role: 'user', content: content, ts: Date.now() };
     tutorStore.appendMessage(sessionId, userMsg);
     const messages = this.data.messages.concat([userMsg]);
-    this.setData({ messages: messages, input: '', sending: true }, () => this.scrollBottom());
+    // 新一轮提问 → 上一轮还在朗读的回复先停（新回复马上到，接着读旧的会串台）
+    speech.stop(true);
+    this.setData({ messages: messages, input: '', sending: true, speakingIdx: -1 }, () => this.scrollBottom());
 
     const child = store.get();
     const lr = store.getLearner();
     const learner = {
       grade: child.grade || '',
       teachStyle: lr.teachStyle || '',
-      expectations: lr.expectations || []
+      replyLength: lr.replyLength || '',
+      expectations: lr.expectations || [],
+      coachNote: lr.coachNote || ''
     };
 
     // history 传给云函数（不含刚追加的本轮 user，云函数内部会再拼本轮 content）
     const history = messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
 
-    // 跨会话记忆（闭环 S3）：每轮新会话的第一问，注入「近期卡点快照」（纯本地结构化字段）
+      // 跨会话记忆（闭环 S3）：每轮新会话的第一问，注入「近期卡点快照」（纯本地结构化字段）
     const learnerCtx = history.length === 0 ? tutorStore.getLearnerContext(this.data.subject) : '';
+    // 教学计划参考：从学科画像取（与教材锚点同属学科设定），空则云函数 fail-open 不注入
+    const teachingPlanRaw = (store.getSubjectProfile(this.data.subject).teachingPlan || {}).raw || '';
+
+    // 讲解材料召回：命中才注入，未命中本轮维持原行为（不带素材、不带来源）
+    const recall = this._buildRecall(content);
+    this._lastRefs = recall ? recall.sources : [];
 
     // 记住本次载荷：限流等失败时可直接重试（不重复插入用户消息）
     this._lastPayload = {
@@ -298,8 +373,11 @@ Page({
       history: history,
       learner: learner,
       learnerCtx: learnerCtx,
+      teachingPlan: teachingPlanRaw,
       // 混合路线：把当前单元必会清单 + 复习状态注入，AI 优先围绕未覆盖/待复习的点引导
-      unitCtx: this._buildUnitCtx()
+      unitCtx: this._buildUnitCtx(),
+      // 本轮讲解材料（必会点/闪卡/订正动作的结构化召回，只影响「怎么讲」）
+      refCtx: recall ? recall.text : ''
     };
     this._callChat(this._lastPayload);
   },
@@ -333,6 +411,9 @@ Page({
       }
       this._lastPayload = null;
       const aiMsg = { role: 'assistant', content: r.reply || '', ts: Date.now() };
+      // 本轮注入过的讲解材料出处（无召回则不带，界面也不显示这行）
+      if (this._lastRefs && this._lastRefs.length) aiMsg.refs = this._lastRefs;
+      this._lastRefs = [];
       tutorStore.appendMessage(this.data.sessionId, aiMsg);
       this.setData({ messages: this.data.messages.concat([aiMsg]), sending: false }, () => this.scrollBottom());
     }).catch(err => {
@@ -461,8 +542,10 @@ Page({
         this._archiveLearner = learner;
 
         const hasTask = !!(this.data.taskContext && this.data.taskContext.key);
+        // 归档后消息清空 → 下标失效，先停朗读
+        speech.stop(true);
         this.setData({
-          messages: [], sessionId: '', input: '',
+          messages: [], sessionId: '', input: '', speakingIdx: -1,
           archivedCount: tutorStore.archiveCount()
         });
         this.showSummary(diagnosis, hasTask ? this.data.taskContext : null, r.summary);

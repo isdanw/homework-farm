@@ -1,0 +1,69 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+  <view wx:elif="{{error}}" class="state err">{{error}}</view>
+
+  <block wx:else>
+    <view class="exam-head">
+      <text class="exam-name">{{exam.name}}</text>
+      <text class="exam-meta">{{exam.subjectName}} · {{exam.questions.length}} 题 · 建议 {{exam.suggestedDuration}} 分钟</text>
+    </view>
+
+    <view class="q" wx:for="{{exam.questions}}" wx:key="id" wx:for-item="q" wx:for-index="qi">
+      <view class="q-title"><text class="q-no">{{qi+1}}.</text>{{q.stem}}
+        <text class="q-kp" wx:if="{{q.kp}}">［{{q.kp}}］</text>
+        <text class="q-pts" wx:if="{{q.points}}">{{q.points}}分</text>
+      </view>
+
+      <!-- 题图（结构化 figure，端上 canvas 2d 绘制；无图为空） -->
+      <canvas wx:if="{{q.figure}}" type="2d" class="q-fig"
+              style="height:{{q.figH}}rpx" data-qid="{{q.id}}"></canvas>
+
+      <!-- 选择题 -->
+      <view wx:if="{{q.type==='choice'}}" class="opts">
+        <view wx:for="{{q.opts}}" wx:key="label"
+              class="opt {{answers[q.id].text===item.label?'on':''}}"
+              data-qid="{{q.id}}" data-opt="{{item.label}}" bindtap="onChoice">
+          {{item.label}}. {{item.text}}
+        </view>
+      </view>
+
+      <!-- 填空 / 计算 -->
+      <view wx:elif="{{q.type==='fill' || q.type==='calc'}}">
+        <input class="text-in" placeholder="请输入答案" value="{{answers[q.id].text}}" data-qid="{{q.id}}" bindinput="onText" />
+      </view>
+
+      <!-- 简答 -->
+      <view wx:elif="{{q.type==='essay'}}">
+        <textarea class="text-ar" placeholder="请输入作答" value="{{answers[q.id].text}}" data-qid="{{q.id}}" bindinput="onText" />
+      </view>
+
+      <!-- 画图 / 手写 -->
+      <view wx:elif="{{q.type==='draw'}}" class="draw-box">
+        <button class="draw-btn" size="mini" data-qid="{{q.id}}" bindtap="openDraw">✎ 书写</button>
+        <text wx:if="{{answers[q.id].imageRefs.length}}" class="draw-flag">已书写 ✓</text>
+        <input class="text-in mini" placeholder="或在此输入答案（便于自动批改）" value="{{answers[q.id].drawText}}" data-qid="{{q.id}}" bindinput="onDrawText" />
+      </view>
+    </view>
+
+    <button class="submit-btn" bindtap="submit" loading="{{submitting}}" disabled="{{submitting}}">
+      {{submitting ? '批改中…' : '提交并批改'}}
+    </button>
+  </block>
+
+  <!-- 书写画板弹层 -->
+  <view wx:if="{{drawModal}}" class="mask" bindtap="closeDraw">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <text>书写区</text>
+        <text class="sheet-close" bindtap="closeDraw">✕</text>
+      </view>
+      <canvas canvas-id="drawCanvas" class="draw-canvas"
+              bindtouchstart="drawStart" bindtouchmove="drawMove" bindtouchend="drawEnd"></canvas>
+      <view class="sheet-actions">
+        <button size="mini" bindtap="clearDraw">清空</button>
+        <button size="mini" type="primary" bindtap="saveDraw">保存</button>
+      </view>
+      <view class="sheet-tip">手写后点「保存」即上传；若想自动批改，也可在题目下方输入文字答案。</view>
+    </view>
+  </view>
+</view>

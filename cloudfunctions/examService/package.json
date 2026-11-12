@@ -1,0 +1,10 @@
+{
+  "name": "examService",
+  "version": "1.0.0",
+  "description": "自助导学测验卷系统：AI 出卷 + 在线作答 + 双路线 AI 批改 + 试卷/提交 CRUD + 视觉模型配置 + 账号绑定",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.7",
+    "pdf-parse": "^1.1.1"
+  }
+}

@@ -8,21 +8,30 @@
  *   · 纯数据搬运 + 服务端聚合，不生成任何"掌握"判定（掌握度只来自 tutor_evidence.passed=true）。
  *
  * 入参：
- *   { token:'xxx', module:'overview|farm|tutor|profile', query:{ range:'7d', openid:'', subject:'' } }
+ *   { token:'xxx', module:'overview|farm|tutor|profile|sync|exams|orders', query:{ range:'7d', openid:'', subject:'' } }
  * 出参：{ ok:true, module, data:{...} } 或 { ok:false, code, msg }
  *
  * 聚合口径：
- *   · 打卡率 = hw_checkin_log 中三科 done 数 / (3 × 日志记录数)
+ *   · 打卡率 = hw_farm_user.data.users[].homework 的 done 数 / 记录数（孩子级权威源）
  *   · 学科分布 = tutor_sessions 按 subject 分组计数
  *   · 错因分布 = tutor_mistakes 按 errorType(E1–E9) 分组计数
  *   · 待复习 = tutor_reviews done=false 且 dueAt≤now
  *   · 已掌握 = tutor_evidence passed=true 计数
  *   · 已订正 = tutor_mistakes status='corrected'（≠掌握，单独计）
+ *
+ * 孩子归属口径（P0-A，2026-10-28）：
+ *   · 记录带 childId → 就归那个孩子，一分不差；
+ *   · 不带 childId（P0 之前的行）→ 标 legacy，**绝不并入任何孩子**（不猜 currentUserId，
+ *     也不猜 users[0]）。同一天同一账号已有孩子级行时，旧行视为被取代的重复行：
+ *     从列表里剔除，但计入 replaced 计数，保证「总数不丢、明细不重」。
+ *   · 展示用的「当前孩子」= currentUserId，若失效则回落该账号的第一个真实孩子，
+ *     但必须用 childSource='first' 明确标注这是回落值（绝不静默）。
  */
 const tcb = require('@cloudbase/node-sdk');
-// 只 require orderKit（纯函数、零依赖、无写能力）。⚠️ 本函数**只读**，
+// 只 require orderKit / scopeGuard（均为纯函数、零依赖、无写能力）。⚠️ 本函数**只读**，
 // 绝不可引入 orderActions / orderCloudDeps —— 那里面有写路径。
 const K = require('./orderKit');
+const G = require('./scopeGuard');
 
 const ENV = process.env.TCB_ENV || 'workbuddy-d2gsgtfvmde5c9adf';
 const COLLS = {
@@ -154,6 +163,49 @@ function computeUnitKpPoints(units, cards) {
   return out;
 }
 
+/** 盲区诊断（pathA S3 云端版）：读依赖边 + 复习卡毕业态，反查「前置欠账」与「下游拖累」。
+ *  掌握度判据 = topic 下存在 done=true 的卡；无卡视为未达标（与 tutorStore.diagnoseBlindSpot 同口径）。 */
+/** 知识点达标判定（P2）：有全局 kpId 时只按 unitId::kpId 精确匹配（防跨单元 topic 撞名误判）；
+ *  无 kpId（旧数据）才 fallback topic。 */
+function kpMastered(cards, target) {
+  if (!target) return false;
+  const tid = target.kpId || '';
+  if (tid) {
+    return cards.some(c => c && c.done && c.kpId && (c.unitId || '') + '::' + c.kpId === tid);
+  }
+  return cards.some(c => c && c.done && c.topic === target.topic);
+}
+
+function computeBlindSpots(units, cards) {
+  const deps = {};   // 前置 topic → 依赖它的后置点
+  const allPoints = [];
+  units.forEach(u => {
+    const unitId = u.clientId || u._id || '';
+    (Array.isArray(u.points) ? u.points : []).forEach(p => {
+      allPoints.push({ unitId: unitId, unitTitle: u.title || '', subject: u.subject || '', point: p });
+      (p.prereqs || []).forEach(r => {
+        if (r && r.topic) (deps[r.topic] = deps[r.topic] || []).push({ topic: p.topic, pointId: p.id });
+      });
+    });
+  });
+  const blindSpots = [];
+  allPoints.forEach(({ unitId, unitTitle, subject, point: p }) => {
+    const prereqs = p.prereqs || [];
+    const missing = prereqs.filter(r => r && !kpMastered(cards, r));
+    const blocks = (deps[p.topic] || []).map(d => d.topic);
+    const selfNotMastered = !kpMastered(cards, p);
+    if (missing.length || (selfNotMastered && blocks.length)) {
+      blindSpots.push({
+        unitId: unitId, unitTitle: unitTitle, subject: subject,
+        kpId: p.kpId || (unitId + '::' + p.id), topic: p.topic, mastered: !selfNotMastered,
+        missingPrereqs: missing.map(r => ({ topic: r.topic, kpId: r.kpId || '', strength: r.strength, reason: r.reason })),
+        blocks: blocks
+      });
+    }
+  });
+  return blindSpots;
+}
+
 /* ---------- 工具：按账号维度过滤（per-user 口令场景） ---------- */
 function ofilter(name, openid) {
   if (!openid) return {}; // 管理员：不过滤，看全部
@@ -162,15 +214,67 @@ function ofilter(name, openid) {
   return { openid };
 }
 
-/* ---------- 工具：取「当前孩子」切片 ----------
+/* ---------- 工具：取「当前孩子」切片 + 归属来源 ----------
  * ⚠️ 关键：hw_farm_user.data 存的是整个 _root（{ version, users:[...], currentUserId, coop }），
  * 孩子级字段（homework/schedule/learner/subjectProfiles/studyPlans/plans/farm/checkinTypes/
  * comments/learn/profile）全部挂在 data.users[i] 上，**data 顶层并没有这些字段**。
  * 早期误从 data.xxx 读取 → 网页永远空。所有孩子级字段一律走本函数。
- * coop 是 _root 级（全家庭共享），仍从 data.coop 取。 */
-function currentUser(data) {
-  const us = (data && Array.isArray(data.users)) ? data.users : [];
-  return us.find(x => x && x.id === (data && data.currentUserId)) || us[0] || {};
+ * coop 是 _root 级（全家庭共享），仍从 data.coop 取。
+ *
+ * 返回 { cu, childId, source }：
+ *   current = currentUserId 指向的真实孩子（正常路径）
+ *   first   = currentUserId 失效，回落该账号第一个真实孩子（只用于展示，必须标注）
+ *   none    = 该账号一个真实孩子都没有（users 里只有占位切片）
+ * 与写入口 scopeGuard.resolveChildId 不同：那边**不回落**（写错孩子是串数据），
+ * 这边只读，回落可接受，但必须把 source 一并下发，让看板能如实标注。 */
+function pickCurrent(data) {
+  const kids = G.childrenOf(data);
+  const want = String((data && data.currentUserId) || '');
+  const cur = want ? kids.find(cu => cu.id === want) : null;
+  if (cur) return { cu: cur, childId: cur.id, source: 'current' };
+  if (kids.length) return { cu: kids[0], childId: kids[0].id, source: 'first' };
+  return { cu: {}, childId: '', source: 'none' };
+}
+
+/* ---------- 工具：读口径收敛到「当前孩子」（单孩子模型） ----------
+ * 家长口令访问（openid 非空）时，列表类模块只回当前孩子的行 + 历史无归属行；
+ * 管理员（openid 为空，跨账号聚合）不切片，保持原行为；
+ * 解析不出孩子（无档案 / 只有占位切片）也不切片 —— 宁可多给，不误删。 */
+async function currentChildScope(openid) {
+  if (!openid) return '';
+  try {
+    const rows = await getAll(COLLS.user, ofilter(COLLS.user, openid));
+    const u = rows && rows[0];
+    return pickCurrent((u && u.data) || {}).childId || '';
+  } catch (e) { return ''; }
+}
+function byChild(rows, cid) {
+  if (!cid) return rows;
+  return rows.filter(r => !r.childId || r.childId === cid);
+}
+
+/* ---------- 工具：历史行（无 childId）拆分 ----------
+ * 规则：有 childId 就归孩子；没有就标 legacy，不并入任何孩子。
+ * keyOf(r) 必须唯一标识「一天的一个账号」（如 _openid + '|' + date）：
+ * 同日同账号已有孩子级行 → 旧行是被取代的重复行，从列表剔除但计数（replaced）。
+ * 否则旧行仍是一天的真实快照，只是不知道属于谁 → 留在列表并标 legacy:true（unattributed）。
+ * 不做 dedupe 的集合（如事件流）传 keyOf=null，只标记不改列表。 */
+function splitLegacy(rows, keyOf) {
+  const src = (rows || []).filter(Boolean);
+  if (!keyOf) {
+    return { kept: src.map(r => (r.childId ? r : Object.assign({}, r, { legacy: true }))), unattributed: src.filter(r => !r.childId).length, replaced: 0 };
+  }
+  const childKeys = new Set();
+  src.forEach(r => { if (r.childId) childKeys.add(keyOf(r)); });
+  const kept = [];
+  let unattributed = 0, replaced = 0;
+  src.forEach(r => {
+    if (r.childId) { kept.push(r); return; }
+    if (childKeys.has(keyOf(r))) { replaced++; return; }
+    unattributed++;
+    kept.push(Object.assign({}, r, { legacy: true }));
+  });
+  return { kept, unattributed, replaced };
 }
 
 /* ---------- 工具：日期加减（'YYYY-MM-DD'） ---------- */
@@ -241,11 +345,37 @@ async function overview(query, openid) {
     : 0;
 
   // 孩子状态摘要：即使无打卡 / 导学活动，也能展示画像（昵称 / 年级）与农场资产
+  // P0-A：逐孩子清单（所有账号 × 所有真实孩子），供看板按孩子切片；
+  // 同时把「当前孩子」的来源一并标注（current / first / none）。
+  const children = [];
+  users.forEach(u => {
+    const d = (u && u.data) || {};
+    const oid = u._openid || u.openid || '';
+    const cur = pickCurrent(d);
+    G.childrenOf(d).forEach(cu => {
+      const f = cu.farm || {};
+      children.push({
+        openid: oid,
+        childId: cu.id,
+        nickname: cu.nickname || '',
+        grade: cu.grade || '',
+        isCurrent: cu.id === cur.childId,
+        coins: f.coins || 0,
+        bears: Array.isArray(f.bears) ? f.bears.length : 0,
+        plots: Array.isArray(f.plots) ? f.plots.length : 0,
+        shields: f.shields || 0
+      });
+    });
+  });
+
   const u0 = users[0];
   const d0 = (u0 && u0.data) || {};
-  const cu0 = currentUser(d0);
+  const p0 = pickCurrent(d0);
+  const cu0 = p0.cu;
   const f0 = cu0.farm || {};
   const child = u0 ? {
+    childId: p0.childId,
+    childSource: p0.source,
     nickname: cu0.nickname || d0.nickname || '',
     grade: cu0.grade || d0.grade || '',
     coins: f0.coins || 0,
@@ -254,8 +384,35 @@ async function overview(query, openid) {
     shields: f0.shields || 0
   } : null;
 
+  // 逐孩子活动归属：只认行上的 childId；无 childId 的行单独落 legacy 桶，
+  // 不摊给任何孩子（摊了就是「两个孩子各算一次」＝重复计数）。
+  const buckets = {};
+  const bucket = (oid, childId) => {
+    const k = (oid || '') + '|' + (childId || '');
+    if (!buckets[k]) buckets[k] = {
+      openid: oid || '', childId: childId || '', legacy: !childId,
+      sessions: 0, mistakes: 0, corrected: 0, mastered: 0, dueReviews: 0
+    };
+    return buckets[k];
+  };
+  children.forEach(c => { bucket(c.openid, c.childId); });
+  sessions.forEach(s => { bucket(s.openid, s.childId).sessions++; });
+  mistakes.forEach(m => {
+    const b = bucket(m.openid, m.childId);
+    b.mistakes++;
+    if (m.status === 'corrected') b.corrected++;
+  });
+  evidence.forEach(e => { if (e.passed === true) bucket(e.openid, e.childId).mastered++; });
+  reviews.forEach(r => {
+    if (!r.done && (r.dueAt || 0) <= now) bucket(r.openid, r.childId).dueReviews++;
+  });
+  const byChild = Object.keys(buckets).map(k => buckets[k]).sort((a, b) =>
+    a.openid === b.openid ? String(a.childId).localeCompare(String(b.childId)) : String(a.openid).localeCompare(String(b.openid)));
+
   return {
     child,
+    children,
+    byChild,
     kpi: { checkinRate, sessions: sessions.length, mistakes: mistakes.length, dueReviews, dueCards, mastered, corrected, unitsInProgress, avgUnitPass },
     subjectDist: groupCount(sessions, 'subject'),
     errorDist: groupCount(mistakes, 'errorType'),
@@ -273,12 +430,13 @@ async function farm(openid) {
   const userSum = [];
   users.forEach(u => {
     const data = (u && u.data) || {};
-    const us = Array.isArray(data.users) ? data.users : [];
-    const list = us.length ? us : [currentUser(data)];
-    list.forEach(cu => {
+    const cur = pickCurrent(data);
+    G.childrenOf(data).forEach(cu => {
       const farm = cu.farm || {};
       userSum.push({
         openid: u._openid || u.openid || '',
+        childId: cu.id,
+        isCurrent: cu.id === cur.childId,
         nickname: cu.nickname || '',
         grade: cu.grade || '',
         coins: farm.coins || 0,
@@ -293,7 +451,23 @@ async function farm(openid) {
       });
     });
   });
-  return { users: userSum, logs: logs.slice(0, 60), settle: settle.slice(0, 60), events: events.slice(0, 60) };
+  // 打卡明细 / 惩罚结算是「一天一条」的快照，P0 之前的行没有 childId。
+  // 同日同账号已有孩子级行 → 旧行是被取代的重复行（剔除但计数）；否则保留并标 legacy。
+  // 事件流是逐条发生的动作，同日多条属正常，不做 dedupe，只标 legacy。
+  const dayKey = r => (r._openid || r.openid || '') + '|' + (r.date || '');
+  const L = splitLegacy(logs, dayKey);
+  const S = splitLegacy(settle, dayKey);
+  const E = splitLegacy(events, null);
+  return {
+    users: userSum,
+    logs: L.kept.slice(0, 60),
+    settle: S.kept.slice(0, 60),
+    events: E.kept.slice(0, 60),
+    childScope: {
+      unattributed: { logs: L.unattributed, settle: S.unattributed, events: E.unattributed },
+      replaced: { logs: L.replaced, settle: S.replaced, events: E.replaced }
+    }
+  };
 }
 
 async function tutor(openid) {
@@ -306,36 +480,51 @@ async function tutor(openid) {
     getAll(COLLS.unitKps, ofilter(COLLS.unitKps, openid))
   ]);
   // 会话白名单含 summary（会话级课程总结）；其余集合无该字段，多带无害
+  // childId（P0-A）：有就下发孩子归属，看板才能逐孩子切片；老行没有该字段 → 不下发（≠''）
   const clean = r => {
     const o = {};
-    ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'stage', 'dueAt', 'done', 'total', 'correct', 'rate', 'passed', 'summary', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+    ['openid', 'childId', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'stage', 'dueAt', 'done', 'total', 'correct', 'rate', 'passed', 'summary', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
     return o;
   };
   // 闪卡白名单（提取式记忆实体；不回 messages、不回 openid 属主细节）
   // 混合路线（P1）增补 unitId / kpId / source 三字段，供看板标注「必会覆盖」来源
   const cardClean = r => {
     const o = {};
-    ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'front', 'back', 'sourceSessionId', 'unitId', 'kpId', 'source', 'box', 'dueAt', 'done', 'lastResult', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+    ['openid', 'childId', 'clientId', 'subject', 'subjectName', 'topic', 'front', 'back', 'sourceSessionId', 'unitId', 'kpId', 'source', 'box', 'dueAt', 'done', 'lastResult', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
     return o;
   };
   // 单元必会清单白名单（P2）：points 只留结构化字段，不带正文外内容
+  // pathA：透传图谱字段（type/prereqs/evidence/assessmentPrompt），供看板展示依赖边
   const unitClean = r => {
     const o = {};
-    ['openid', 'clientId', 'subject', 'subjectName', 'title', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+    ['openid', 'childId', 'clientId', 'subject', 'subjectName', 'title', 'createdAt', 'updatedAt'].forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
     o.points = (Array.isArray(r.points) ? r.points : []).map(p => ({
-      id: p.id, topic: p.topic, front: p.front, back: p.back, order: p.order
+      id: p.id, topic: p.topic, front: p.front, back: p.back, order: p.order,
+      type: p.type || '',
+      prereqs: Array.isArray(p.prereqs) ? p.prereqs : [],
+      evidence: Array.isArray(p.evidence) ? p.evidence : [],
+      assessmentPrompt: p.assessmentPrompt || ''
     }));
     return o;
   };
+  // 单孩子模型：列表与统计同口径，只算当前孩子（历史无归属行保留）
+  const cid = await currentChildScope(openid);
+  const sS = byChild(sessions, cid);
+  const mS = byChild(mistakes, cid);
+  const rS = byChild(reviews, cid);
+  const eS = byChild(evidence, cid);
+  const cdS = byChild(cards, cid);
+  const ukS = byChild(unitKps, cid);
   return {
-    sessions: sessions.slice(0, 100).map(clean),
-    mistakes: mistakes.slice(0, 100).map(clean),
-    reviews: reviews.slice(0, 100).map(clean),
-    evidence: evidence.slice(0, 100).map(clean),
-    cards: cards.slice(0, 100).map(cardClean),
-    unitKps: unitKps.slice(0, 100).map(unitClean),
-    unitKpStats: computeUnitKpStats(unitKps, cards),
-    unitKpPoints: computeUnitKpPoints(unitKps, cards)
+    sessions: sS.slice(0, 100).map(clean),
+    mistakes: mS.slice(0, 100).map(clean),
+    reviews: rS.slice(0, 100).map(clean),
+    evidence: eS.slice(0, 100).map(clean),
+    cards: cdS.slice(0, 100).map(cardClean),
+    unitKps: ukS.slice(0, 100).map(unitClean),
+    unitKpStats: computeUnitKpStats(ukS, cdS),
+    unitKpPoints: computeUnitKpPoints(ukS, cdS),
+    blindSpots: computeBlindSpots(ukS, cdS)
   };
 }
 
@@ -350,7 +539,9 @@ async function profile(openid) {
     getAll(COLLS.unitKps, ofilter(COLLS.unitKps, openid))
   ]);
   const now = Date.now();
-  // 按 openid 聚合（tutor_* 无 childId 字段，真实口径只到 openid 级）
+  // 按 openid 聚合（账号 = 网页顶部孩子 chip 的键；一个账号可含多个孩子）
+  // P0-A：账号级计数仍跨孩子汇总（兼容既有看板），逐孩子切片走 childId / children[]；
+  // tutor_* 行带 childId 的才归孩子，不带的是老行，**不摊给任何孩子**。
   const openids = new Set();
   users.forEach(u => openids.add(u._openid));
   sessions.forEach(s => s.openid && openids.add(s.openid));
@@ -362,7 +553,8 @@ async function profile(openid) {
   for (const oid of openids) {
     const u = users.find(x => x._openid === oid) || {};
     const data = u.data || {};
-    const cu = currentUser(data);              // 孩子切片：homework/schedule/learner/studyPlans/farm… 全在 data.users[i]
+    const picked = pickCurrent(data);          // 孩子切片：homework/schedule/learner/studyPlans/farm… 全在 data.users[i]
+    const cu = picked.cu;
     const farm = cu.farm || {};
     const s = sessions.filter(x => x.openid === oid);
     const m = mistakes.filter(x => x.openid === oid);
@@ -377,6 +569,31 @@ async function profile(openid) {
       : 0;
     accounts.push({
       openid: oid,
+      // P0-A 孩子归属：账号级字段全部取自「当前孩子」切片，必须同时说明是谁、以及
+      // 这个「当前」是 currentUserId 还是失效后的回落（first）。
+      childId: picked.childId,
+      currentChildId: picked.childId,
+      childSource: picked.source,
+      // 逐孩子清单：孩子级字段各带一份，供看板切换孩子时不必再拉库。
+      // 注意：这里是「每个孩子自己的切片」，不是账号级汇总，别混用。
+      children: G.childrenOf(data).map(c => {
+        const f = c.farm || {};
+        return {
+          childId: c.id,
+          nickname: c.nickname || '',
+          grade: c.grade || '',
+          isCurrent: c.id === picked.childId,
+          coins: f.coins || 0,
+          bears: Array.isArray(f.bears) ? f.bears.length : 0,
+          plots: Array.isArray(f.plots) ? f.plots.length : 0,
+          shields: f.shields || 0,
+          homework: c.homework || {},
+          streak: (c.profile && c.profile.streak) || 0,
+          plans: c.plans || {},
+          schedule: c.schedule || null,
+          studyPlans: c.studyPlans || null
+        };
+      }),
       nickname: cu.nickname || data.nickname || '',
       grade: cu.grade || data.grade || '',
       learner: cu.learner || null,
@@ -410,7 +627,9 @@ async function profile(openid) {
       subjectDist: groupCount(s, 'subject'),
       errorDist: groupCount(m, 'errorType'),
       mistakeBySubject: groupCount(m, 'subject'),
-      masteredBySubject: groupCount(ev.filter(e => e.passed === true), 'subject')
+      masteredBySubject: groupCount(ev.filter(e => e.passed === true), 'subject'),
+      // 文档级 updatedAt（2026-10-26）：教学计划导入的冲突闸 base（webAdminWrite.writeTeachingPlan 用）
+      updatedAt: u.updatedAt || 0
     });
   }
   return { accounts };
@@ -436,7 +655,8 @@ async function sync(openid) {
   ]);
   const u = users[0];
   const data = (u && u.data) || {};
-  const cu = currentUser(data);
+  const picked = pickCurrent(data);
+  const cu = picked.cu;
   const pass = (rows, keep) => rows.map(r => {
     const o = {};
     keep.forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
@@ -445,6 +665,14 @@ async function sync(openid) {
   });
   return {
     profile: {
+      // P0-A：profile 的字段全取自「当前孩子」切片，必须同时说明孩子是谁、
+      // 以及「当前」是 currentUserId 还是失效后的回落；children 供工作台判断
+      // 这份账号里到底有几个孩子（本模块仍只下一个孩子的镜像）。
+      childId: picked.childId,
+      childSource: picked.source,
+      children: G.childrenOf(data).map(c => ({
+        childId: c.id, nickname: c.nickname || '', grade: c.grade || '', isCurrent: c.id === picked.childId
+      })),
       nickname: cu.nickname || data.nickname || '',
       grade: cu.grade || data.grade || '',
       learner: cu.learner || null,
@@ -463,12 +691,14 @@ async function sync(openid) {
       // 供工作台上推时判断「小程序是否在我下拉之后又写过」，从而避免静默覆盖。
       updatedAt: (u && u.updatedAt) || 0
     },
-    sessions: pass(sessions, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'messages', 'createdAt', 'updatedAt', 'closed', 'closedAt']),
-    mistakes: pass(mistakes, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'source', 'questionText', 'childAnswer', 'markSource', 'createdAt', 'updatedAt']),
-    evidence: pass(evidence, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'total', 'correct', 'rate', 'passed', 'createdAt', 'updatedAt']),
-    reviews: pass(reviews, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'stage', 'dueAt', 'done', 'mistakeClientId', 'createdAt', 'updatedAt']),
+    // 下列各行都透传 childId（P0-A）：工作台按孩子重建镜像时，没有它就只能归到账号级，
+    // 多孩家庭会把两个孩子的错题/复习混成一份。老行无该字段 → 不下发（≠ 编一个）。
+    sessions: pass(sessions, ['openid', 'childId', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'messages', 'createdAt', 'updatedAt', 'closed', 'closedAt']),
+    mistakes: pass(mistakes, ['openid', 'childId', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'errorDesc', 'suggestion', 'status', 'source', 'questionText', 'childAnswer', 'markSource', 'createdAt', 'updatedAt']),
+    evidence: pass(evidence, ['openid', 'childId', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'total', 'correct', 'rate', 'passed', 'createdAt', 'updatedAt']),
+    reviews: pass(reviews, ['openid', 'childId', 'clientId', 'subject', 'subjectName', 'topic', 'errorType', 'stage', 'dueAt', 'done', 'mistakeClientId', 'createdAt', 'updatedAt']),
     // 闪卡：与 reviews 同口径透传（含 box/lastResult 进度 + 混合路线 unitId/kpId/source，供工作台下拉完整重建）
-    cards: pass(cards, ['openid', 'clientId', 'subject', 'subjectName', 'topic', 'front', 'back', 'sourceSessionId', 'unitId', 'kpId', 'source', 'box', 'dueAt', 'done', 'lastResult', 'createdAt', 'updatedAt']),
+    cards: pass(cards, ['openid', 'childId', 'clientId', 'subject', 'subjectName', 'topic', 'front', 'back', 'sourceSessionId', 'unitId', 'kpId', 'source', 'box', 'dueAt', 'done', 'lastResult', 'createdAt', 'updatedAt']),
     // F-B：试卷库（资源库条目，非学情数据）。正文三段一并返回，供工作台下拉重建 papers md。
     exams: pass(exams, ['openid', 'clientId', 'resourceId', 'fileName', 'name', 'level', 'examType', 'retestType',
       'subject', 'subjectName', 'stage', 'grade', 'textbookEdition', 'correspondingUnit',
@@ -485,7 +715,7 @@ async function sync(openid) {
  * 出参：{ exams:[{ id, name, subjectName, examType, retestType, grade, stage, correspondingUnit, suggestedDuration, maxEvidenceLevel, officialUrl, answerUrl, staleLink, updatedAt, ... }] }
  */
 async function exams(openid) {
-  const rows = await getAll(COLLS.exams, ofilter(COLLS.exams, openid));
+  const rows = byChild(await getAll(COLLS.exams, ofilter(COLLS.exams, openid)), await currentChildScope(openid));
   const KEEP = ['openid', 'clientId', 'resourceId', 'fileName', 'name', 'level', 'examType', 'retestType',
     'subject', 'subjectName', 'stage', 'grade', 'textbookEdition', 'correspondingUnit',
     'knowledgePoints', 'suggestedDuration', 'maxEvidenceLevel', 'passingCriteria',
@@ -536,7 +766,7 @@ async function exams(openid) {
  */
 async function orders(openid, query) {
   const q = query || {};
-  const rows = await getAll(COLLS.orders, ofilter(COLLS.orders, openid));
+  const rows = byChild(await getAll(COLLS.orders, ofilter(COLLS.orders, openid)), await currentChildScope(openid));
 
   // 大文本剔除（端上要用时按 orderKit 的 orderTextFor 重新生成，不依赖云端存全文）
   const HEAVY = ['copyText', 'resumeText', 'recycleText', 'protocolBlock', 'promptText'];

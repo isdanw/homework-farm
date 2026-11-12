@@ -1,0 +1,89 @@
+<view class="page">
+  <!-- 无数据兜底 -->
+  <view wx:if="{{!ready}}" class="empty">
+    <view class="empty-emoji">{{loadingCloud ? '⏳' : '📭'}}</view>
+    <view class="empty-tip">{{err || (loadingCloud ? '正在取回批改记录…' : '暂无批改数据')}}</view>
+    <button class="btn-ghost" bindtap="backGallery">返回测验卷中心</button>
+  </view>
+
+  <block wx:else>
+    <!-- 总评卡 -->
+    <view class="summary-card">
+      <view class="sum-head">
+        <view class="sum-name">{{examName}}</view>
+        <view class="sum-meta">{{subjectName}} · 批改路线 {{routeLabel}}</view>
+      </view>
+
+      <view class="rate-row">
+        <view class="rate-main">
+          <text class="rate-num">{{summary.rate}}</text><text class="rate-pct">%</text>
+          <view class="rate-sub">正确率</view>
+        </view>
+        <view class="rate-side">
+          <view class="rs-item"><text class="rs-num">{{summary.correctCount}}/{{summary.total}}</text><text class="rs-label">正确题数</text></view>
+          <view class="rs-item"><text class="rs-num">{{summary.gotPoints}}/{{summary.totalPoints}}</text><text class="rs-label">得分</text></view>
+          <view class="rs-item"><text class="rs-num">{{mistakesAdded}}</text><text class="rs-label">回流错题</text></view>
+        </view>
+      </view>
+
+      <view wx:if="{{summary.advice}}" class="advice">{{summary.advice}}</view>
+
+      <view wx:if="{{summary.weaknesses.length}}" class="weak">
+        <view class="weak-title">薄弱点</view>
+        <view class="weak-tags">
+          <text wx:for="{{summary.weaknesses}}" wx:key="*this" class="weak-tag">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 逐题诊断 -->
+    <view class="sec-title">逐题诊断</view>
+    <view wx:for="{{items}}" wx:key="no" wx:for-item="it" class="q-card {{it.correct?'ok':'bad'}}">
+      <view class="q-top">
+        <text class="q-no">{{it.no}}.</text>
+        <text class="q-type">{{it.typeLabel}}</text>
+        <text wx:if="{{it.kp}}" class="q-kp">［{{it.kp}}］</text>
+        <text class="q-pts">{{it.points}}分</text>
+        <text class="q-flag {{it.correct?'on':'off'}}">{{it.correct?'✓ 正确':'✗ 错误'}}</text>
+      </view>
+
+      <view class="q-stem">{{it.stem}}</view>
+
+      <!-- 题图（结构化 figure，端上 canvas 2d 绘制；无图为空） -->
+      <canvas wx:if="{{it.figH}}" type="2d" class="q-fig"
+              style="height:{{it.figH}}rpx"></canvas>
+
+      <!-- 选择题选项 -->
+      <view wx:if="{{it.type==='choice'}}" class="opts">
+        <view wx:for="{{it.opts}}" wx:key="label" wx:for-item="o"
+              class="opt {{it.answer===o.label?'correct':''}} {{it.userText.indexOf(o.label+'. ')===0?'picked':''}}">
+          {{o.label}}. {{o.text}}
+          <text wx:if="{{it.answer===o.label}}" class="mark r">答案</text>
+          <text wx:if="{{it.userText.indexOf(o.label+'. ')===0 && it.answer!==o.label}}" class="mark w">你的</text>
+        </view>
+      </view>
+
+      <view class="ans-line">
+        <text class="ans-k">你的作答：</text>
+        <text class="ans-v {{it.correct?'on':''}}">{{it.userText}}</text>
+      </view>
+      <view wx:if="{{!it.correct}}" class="ans-line">
+        <text class="ans-k">参考答案：</text>
+        <text class="ans-v right">{{it.answerText}}</text>
+      </view>
+
+      <view wx:if="{{!it.correct && (it.diag.label || it.errorDesc || it.suggestion)}}" class="diag">
+        <view wx:if="{{it.diag.label}}" class="diag-tag" style="color:{{it.diag.color}};background:{{it.diag.bg}}">{{it.diag.label}}</view>
+        <view wx:if="{{it.errorDesc}}" class="diag-desc">错因：{{it.errorDesc}}</view>
+        <view wx:if="{{it.suggestion}}" class="diag-sug">建议：{{it.suggestion}}</view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="actions">
+      <button class="btn-primary" bindtap="redo">重做本卷</button>
+      <button class="btn-ghost" bindtap="toMistakes">去错题本（{{mistakesAdded}}）</button>
+      <button class="btn-ghost" bindtap="again">再来一份</button>
+    </view>
+  </block>
+</view>

@@ -54,3 +54,31 @@
   font-size: 26rpx; line-height: 1.6; color: #2A3340;
 }
 .paste-btn { margin-top: 16rpx; }
+
+/* 教材库入口（2026-10-25） */
+.opt-sub-row { margin-top: 12rpx; display: flex; align-items: center; gap: 14rpx; flex-wrap: wrap; }
+.link-btn {
+  font-size: 24rpx; color: #3FA9F5; font-weight: 600;
+  background: #EEF7FE; border-radius: 10rpx; padding: 8rpx 18rpx;
+}
+.op-hover { opacity: 0.7; }
+.opt-hint { font-size: 22rpx; color: #9AA5B1; flex: 1; }
+
+/* 教学计划（与成长计划关联） */
+.tp-info { margin-bottom: 14rpx; }
+.tp-title { font-size: 28rpx; font-weight: 800; color: #2A3340; }
+.tp-meta { font-size: 22rpx; color: #9AA5B1; margin-top: 4rpx; }
+.tp-tip { margin-bottom: 14rpx; line-height: 1.6; }
+
+/* 导入 sheet */
+.sheet-mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 999; display: flex; align-items: flex-end; }
+.sheet { width: 100%; background: #fff; border-radius: 28rpx 28rpx 0 0; padding: 28rpx 24rpx 40rpx; box-sizing: border-box; max-height: 86vh; display: flex; flex-direction: column; }
+.sheet-head { display: flex; align-items: center; margin-bottom: 14rpx; }
+.sheet-title { flex: 1; font-size: 32rpx; font-weight: 800; color: #2A3340; }
+.sheet-close { width: 60rpx; height: 60rpx; line-height: 58rpx; text-align: center; color: #9AA5B1; font-size: 32rpx; }
+.sheet-tip { margin-bottom: 14rpx; line-height: 1.6; }
+.sheet-opt { display: flex; align-items: center; gap: 14rpx; margin: 12rpx 0; }
+.tp-preview { background: #F6F9FC; border-radius: 16rpx; padding: 16rpx 18rpx; margin: 14rpx 0; }
+.tp-preview-head { font-size: 22rpx; color: #9AA5B1; margin-bottom: 8rpx; }
+.tp-preview-body { max-height: 320rpx; }
+.tp-preview-body text { font-size: 24rpx; color: #3A4350; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }

@@ -5,7 +5,15 @@
  *   .where().orderBy().limit().get() / .where().update() / .doc().update() / createCollection
  * 用法：Module._load 拦截 '@cloudbase/node-sdk' 返回本模块的 createMock()
  */
-function createMockDb() {
+  /* 与真实 SDK 对齐：add/update 均收裸数据对象；为兼容旧测试的 {data:X} 包装做解包 */
+  function unwrap(docOrOpts) {
+    if (docOrOpts && typeof docOrOpts === 'object' && 'data' in docOrOpts && Object.keys(docOrOpts).length === 1) {
+      return docOrOpts.data;
+    }
+    return docOrOpts;
+  }
+
+  function createMockDb() {
   const db = {
     collections: {},          // { name: [doc, ...] }
     autoId: 0,
@@ -33,7 +41,8 @@ function createMockDb() {
         arr = arr.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         return { data: JSON.parse(JSON.stringify(arr)) };
       },
-      update: async ({ data }) => {
+      update: async (docOrOpts) => {
+        const data = unwrap(docOrOpts);
         db.log.push({ op: 'update', name: name, filter: filter, data: data });
         let n = 0;
         coll(name).forEach((d, i) => {
@@ -51,19 +60,33 @@ function createMockDb() {
     where: (f) => makeQuery(name, f),
     orderBy: () => db.collection(name),
     limit: () => db.collection(name),
-    add: async ({ data }) => {
+    add: async (docOrOpts) => {
+      const data = unwrap(docOrOpts);
       db.log.push({ op: 'add', name: name, data: data });
       const _id = 'cloud_' + (++db.autoId);
       coll(name).push(Object.assign({}, data, { _id: _id }));
       return { id: _id };
     },
     doc: (id) => ({
-      update: async ({ data }) => {
+      update: async (docOrOpts) => {
+        const data = unwrap(docOrOpts);
         db.log.push({ op: 'docUpdate', name: name, id: id, data: data });
         const arr = coll(name);
         const i = arr.findIndex(d => d._id === id);
         if (i >= 0) arr[i] = Object.assign({}, arr[i], data);
         return { updated: i >= 0 ? 1 : 0 };
+      },
+      remove: async () => {
+        db.log.push({ op: 'docRemove', name: name, id: id });
+        const arr = coll(name);
+        const i = arr.findIndex(d => d._id === id);
+        if (i >= 0) arr.splice(i, 1);
+        return { deleted: i >= 0 ? 1 : 0 };
+      },
+      get: async () => {
+        const arr = coll(name);
+        const d = arr.find(x => x._id === id);
+        return { data: d ? [JSON.parse(JSON.stringify(d))] : [] };
       }
     }),
     get: async () => ({ data: JSON.parse(JSON.stringify(coll(name))) })

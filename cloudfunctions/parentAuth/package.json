@@ -1,0 +1,9 @@
+{
+  "name": "parentAuth",
+  "version": "1.0.0",
+  "description": "家长凭证：PIN 加盐散列 + 5 次失败锁 15 分钟 + 2 小时 parentSession（签发作废与审计）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

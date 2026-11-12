@@ -5,6 +5,7 @@
     <view class="rt-subject">{{subjectEmoji}} {{subjectName}}</view>
     <view class="rt-topic">{{topic}}</view>
     <view class="rt-err" wx:if="{{errorType}}">错因：{{errorTypeLabel}}</view>
+    <view class="rt-err" wx:if="{{kind === 'variant'}}">变式复测{{context ? ' · ' + context : ''}} · 题面是新情境，判分标准与普通复测一致</view>
   </view>
 
   <!-- ===== 加载中 ===== -->
@@ -44,7 +45,22 @@
       <view class="rt-btn rt-btn-line {{current === 0 ? 'disabled' : ''}}" bindtap="goPrev">上一题</view>
       <view class="rt-btn rt-btn-line {{current === questions.length - 1 ? 'disabled' : ''}}" bindtap="goNext">下一题</view>
     </view>
-    <view class="rt-submit" bindtap="submit">✓ 交卷（已答 {{answeredCount}} / {{questions.length}}）</view>
+
+    <!-- 独立性声明：不预选，必须孩子自己点；有提示的复测不计入证据 -->
+    <view class="rt-indep">
+      <view class="rt-indep-title">这次是独立完成的吗？</view>
+      <view
+        wx:for="{{independenceOpts}}"
+        wx:key="value"
+        class="rt-indep-opt {{independence === item.value ? 'on' : ''}}"
+        data-value="{{item.value}}"
+        bindtap="pickIndependence">
+        <view class="rt-indep-label">{{item.label}}</view>
+        <view class="rt-indep-hint">{{item.hint}}</view>
+      </view>
+    </view>
+
+    <view class="rt-submit {{independence ? '' : 'disabled'}}" bindtap="submit">✓ 交卷（已答 {{answeredCount}} / {{questions.length}}）</view>
   </block>
 
   <!-- ===== 结果 ===== -->
@@ -65,11 +81,11 @@
         <view class="rt-result-rate">答对 {{result.correct}} / {{result.total}} 题 · 通过率 {{result.rate * 100}}%</view>
         <view class="rt-result-reason" wx:if="{{result.reason}}">{{result.reason}}</view>
         <view class="rt-result-note">
-          {{result.pass ? '这次表现不错，该知识点已记入导学证据。' : '还差一点，建议先回「导学助手」订正，再来复测一次。'}}
+          {{result.evidenceProduced ? (result.pass ? '这次是独立完成的，该知识点已记入导学证据。' : '还差一点，建议先回「导学助手」订正，再来复测一次。') : '这次有提示，题目记录已保存，但不算复测证据，也不推进复习计划。'}}
         </view>
       </view>
 
-      <!-- 逐题结果 -->
+      <!-- 逐题结果：答案与解析由服务端判分时回传（题面里本来就没有） -->
       <view class="rt-card rt-review">
         <view wx:for="{{questions}}" wx:key="index" class="rt-review-item">
           <view class="rt-review-head">
@@ -79,8 +95,8 @@
             </text>
           </view>
           <view class="rt-review-q">{{item.q}}</view>
-          <view class="rt-review-ans">你的答案：{{result.results[index].your || '未答'}} · 正确答案：{{item.answer}}</view>
-          <view class="rt-review-analysis" wx:if="{{item.analysis}}">{{item.analysis}}</view>
+          <view class="rt-review-ans">你的答案：{{result.results[index].your || '未答'}} · 正确答案：{{result.results[index].answer}}</view>
+          <view class="rt-review-analysis" wx:if="{{result.results[index].analysis}}">{{result.results[index].analysis}}</view>
         </view>
       </view>
 

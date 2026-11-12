@@ -6,10 +6,9 @@
       <text class="ck-date">{{selDateText}}</text>
       <text class="ck-progress">完成 <text class="ck-num">{{doneNum}}</text>/{{typeTotal}} 项</text>
     </view>
-    <view class="ck-h-right" bindtap="switchChild">
+    <view class="ck-h-right">
       <view class="ck-avatar-sm">{{child.avatar}}</view>
       <text class="ck-child-name">{{child.nickname}}</text>
-      <text class="ck-switch-hint">切换 ›</text>
     </view>
   </view>
 

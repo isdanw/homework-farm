@@ -1,0 +1,253 @@
+<view class="page">
+
+  <!-- 顶部：标题 + 筛选 + 新建 -->
+  <view class="topbar">
+    <text class="title">{{pickMode ? '选择教材' : '教材库'}}</text>
+    <text class="sub">{{pickMode ? '选用后，学习计划将按该教材单元目录编排' : '官方库 + 我的库 · 计划生成的目录锚点'}}</text>
+  </view>
+
+  <view class="toolbar">
+    <picker class="filter-pick" mode="selector" range="{{subjectOptions}}" range-key="name" bindchange="onFilterSubject">
+      <view class="filter-btn">{{subjectOptions[filterIdx].name}} ▾</view>
+    </picker>
+    <view class="search-btn" hover-class="op-hover" bindtap="openSearch">🔍 搜索</view>
+    <view class="new-btn" hover-class="op-hover" bindtap="openSheet">＋ 新建</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <!-- 我的库 -->
+  <block wx:if="{{mine.length}}">
+    <view class="section-title">我的教材（{{mine.length}}）</view>
+    <view wx:for="{{mine}}" wx:key="textbookId" class="tb-card">
+      <view class="tb-main" bindtap="toggleExpand" data-id="{{item.textbookId}}">
+        <view class="tb-title">{{item.title}}</view>
+        <view class="tb-meta">
+          <text class="tag t-b">{{item.subjectName}}</text>
+          <text wx:if="{{item.grade}}" class="tb-dim">{{item.grade}}</text>
+          <text wx:if="{{item.term}}" class="tb-dim">{{item.term}}</text>
+          <text class="tb-dim">{{item.unitCount}} 单元</text>
+          <text class="tag t-n">{{item.sourceLabel}}</text>
+        </view>
+      </view>
+      <view class="tb-actions">
+        <view wx:if="{{pickMode}}" class="mini-btn primary" bindtap="pickThis" data-id="{{item.textbookId}}">选用</view>
+        <template wx:else>
+          <view class="mini-btn" bindtap="editMine" data-id="{{item.textbookId}}">编辑</view>
+          <view class="mini-btn danger" bindtap="deleteMine" data-id="{{item.textbookId}}">删除</view>
+        </template>
+      </view>
+      <view wx:if="{{expandedId === item.textbookId}}" class="tb-units">
+        <view wx:for="{{expandedUnits}}" wx:key="name" wx:for-item="u" class="tb-unit">
+          <text class="tb-unit-name">{{u.name}}</text>
+          <text wx:if="{{u.sections}}" class="tb-unit-sub">小节：{{u.sections}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 官方库 -->
+  <view class="section-title">官方教材库（{{official.length}}）</view>
+  <view wx:if="{{official.length === 0 && !loading}}" class="empty">该筛选下暂无官方教材。</view>
+  <view wx:for="{{official}}" wx:key="textbookId" class="tb-card">
+    <view class="tb-main" bindtap="toggleExpand" data-id="{{item.textbookId}}">
+      <view class="tb-title">{{item.title}}</view>
+      <view class="tb-meta">
+        <text class="tag t-b">{{item.subjectName}}</text>
+        <text wx:if="{{item.grade}}" class="tb-dim">{{item.grade}}</text>
+        <text wx:if="{{item.term}}" class="tb-dim">{{item.term}}</text>
+        <text class="tb-dim">{{item.unitCount}} 单元</text>
+        <text class="tag t-g">官方</text>
+      </view>
+    </view>
+    <view class="tb-actions">
+      <view class="mini-btn primary" bindtap="pickThis" data-id="{{item.textbookId}}">{{pickMode ? '选用' : '复制到我的'}}</view>
+    </view>
+    <view wx:if="{{expandedId === item.textbookId}}" class="tb-units">
+      <view wx:for="{{expandedUnits}}" wx:key="name" wx:for-item="u" class="tb-unit">
+        <text class="tb-unit-name">{{u.name}}</text>
+        <text wx:if="{{u.sections}}" class="tb-unit-sub">小节：{{u.sections}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="foot-note">官方库来自国家中小学智慧教育平台公开目录整理；选用只写画像，不修改官方条目。</view>
+
+  <!-- ============ 新建上下文 sheet（学科/年级/版本 + 两个入口） ============ -->
+  <view wx:if="{{sheetOpen}}" class="mask" bindtap="closeSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">新建教材</view>
+      <view class="sheet-desc">先告诉系统学科与年级，AI 会照着提取教材目录。</view>
+      <view class="form-row">
+        <text class="form-lab">学科</text>
+        <picker mode="selector" range="{{subjectPickOptions}}" range-key="name" value="{{newSubjectIdx}}" bindchange="onNewSubject">
+          <view class="form-pick">{{subjectPickOptions[newSubjectIdx].name}} ▾</view>
+        </picker>
+      </view>
+      <view class="form-row">
+        <text class="form-lab">年级</text>
+        <input class="form-inp" value="{{newGrade}}" bindinput="onNewGrade" placeholder="如：一年级" placeholder-class="ph" />
+      </view>
+      <view class="form-row">
+        <text class="form-lab">版本</text>
+        <input class="form-inp" value="{{newVersion}}" bindinput="onNewVersion" placeholder="如：人教版" placeholder-class="ph" />
+      </view>
+      <view class="form-row">
+        <text class="form-lab">学期</text>
+        <input class="form-inp" value="{{newTerm}}" bindinput="onNewTerm" placeholder="如：上学期" placeholder-class="ph" />
+      </view>
+      <view class="sheet-btns">
+        <view class="big-btn primary" hover-class="op-hover" bindtap="choosePdf">📄 上传 PDF 目录</view>
+        <view class="big-btn" hover-class="op-hover" bindtap="openPaste">📋 粘贴目录文本</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 联网搜索（Tavily → 候选带 units） ============ -->
+  <view wx:if="{{searchOpen}}" class="mask">
+    <view class="sheet sheet-tall" catchtap="noop">
+      <view class="sheet-title">联网搜索教材目录</view>
+      <view class="sheet-desc">搜索公开网页里的教材目录，AI 提取单元；候选仅供参考，保存前请核对。</view>
+      <view class="form-row">
+        <text class="form-lab">学科</text>
+        <picker mode="selector" range="{{subjectPickOptions}}" range-key="name" value="{{searchSubjectIdx}}" bindchange="onSearchSubject">
+          <view class="form-pick">{{subjectPickOptions[searchSubjectIdx].name}} ▾</view>
+        </picker>
+      </view>
+      <view class="form-row">
+        <text class="form-lab">年级</text>
+        <input class="form-inp" value="{{searchGrade}}" bindinput="onSearchGrade" placeholder="如：一年级（可空）" placeholder-class="ph" />
+      </view>
+      <view class="form-row">
+        <text class="form-lab">版本</text>
+        <input class="form-inp" value="{{searchVersion}}" bindinput="onSearchVersion" placeholder="如：人教版（可空）" placeholder-class="ph" />
+      </view>
+      <view class="form-row">
+        <text class="form-lab">学期</text>
+        <input class="form-inp" value="{{searchTerm}}" bindinput="onSearchTerm" placeholder="如：上学期（可空）" placeholder-class="ph" />
+      </view>
+      <view class="form-row">
+        <text class="form-lab">关键词</text>
+        <input class="form-inp" value="{{searchQuery}}" bindinput="onSearchQuery" placeholder="如：人教版一年级数学上册 目录" placeholder-class="ph" />
+      </view>
+      <view class="sheet-btns">
+        <view class="big-btn primary" hover-class="op-hover" bindtap="doSearch">{{searching ? '搜索中…' : '搜索'}}</view>
+        <view class="big-btn ghost" hover-class="op-hover" bindtap="closeSearch">取消</view>
+      </view>
+      <scroll-view wx:if="{{searchResults.length}}" scroll-y class="edit-scroll">
+        <view class="section-title">候选（{{searchResults.length}}）{{searchUsed ? ' · 「' + searchUsed + '」' : ''}}</view>
+        <view wx:for="{{searchResults}}" wx:key="url" class="tb-card">
+          <view class="tb-main">
+            <view class="tb-title">{{item.title}}</view>
+            <view class="tb-dim tb-url">{{item.url}}</view>
+            <view class="tb-dim tb-snippet">{{item.snippet}}</view>
+            <view class="tb-meta">
+              <text class="tag {{item.units.length ? 't-g' : 't-n'}}">{{item.units.length ? item.units.length + ' 个单元' : '未提取到目录'}}</text>
+            </view>
+          </view>
+          <view class="tb-actions">
+            <view class="mini-btn primary" bindtap="pickSearch" data-i="{{index}}">选它</view>
+          </view>
+        </view>
+      </scroll-view>
+      <view wx:if="{{searchUsed && !searchResults.length && !searching}}" class="empty">「{{searchUsed}}」没有搜到结果，换个关键词试试。</view>
+    </view>
+  </view>
+
+  <!-- ============ PDF 上传/解析中 ============ -->
+  <view wx:if="{{uploading}}" class="mask">
+    <view class="sheet">
+      <view class="sheet-title">{{uploadStage}}</view>
+      <view class="sheet-desc">PDF 直传云端解析，大文件需要稍等；请勿离开页面。</view>
+    </view>
+  </view>
+
+  <!-- ============ 粘贴目录文本 ============ -->
+  <view wx:if="{{pasteOpen}}" class="mask">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">粘贴教材目录</view>
+      <view class="sheet-desc">从电子课本或网页复制目录文字粘贴到这里（扫描版 PDF 提不出文字时用它）。</view>
+      <textarea class="paste-area" value="{{pasteText}}" bindinput="onPasteText" placeholder="如：&#10;第一单元 准备课&#10;  1 数一数&#10;  2 比多少&#10;第二单元 位置…" placeholder-class="ph" />
+      <view class="sheet-btns">
+        <view class="big-btn primary" hover-class="op-hover" bindtap="parsePaste">{{parsing ? '解析中…' : '解析'}}</view>
+        <view class="big-btn" hover-class="op-hover" bindtap="pasteFromClipboard">粘贴剪贴板</view>
+        <view class="big-btn ghost" hover-class="op-hover" bindtap="closePaste">取消</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 预览编辑表 ============ -->
+  <view wx:if="{{editing}}" class="mask">
+    <view class="sheet sheet-tall" catchtap="noop">
+      <view class="sheet-title">确认教材目录</view>
+      <view class="sheet-desc">AI 提取结果请过目：可改、可删、可加，确认后保存。</view>
+      <scroll-view scroll-y class="edit-scroll">
+        <!-- 与官方种子库比对（家长拍板哪份对） -->
+        <view wx:if="{{compare}}" class="cmp-card">
+          <view class="cmp-summary" bindtap="toggleCompareDetail">
+            <view class="cmp-t">与官方库《{{compare.seedTitle}}》比对</view>
+            <view class="cmp-stats">
+              <text class="cmp-num ok">{{compare.matched}} 一致</text>
+              <text class="cmp-num add">{{compare.draftOnly}} 仅识别</text>
+              <text class="cmp-num miss">{{compare.seedOnly}} 官方独有</text>
+              <text class="cmp-arrow">{{compareOpen ? '收起 ▴' : '明细 ▾'}}</text>
+            </view>
+          </view>
+          <view wx:if="{{compareOpen}}" class="cmp-rows">
+            <view wx:for="{{compare.rows}}" wx:key="index" class="cmp-row">
+              <text class="cmp-ico {{item.status}}">{{item.status === 'same' ? '✓' : (item.status === 'section_diff' ? '≈' : (item.status === 'draft_only' ? '＋' : '－'))}}</text>
+              <text class="cmp-name">{{item.name}}</text>
+              <text class="cmp-note">{{item.note}}</text>
+            </view>
+          </view>
+          <view class="cmp-btns">
+            <view class="mini-btn primary" bindtap="useOfficial">官方库是对的，改用它</view>
+            <view class="mini-btn" bindtap="dismissCompare">以本次识别为准</view>
+          </view>
+        </view>
+
+        <view class="form-row">
+          <text class="form-lab">名称</text>
+          <input class="form-inp" value="{{form.title}}" bindinput="onFormTitle" placeholder="教材名称" placeholder-class="ph" />
+        </view>
+        <view class="form-row">
+          <text class="form-lab">学科</text>
+          <picker mode="selector" range="{{subjectPickOptions}}" range-key="name" value="{{formSubjectIdx}}" bindchange="onFormSubject">
+            <view class="form-pick">{{subjectPickOptions[formSubjectIdx].name}} ▾</view>
+          </picker>
+        </view>
+        <view class="form-row">
+          <text class="form-lab">年级</text>
+          <input class="form-inp" value="{{form.grade}}" bindinput="onFormGrade" placeholder="如：一年级" placeholder-class="ph" />
+        </view>
+        <view class="form-row">
+          <text class="form-lab">版本</text>
+          <input class="form-inp" value="{{form.version}}" bindinput="onFormVersion" placeholder="如：人教版" placeholder-class="ph" />
+        </view>
+        <view class="form-row">
+          <text class="form-lab">学期</text>
+          <input class="form-inp" value="{{form.term}}" bindinput="onFormTerm" placeholder="如：上学期" placeholder-class="ph" />
+        </view>
+
+        <view class="units-head">
+          <text>单元（{{form.units.length}}）</text>
+          <view class="mini-btn" bindtap="addUnit">＋ 加单元</view>
+        </view>
+        <view wx:for="{{form.units}}" wx:key="index" class="unit-edit">
+          <view class="unit-edit-head">
+            <text class="unit-no">{{index + 1}}.</text>
+            <input class="form-inp" value="{{item.name}}" bindinput="onUnitName" data-i="{{index}}" placeholder="单元名" placeholder-class="ph" />
+            <view class="mini-btn danger" bindtap="removeUnit" data-i="{{index}}">删</view>
+          </view>
+          <textarea class="unit-area" value="{{item.sectionsText}}" bindinput="onUnitSections" data-i="{{index}}" placeholder="小节（每行一个，可空）" placeholder-class="ph" />
+          <input class="form-inp" value="{{item.keywordsText}}" bindinput="onUnitKeywords" data-i="{{index}}" placeholder="关键词（顿号分隔，可空）" placeholder-class="ph" />
+        </view>
+      </scroll-view>
+      <view class="sheet-btns">
+        <view class="big-btn primary" hover-class="op-hover" bindtap="saveForm">{{saving ? '保存中…' : '保存到教材库'}}</view>
+        <view class="big-btn ghost" hover-class="op-hover" bindtap="cancelEdit">取消</view>
+      </view>
+    </view>
+  </view>
+
+</view>

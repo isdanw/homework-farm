@@ -80,6 +80,11 @@ function defaultData() {
     lastActiveDate: util.today(),         // 上次打开小程序的日期（用于凌晨自动重置）
     settledDates: [],                     // 已完成夜间惩罚结算的日期，避免重复扣
 
+    /* F14：字段级时间戳（LWW 仲裁用，详见 reconcileWithCloud / mergeRemote 与文件底部 F14 段）。
+       形如 { farm: 1234567890, profile: 1234567891 }，仅覆盖白名单孩子级字段；
+       老数据无此字段 → 该字段退化为本地优先（向后兼容，不破坏 R4 契约）。 */
+    _ts: {},
+
     profile: {
       nickname: '小小农场主',
       streak: 0,                          // 连续全科打卡天数
@@ -94,7 +99,9 @@ function defaultData() {
       weeklyMinutes: 0,                   // 每周可学习时间（分钟）
       timeSlots: [],                      // 常用时段：['放学后','晚饭后']
       teachStyle: '',                     // 讲解偏好：先提示后讲解/直接讲解/引导式探究/示范模仿
+      replyLength: '',                    // 讲解长度偏好：简短些/适中/详细些（只影响「怎么说」）
       expectations: [],                   // 期望内容：概念理解/方法训练/错题复盘/复测巩固...
+      coachNote: '',                      // 家长辅导备忘：可观察的习惯与提醒；只作导学方式参考，不算学习成果
       selfFeeling: '',                    // 自我感受：很好/一般/吃力/抗拒
       schoolProgress: '',                 // 学校进度：如「一年级上学期开学」
       schemaVersion: 'v1'
@@ -265,6 +272,8 @@ function ensureUserFields(u) {
   }
   // 学科情境（P2）：补齐缺失的学科切片（形状由 scenario.js 唯一定义）
   if (!u.scenarios || typeof u.scenarios !== 'object' || Array.isArray(u.scenarios)) u.scenarios = {};
+  // F14：补齐 _ts（字段级时间戳，LWW 仲裁用）；老数据缺则补空对象，不影响既有本地优先行为
+  if (!u._ts || typeof u._ts !== 'object' || Array.isArray(u._ts)) u._ts = {};
   return u;
 }
 
@@ -640,8 +649,10 @@ function defaultSubjectProfile(key) {
   return {
     subject: name,
     textbook: '',                 // 教材版本（如人教版）
+    textbookId: '',               // 教材库条目锚点（选用后计划生成按单元目录编排；空=旧行为）
     progress: '',                 // 进度（如「一年级上学期 准备课」）
     learnerNo: '',                // 学习者编号（如 JY-001）
+    teachingPlan: null,           // 教学计划（md/html 导入）：{title,format,raw,outline,updatedAt}；null=未导入
     dimensions: dims.map(n => ({ name: n, level: 2 })),  // 能力维度 + 1-5 掌握度初值
     errors: []                    // 常见错误模式
   };
@@ -670,6 +681,10 @@ function save(slice, sync) {
   } catch (e) {
     console.error('[store] save fail（本地落盘失败）', e);
   }
+
+  // 1.5) F14：对白名单字段做「与上次保存快照 diff」，仅本地真改动的字段打上时间戳，
+  //      供后续 reconcileWithCloud / mergeRemote 按时间戳做 LWW 仲裁（避免本地永远赢）。
+  f14Stamp(_root);
 
   // 2) 上云：异步、不阻塞 UI；占位切片不产生云端档案
   if (sync !== false && !isBarePlaceholderOnly(_root)) {
@@ -991,6 +1006,83 @@ function handleConflict(r, retryLeft) {
  * @param {Object} cloudRoot 云端整份 _root
  * @returns {Boolean} 本地是否被改动（改动过则需要落盘 + 重推）
  */
+/* ==========================================================================
+ * F14：字段级时间戳 + 选择性 LWW 仲裁
+ * --------------------------------------------------------------------------
+ * 【解决的问题】reconcileWithCloud / mergeRemote 对「两端都有的孩子」除 homework
+ *   单调量外一律本地优先（见上方 946-948 行边界注释），导致多设备同字段并发编辑
+ *   会丢一次（如 A 机收菜改 farm、B 机改 profile，本地优先会把 B 的 profile 编辑丢弃）。
+ *
+ * 【方案：逐实体（顶层孩子级字段）时间戳 + LWW（用户已选 A）】
+ *   不改动任何字段形状（保持 R4 契约），不引入 CRDT 寄存器；对一组白名单孩子级字段
+ *   记录 last-modified 时间戳（u._ts[field]），云端↔本地合并时按时间戳做「较新者赢」，
+ *   较旧的并发编辑不再被整片覆盖。
+ *
+ * 【机制（关键：避免「每次保存都打戳导致本地永远赢」）】
+ *   · 写操作唯一漏斗是 save()：save 时对白名单字段与「上次保存快照」(_f14Shadow) 做 diff，
+ *     仅本地真正改动的字段才打上 Date.now() 时间戳 —— _f14Shadow 存上次保存后的快照。
+ *   · 合并（reconcileWithCloud / mergeRemote）对白名单字段：云端时间戳更新 → 采纳云端；
+ *     否则保留本地；双方都无时间戳 → 维持原本地优先（老数据兼容）。
+ *   · _f14Shadow 为内存态（随会话存活）：重启后首轮 save 会整体打戳（短暂本地优先一周期），
+ *     下一轮起恢复正常 —— 属可接受的小边界，不引入持久化复杂度。
+ *
+ * 【粒度说明】以「顶层孩子级字段」为仲裁单元（farm / profile / learner / schedule /
+ *   checkinTypes / comments / plans / studyPlans / subjectProfiles），非子字段；
+ *   足以解决最常见的「多设备改了不同字段」并发丢失，子字段级并发（如 A 改 coins、B 改
+ *   suns）仍按实体级 LWW 取其一 —— 属 F14 的已知边界，必要时再下沉到子字段。
+ * ========================================================================== */
+const F14_FIELDS = ['farm', 'profile', 'learner', 'schedule', 'checkinTypes', 'comments', 'plans', 'studyPlans', 'subjectProfiles'];
+let _f14Shadow = {};   // { [userId]: { [field]: <serialized> } }，上次保存后的快照（内存态）
+
+function _f14Ser(v) { try { return JSON.stringify(v); } catch (e) { return ' '; } }
+
+/** save() 调用：对白名单字段做「与上次快照 diff」，仅本地真改动的字段打时间戳 */
+function f14Stamp(root) {
+  if (!root || !Array.isArray(root.users)) return;
+  root.users.forEach(u => {
+    if (!u || !u.id) return;
+    if (!u._ts || typeof u._ts !== 'object') u._ts = {};
+    const prev = _f14Shadow[u.id] || {};
+    const now = Date.now();
+    F14_FIELDS.forEach(f => {
+      if (!(f in u)) return;
+      const cur = _f14Ser(u[f]);
+      if (cur !== (f in prev ? prev[f] : ' ')) u._ts[f] = now;   // 仅本地真改动的字段打戳
+    });
+    const snap = {};
+    F14_FIELDS.forEach(f => { if (f in u) snap[f] = _f14Ser(u[f]); });
+    _f14Shadow[u.id] = snap;
+  });
+}
+
+/**
+ * 单用户白名单字段 LWW 合并（就地改 lu；云端时间戳一并带回）。
+ * @returns {Boolean} 是否发生了合并（用于 mergeRemote 的 changed 判定）
+ */
+function f14MergeUser(lu, cu) {
+  if (!lu || !cu || typeof cu !== 'object') return false;
+  if (!lu._ts || typeof lu._ts !== 'object') lu._ts = {};
+  let changed = false;
+  F14_FIELDS.forEach(f => {
+    if (!(f in cu)) return;                       // 云端无该字段 → 不动本地
+    if (!(f in lu)) {                             // 本地缺失 → 采纳云端（含其时间戳）
+      lu[f] = JSON.parse(_f14Ser(cu[f]));
+      lu._ts[f] = (cu._ts && typeof cu._ts[f] === 'number') ? cu._ts[f] : 0;
+      changed = true;
+      return;
+    }
+    const cTs = (cu._ts && typeof cu._ts[f] === 'number') ? cu._ts[f] : 0;
+    const lTs = (lu._ts && typeof lu._ts[f] === 'number') ? lu._ts[f] : 0;
+    if (cTs > lTs) {                              // 云端更新 → 采纳云端（含其时间戳）
+      lu[f] = JSON.parse(_f14Ser(cu[f]));
+      lu._ts[f] = cTs;
+      changed = true;
+    }
+    // 否则保留本地（本地更新或双方无时间戳 → 维持本地优先，兼容老数据）
+  });
+  return changed;
+}
+
 function reconcileWithCloud(cloudRoot) {
   if (!cloudRoot || !Array.isArray(cloudRoot.users) || !cloudRoot.users.length) return false;
   const local = getRoot();
@@ -1016,7 +1108,8 @@ function reconcileWithCloud(cloudRoot) {
       return;
     }
 
-    // ② 两端都有真实孩子 → 只对 homework 的单调量做并集
+    // ② 两端都有真实孩子 → homework 单调量并集 + F14 白名单字段 LWW 仲裁
+    if (f14MergeUser(lu, cu)) changed = true;      // 顶层白名单字段：云端较新者赢
     const chw = cu.homework, lhw = lu.homework;
     if (!chw || typeof chw !== 'object') return;
     if (!lhw || typeof lhw !== 'object') { lu.homework = JSON.parse(JSON.stringify(chw)); changed = true; return; }
@@ -1170,7 +1263,12 @@ function mergeRemote() {
         remote.users.forEach(r => {
           if (!r || !r.id) return;
           const existing = local.users.find(x => x && x.id === r.id);
-          if (existing && !existing.__placeholder) return;   // 本地已有真实同 id 孩子 → 保留本地，绝不覆盖
+          if (existing && !existing.__placeholder) {
+            // 本地已有真实同 id 孩子：F14 白名单字段按时间戳 LWW（云端较新者赢），其余保留本地；
+            // 不再整片「保留本地、绝不覆盖」—— 那正是多设备同字段并发编辑丢一次的根因。
+            if (f14MergeUser(existing, r)) changed = true;
+            return;
+          }
           const adopted = ensureUserFields(Object.assign({}, r));
           delete adopted.__placeholder;
           if (existing && existing.__placeholder) {

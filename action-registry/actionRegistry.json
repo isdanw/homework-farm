@@ -1,0 +1,175 @@
+{
+  "$comment": "Action Registry v3 —— 唯一契约（见《多Agent教学辅导系统-架构设计-v3-代码印证版》§3.6 / §7.7）。模型只能输出 action.name；服务端用 actionRegistry.js 校验 params；页面是否存在、是否消费声明参数，由 scripts/test-action-registry.cjs 与 miniprogram/app.json 交叉核验。",
+  "version": 3,
+  "notes": [
+    "in:'page' 的参数必须被页面 onLoad 读取；in:'scope' 的参数（childId）由端上 store/服务端作用域解析，不从页面参数取，页面不读它。",
+    "childId 的类型/长度在此校验；归属（是否属于该家庭）由 agentKit 的服务端作用域校验负责，不在这里猜。",
+    "open_daily_report 暂无页面，故不入表；new_lesson / practice / blindsweep 不是独立 action，映射到 start_tutor / open_unit_kp。",
+    "parentOnly 是契约声明：端上已在三个写入口（出单/作废、生成/清除计划、增删打卡类型）接 parentAuth.requireScope 软门禁，云端 parentAuth 校验会话；这是协作式提示而非安全边界，离线时放行，真正的权限兜底仍应落在服务端写接口。"
+  ],
+  "actions": {
+    "start_retest": {
+      "name": "start_retest",
+      "page": "/pkgGuide/retest/retest",
+      "pageRegistered": true,
+      "stage": "P1",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "subject": { "type": "enum", "values": ["math", "chinese", "english", "physics", "chemistry", "biology", "history", "geography", "politics"], "required": true, "in": "page" },
+          "topic": { "type": "string", "maxLength": 120, "required": true, "in": "page" },
+          "errorType": { "type": "string", "maxLength": 16, "in": "page" },
+          "mid": { "type": "string", "maxLength": 64, "in": "page" },
+          "recommendationId": { "type": "string", "maxLength": 64, "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "start_tutor": {
+      "name": "start_tutor",
+      "page": "/pkgGuide/tutor/tutor",
+      "pageRegistered": true,
+      "stage": "P1",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "enum", "values": ["math", "chinese", "english", "physics", "chemistry", "biology", "history", "geography", "politics"], "in": "page" },
+          "task": { "type": "string", "maxLength": 120, "in": "page" },
+          "si": { "type": "integer", "min": 0, "in": "page" },
+          "ti": { "type": "integer", "min": 0, "in": "page" },
+          "topic": { "type": "string", "maxLength": 120, "in": "page" },
+          "errorType": { "type": "string", "maxLength": 16, "in": "page" },
+          "recommendationId": { "type": "string", "maxLength": 64, "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "review_cards": {
+      "name": "review_cards",
+      "page": "/pkgTools/cards/cards",
+      "pageRegistered": true,
+      "stage": "P2",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "subject": { "type": "enum", "values": ["math", "chinese", "english", "physics", "chemistry", "biology", "history", "geography", "politics"], "in": "page" },
+          "unitId": { "type": "string", "maxLength": 64, "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "open_plan": {
+      "name": "open_plan",
+      "page": "/pkgTools/plan/plan",
+      "pageRegistered": true,
+      "stage": "P2",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "enum", "values": ["math", "chinese", "english", "physics", "chemistry", "biology", "history", "geography", "politics"], "in": "page" },
+          "si": { "type": "integer", "min": 0, "in": "page" },
+          "ti": { "type": "integer", "min": 0, "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "open_unit_kp": {
+      "name": "open_unit_kp",
+      "page": "/pkgTools/unitKp/unitKp",
+      "pageRegistered": true,
+      "stage": "P2",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "subject": { "type": "enum", "values": ["math", "chinese", "english", "physics", "chemistry", "biology", "history", "geography", "politics"], "in": "page" },
+          "unitId": { "type": "string", "maxLength": 64, "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "open_mistakes": {
+      "name": "open_mistakes",
+      "page": "/pkgTools/mistakes/mistakes",
+      "pageRegistered": true,
+      "stage": "P2",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "subject": { "type": "enum", "values": ["math", "chinese", "english", "physics", "chemistry", "biology", "history", "geography", "politics"], "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "start_speakstep": {
+      "name": "start_speakstep",
+      "page": "/pkgGuide/speakstep/speakstep",
+      "pageRegistered": true,
+      "stage": "P3",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "open_exam_gallery": {
+      "name": "open_exam_gallery",
+      "page": "/pkgGuide/examGallery/examGallery",
+      "pageRegistered": true,
+      "stage": "P3",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "subject": { "type": "enum", "values": ["math", "chinese", "english", "physics", "chemistry", "biology", "history", "geography", "politics"], "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "generate_exam": {
+      "name": "generate_exam",
+      "page": "/pkgGuide/examGen/examGen",
+      "pageRegistered": true,
+      "stage": "P3",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "subject": { "type": "enum", "values": ["math", "chinese", "english", "physics", "chemistry", "biology", "history", "geography", "politics"], "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    },
+    "open_exam_report": {
+      "name": "open_exam_report",
+      "page": "/pkgGuide/examReport/examReport",
+      "pageRegistered": true,
+      "stage": "P3",
+      "parentOnly": false,
+      "requiredFacts": [],
+      "paramsSchema": {
+        "type": "object",
+        "properties": {
+          "submissionClientId": { "type": "string", "maxLength": 64, "required": true, "in": "page" },
+          "childId": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$", "in": "scope" }
+        }
+      }
+    }
+  }
+}

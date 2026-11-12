@@ -2,6 +2,8 @@
  * 单元必会清单页（P3 编辑体验）
  *  · 展示当前学科的单元必会库（tutor_unit_kps，混合路线 canonical 清单）
  *  · 每个必会点标注状态：未覆盖 / 复习中 / 待复习 / 已通关（按 kpId 关联 tutor_cards）
+ *  · 每个必会点另标「证据覆盖程度 L0–L6」（只读，来自 evidenceLadder）：这一层记录有没有，
+ *    不是能力等级、不是掌握百分比，所以文案只用「做过 / 订正过 / 独立测过」的口气
  *  · 编辑：改 front/back（内联编辑）、删点、加点；改完自动登记上云（与看板互通）
  *  · 翻面自测：点「自测」对该点已生成的卡做翻面回想（记得/忘了推进 Leitner 盒子）
  *
@@ -14,13 +16,16 @@ const store = require('../../utils/store.js');
 const engine = require('../../utils/farmEngine.js');
 const tutorSubjects = require('../../utils/tutorSubjects.js');
 const workbenchKpImport = require('../../utils/workbenchKpImport.js');
+const evidenceLadder = require('../../utils/evidenceLadder.js');
+const config = require('../../utils/config.js');
 
 Page({
   data: {
     subject: 'math',
     subjectName: '数学',
     unit: null,                 // 当前学科最新一份必会库 { id, title, grade, points }
-    rows: [],                   // 渲染行（point + 状态 + 关联卡）
+    rows: [],                   // 渲染行（point + 状态 + 关联卡 + 证据覆盖档位）
+    lvDist: [],                 // 证据覆盖 L0–L6 分布（只读，条数不含百分比）
     stats: { total: 0, carded: 0, done: 0, passRate: 0 },
     // 编辑态
     editingId: '',
@@ -40,7 +45,14 @@ Page({
   },
 
   onLoad(options) {
-    const subject = (options && options.subject) || 'math';
+    const unitId = String((options && options.unitId) || '').trim();
+    let subject = String((options && options.subject) || '').trim() || 'math';
+    // 带 unitId 时以该单元自身学科为准（Registry 的 unitId 是精确定位，学科只是兜底）
+    if (unitId) {
+      const u = tutorStore.getUnitKps(unitId);
+      if (u && u.subject) subject = u.subject;
+    }
+    this._unitId = unitId;
     const sub = tutorSubjects.TUTOR_SUBJECTS.find(s => s.key === subject);
     this.setData({
       subject: subject,
@@ -52,7 +64,10 @@ Page({
   onShow() { this.render(); },
 
   render() {
-    const unit = tutorStore.getUnitKpsBySubject(this.data.subject);
+    const unit = this._unitId
+      ? tutorStore.getUnitKps(this._unitId)
+      : tutorStore.getUnitKpsBySubject(this.data.subject);
+    const lvMap = this._ladderOf(unit);
     const rows = [];
     let carded = 0, done = 0;
     if (unit && Array.isArray(unit.points)) {
@@ -66,6 +81,7 @@ Page({
         if (cs.length) carded++;
         if (anyDone) done++;
         const c0 = cs[0] || null;
+        const lv = lvMap[p.id] || null;
         rows.push({
           id: p.id,
           topic: p.topic || '',
@@ -73,7 +89,13 @@ Page({
           back: p.back || '',
           status: !cs.length ? 'uncovered' : (anyDone ? 'done' : (anyDue ? 'due' : 'learning')),
           box: c0 ? (c0.box || 1) : 0,
-          cardId: c0 ? c0.id : ''
+          cardId: c0 ? c0.id : '',
+          // 证据覆盖档位（只读展示，不参与任何判定或写入）
+          lv: lv ? lv.level : -1,
+          lvText: lv ? 'L' + lv.level : '',
+          lvLabel: lv ? lv.label : '',
+          lvNext: lv ? lv.nextStep : '',
+          lvLink: lv ? lv.link : ''
         });
       });
     }
@@ -81,6 +103,7 @@ Page({
     this.setData({
       unit: unit,
       rows: rows,
+      lvDist: this._distOf(lvMap),
       stats: {
         total: total, carded: carded, done: done,
         passRate: total ? Math.round(done / total * 100) : 0
@@ -91,6 +114,84 @@ Page({
       const cur = tutorStore.getCards().find(c => c.id === this.data.study.current.id);
       if (cur && !cur.done) this.setData({ study: { active: true, flipped: this.data.study.flipped, current: this._viewOf(cur) } });
     }
+  },
+
+  /** 证据覆盖程度（只读）：把本单元的点喂给 evidenceLadder，异常或无清单时退化为「不展示」 */
+  _ladderOf(unit) {
+    const out = {};
+    this._lvSummary = null;
+    if (!unit || !Array.isArray(unit.points) || !unit.points.length) return out;
+    try {
+      const res = evidenceLadder.buildLadder({
+        subject: this.data.subject,
+        units: [unit],
+        cards: tutorStore.getCards(),
+        mistakes: tutorStore.getMistakes(),
+        reviews: tutorStore.getReviews(),
+        evidence: tutorStore.getEvidence(),
+        // 显式 transfers 口留空：变式记录由 evidence 里的 evidenceKind==='variant' 派生
+        // （题由服务端判、情境由服务端白名单钉），不在这里凭空补
+        transfers: []
+      });
+      (res.rows || []).forEach(r => { out[r.kpId] = r; });
+      this._lvSummary = res.summary || null;
+    } catch (e) {
+      console.warn('[unitKp] 证据覆盖计算异常，本轮不展示', e);
+      this._lvSummary = null;
+    }
+    return out;
+  },
+
+  /** 各档位的条数分布（只给条数，不给百分比） */
+  _distOf(lvMap) {
+    const sum = this._lvSummary;
+    if (!sum || !sum.total) return [];
+    const short = ['无记录', '有活动', '有订正', '独立达标', '间隔稳定', '变式迁移', '多情境'];
+    return evidenceLadder.LEVELS.map(l => ({
+      code: 'L' + l,
+      name: short[l],
+      count: sum.counts[l] || 0,
+      on: (sum.counts[l] || 0) > 0
+    }));
+  },
+
+  /**
+   * 换情境变式（L5/L6 记录源）：先选情境，再跳复测页带 kind=variant + unitId/kpId。
+   * 情境是封闭集合（config.PROFILE.VARIANT_CONTEXTS，与云函数白名单同口径）：
+   * 让孩子随口写一句就能凑出「另一种情境」，L6 的「多情境」就成了自证。
+   */
+  startVariant(e) {
+    const u = this.data.unit;
+    const r = (this.data.rows || []).find(x => x.id === e.currentTarget.dataset.id);
+    if (!u || !r) return;
+    const list = (config.PROFILE && config.PROFILE.VARIANT_CONTEXTS) || [];
+    if (!list.length) return util.toast('变式情境还没配置');
+    if (!r.topic) return util.toast('这个点还没有知识点名称，先补一下');
+    wx.showActionSheet({
+      itemList: list,
+      success: (res) => {
+        const ctxName = list[res.tapIndex] || '';
+        wx.navigateTo({
+          url: '/pkgGuide/retest/retest?key=' + this.data.subject +
+            '&topic=' + encodeURIComponent(r.topic) +
+            '&uid=' + encodeURIComponent(u.id) +
+            '&pid=' + encodeURIComponent(r.id) +
+            '&kind=variant&ctx=' + encodeURIComponent(ctxName)
+        });
+      },
+      fail: () => {}
+    });
+  },
+
+  /** 点档位标签 → 说明这一档怎么来的、还缺哪类记录（纯只读弹窗） */
+  showLadder(e) {
+    const id = e.currentTarget.dataset.id;
+    const r = this.data.rows.find(x => x.id === id);
+    if (!r || r.lv < 0) return;
+    const lines = [r.lvLabel];
+    if (r.lvLink === 'topic') lines.push('（按知识点名称关联到记录，可能存在同名）');
+    if (r.lvNext) lines.push('再往上一层需要：' + r.lvNext);
+    wx.showModal({ title: '证据覆盖 ' + r.lvText, content: lines.join('\n'), showCancel: false, confirmText: '知道了' });
   },
 
   _viewOf(c) {

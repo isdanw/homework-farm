@@ -22,6 +22,7 @@ const tutorStore = require('../../utils/tutorStore.js');
 const studyPlan = require('../../utils/studyPlan.js');
 const tutorSubjects = require('../../utils/tutorSubjects.js');
 const K = require('../../utils/orderKit.js');
+const parentAuth = require('../../utils/parentAuth.js');
 
 /** 训练类型（与 orderKit.KIND_LABEL 同源，此处只做有序化，不改文案） */
 const KIND_ORDER = ['concept', 'example', 'mistake', 'review', 'express'];
@@ -260,7 +261,9 @@ Page({
   },
 
   /* ---------------- 出单（T15） ---------------- */
-  doIssue() {
+  async doIssue() {
+    // 出单是家长特权动作（§7.6 审批矩阵）：无有效家长会话时只弹引导，不出单
+    if (!(await parentAuth.requireScope('orderIssue'))) return;
     const self = this;
     const p = this.data.plans[this.data.planIdx];
     if (!p) { wx.showToast({ title: '该学科还没有成长计划', icon: 'none' }); return; }
@@ -699,12 +702,14 @@ Page({
     wx.navigateTo({
       url: '/pkgGuide/retest/retest?key=' + encodeURIComponent(d.retestSubject) +
         '&topic=' + encodeURIComponent(d.retestTopic) +
-        '&errorType=' + encodeURIComponent(d.retestErrorType || '')
+        '&errorType=' + encodeURIComponent(d.retestErrorType || '') +
+        '&rid=' + encodeURIComponent(d.orderNo || '')   // 导学单号：证据溯源用
     });
   },
 
   /** 作废重开（修正回执的唯一合法路径：不作原地覆盖） */
-  doReissue() {
+  async doReissue() {
+    if (!(await parentAuth.requireScope('orderIssue'))) return;
     const self = this;
     const d = this.data.detail;
     if (!d) return;

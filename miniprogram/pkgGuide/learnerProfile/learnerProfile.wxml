@@ -68,6 +68,14 @@
       </picker>
     </view>
 
+    <!-- 讲解长度 -->
+    <view class="opt-row">
+      <view class="opt-name">讲解长度</view>
+      <picker class="opt-picker" mode="selector" range="{{replyLengths}}" value="{{lengthIndex < 0 ? 0 : lengthIndex}}" bindchange="onLength">
+        <view class="picker-val {{lengthIndex < 0 ? 'ph' : ''}}">{{lengthIndex < 0 ? '请选择' : replyLengths[lengthIndex]}} ›</view>
+      </picker>
+    </view>
+
     <!-- 期望内容 -->
     <view class="opt-label">期望内容（可多选）</view>
     <view class="chip-row">
@@ -82,6 +90,14 @@
       <picker class="opt-picker" mode="selector" range="{{selfFeelings}}" value="{{feelingIndex < 0 ? 0 : feelingIndex}}" bindchange="onFeeling">
         <view class="picker-val {{feelingIndex < 0 ? 'ph' : ''}}">{{feelingIndex < 0 ? '请选择' : selfFeelings[feelingIndex]}} ›</view>
       </picker>
+    </view>
+
+    <!-- 家长辅导备忘：只影响导学「怎么讲」，不作为学习成果记录（成果只认复测证据） -->
+    <view class="opt-row col">
+      <view class="opt-name">辅导备忘</view>
+      <textarea class="opt-textarea" placeholder="写你观察到的习惯，AI 会照着调整问法。如：容易漏看单位；读题指着字读两遍；先让他自己说一遍再提示"
+                placeholder-class="opt-ph" value="{{coachNote}}" bindinput="onNote" maxlength="120" auto-height cursor-spacing="20" />
+      <view class="opt-hint">{{coachNote.length}}/120 · 只影响讲法，不记为孩子的学习成果</view>
     </view>
   </view>
 

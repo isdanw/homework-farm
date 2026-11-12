@@ -10,48 +10,60 @@
 <style>
   :root{
     --navy:#1d2b53; --gold:#c9a227; --gold-soft:#faf3dd;
-    --bg:#f7f8fa; --card:#fff; --line:#eaecef; --line2:#f0f1f4;
-    --ink:#1c2130; --ink2:#4b5265; --mut:#8b92a5;
+    --bg:#f7f6f3; --card:#fff; --line:#e9e9e7; --line2:#f1f1ef;
+    --ink:#32302c; --ink2:#5f5e5b; --mut:#9b9a97;
     --green:#2e7d32; --green-soft:#e6f2e7;
     --amber:#b26a00; --amber-soft:#fdf1de;
     --blue:#1565c0; --blue-soft:#e7eff9;
     --red:#c0392b; --red-soft:#fbeae7;
+    --hover:#fafaf8;
+    --radius-lg:10px; --radius:8px;
+    --shadow-pop:0 4px 16px rgba(15,15,15,.08);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--gold-soft)}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#d3d1cc;border-radius:5px;border:2px solid var(--bg)}
+  ::-webkit-scrollbar-track{background:transparent}
+  :focus-visible{outline:2px solid var(--navy);outline-offset:2px;border-radius:4px}
   .app{display:flex;min-height:100vh}
   .side{width:228px;flex:none;background:var(--navy);color:#fff;padding:20px 0;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease;z-index:30}
-  .brand{padding:0 20px 16px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:8px}
+  .brand{padding:0 22px 16px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:8px}
   .brand b{font-size:15px;letter-spacing:.03em}
   .brand span{display:block;font-size:11px;color:#e3cf8f;margin-top:3px;letter-spacing:.12em}
-  .navgrp{font-size:11px;color:#8b92a5;padding:14px 20px 6px;letter-spacing:.12em}
-  .nav a{display:flex;align-items:center;gap:11px;padding:10px 20px;color:#d9dfeb;text-decoration:none;font-size:13.5px;border-left:3px solid transparent;cursor:pointer}
-  .nav a svg{width:17px;height:17px;flex:none;stroke:#aeb6c9;fill:none;stroke-width:1.7}
-  .nav a:hover{background:rgba(255,255,255,.06)}
-  .nav a.on{background:rgba(201,162,39,.16);border-left-color:var(--gold);color:#fff;font-weight:700}
+  .navgrp{font-size:10.5px;color:rgba(255,255,255,.42);padding:16px 30px 6px;letter-spacing:.14em;font-weight:600}
+  .nav a{display:flex;align-items:center;gap:11px;margin:1px 10px;padding:8px 12px;color:rgba(255,255,255,.82);text-decoration:none;font-size:13px;border-radius:7px;cursor:pointer;transition:background .12s ease,color .12s ease}
+  .nav a svg{width:16px;height:16px;flex:none;stroke:rgba(255,255,255,.55);fill:none;stroke-width:1.7;transition:stroke .12s ease}
+  .nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+  .nav a:hover svg{stroke:rgba(255,255,255,.85)}
+  .nav a.on{background:rgba(255,255,255,.1);box-shadow:inset 3px 0 0 var(--gold);color:#fff;font-weight:600}
   .nav a.on svg{stroke:var(--gold)}
   .main{flex:1;min-width:0;display:flex;flex-direction:column}
   .topbar{background:#fff;border-bottom:1px solid var(--line);padding:13px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;gap:12px}
   .topbar .left{display:flex;align-items:center;gap:12px;min-width:0}
   .hamb{display:none;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;align-items:center;justify-content:center}
   .hamb svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2}
-  .topbar h1{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar h1{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topbar .sub{font-size:12px;color:var(--mut);margin-top:1px}
   .tools{display:flex;gap:8px;align-items:center;flex:none}
-  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
-  .seg button{border:0;background:#fff;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink2)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+  .seg button{border:0;background:transparent;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink2);transition:background .12s ease,color .12s ease}
+  .seg button:hover{color:var(--ink)}
   .seg button.on{background:var(--navy);color:#fff}
-  .sel{border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:12.5px;color:var(--ink2);background:#fff;max-width:130px}
-  .btn-refresh{border:1px solid var(--navy);color:var(--navy);background:#fff;border-radius:9px;padding:6px 13px;font-size:12.5px;cursor:pointer}
-  .btn-refresh:hover{background:var(--navy);color:#fff}
-  .inp{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;box-sizing:border-box;font-family:inherit}
+  .sel{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--ink2);background:#fff;max-width:130px;cursor:pointer;transition:border-color .12s ease}
+  .sel:hover{border-color:#d3d1cc}
+  .btn-refresh{border:1px solid var(--line);color:var(--ink2);background:#fff;border-radius:8px;padding:6px 13px;font-size:12.5px;cursor:pointer;transition:border-color .12s ease,color .12s ease,background .12s ease}
+  .btn-refresh:hover{border-color:var(--navy);color:var(--navy)}
+  .inp{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;box-sizing:border-box;font-family:inherit;transition:border-color .12s ease}
   .inp:focus{outline:none;border-color:var(--navy)}
-  .content{padding:20px 22px 90px;max-width:1180px;width:100%}
-  .alerts{background:#fff;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;padding:14px 16px;margin-bottom:18px}
-  .alerts .hd{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .content{padding:20px 24px 90px;max-width:1180px;width:100%}
+  .alerts{background:#fff;border:1px solid var(--line);border-left:3px solid var(--red);border-radius:0 var(--radius-lg) var(--radius-lg) 0;padding:14px 16px;margin-bottom:18px}
+  .alerts .hd{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px}
   .alerts .hd svg{width:16px;height:16px;stroke:var(--red);fill:none;stroke-width:1.8}
-  .arow{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line2);font-size:13px}
+  .arow{display:flex;align-items:center;gap:12px;padding:8px 4px;border-bottom:1px dashed var(--line2);font-size:13px;border-radius:6px;transition:background .12s ease}
+  .arow:hover{background:var(--hover)}
   .arow:last-child{border-bottom:none}
   .arow .dot{width:8px;height:8px;border-radius:50%;flex:none}
   .arow .dot.r{background:var(--red)} .arow .dot.a{background:var(--amber)} .arow .dot.g{background:var(--green)}
@@ -60,40 +72,46 @@
   .arow .btn{flex:none;border:1px solid var(--navy);color:var(--navy);background:#fff;border-radius:8px;padding:5px 13px;font-size:12px;cursor:pointer;white-space:nowrap}
   .arow .btn:hover{background:var(--navy);color:#fff}
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:13px;margin-bottom:18px}
-  .kpi{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:15px 16px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);padding:15px 16px;transition:box-shadow .15s ease}
+  .kpi:hover{box-shadow:var(--shadow-pop)}
   .kpi .lab{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:6px}
   .kpi .lab svg{width:14px;height:14px;stroke:var(--mut);fill:none;stroke-width:1.7}
-  .kpi .num{font-size:26px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums}
+  .kpi .num{font-size:24px;font-weight:700;margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .kpi .hint{font-size:11.5px;color:var(--ink2);margin-top:3px}
   .kpi.g .num{color:var(--green)} .kpi.a .num{color:var(--amber)} .kpi.n .num{color:var(--navy)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px 18px}
-  .card h3{font-size:14px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-  .card h3::before{content:"";width:4px;height:15px;border-radius:3px;background:var(--gold);display:inline-block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px}
+  .card h3{font-size:13.5px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .card h3::before{content:"";width:4px;height:14px;border-radius:2px;background:var(--gold);display:inline-block;flex:none}
   .card .sub-h{font-size:12px;color:var(--mut);margin:-6px 0 12px}
-  .brow{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:4px 0}
+  .brow{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:4px 2px;border-radius:6px;transition:background .12s ease}
+  .brow:hover{background:var(--hover)}
   .brow .nm{width:84px;flex:none;color:var(--ink2)}
-  .brow .track{flex:1;height:12px;background:#eef0f4;border-radius:6px;overflow:hidden}
+  .brow .track{flex:1;height:12px;background:var(--line2);border-radius:6px;overflow:hidden}
   .brow .track i{display:block;height:100%;background:linear-gradient(90deg,var(--navy),var(--gold))}
   .brow .v{width:32px;flex:none;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th{background:#f6f7f9;text-align:left;padding:8px 10px;font-weight:700;color:var(--ink2);border-bottom:2px solid var(--line);white-space:nowrap}
+  th{background:var(--bg);text-align:left;padding:8px 10px;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--line);white-space:nowrap;font-size:12px}
   td{padding:8px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
   tr:last-child td{border-bottom:none}
-  .tag{display:inline-block;padding:1px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  tbody tr{transition:background .1s ease}
+  tbody tr:hover{background:var(--hover)}
+  .tag{display:inline-block;padding:1px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
   .t-g{background:var(--green-soft);color:var(--green)} .t-a{background:var(--amber-soft);color:var(--amber)}
-  .t-b{background:var(--blue-soft);color:var(--blue)} .t-n{background:#eef0f6;color:var(--navy)}
+  .t-b{background:var(--blue-soft);color:var(--blue)} .t-n{background:#eeedeb;color:var(--ink2)}
   .t-r{background:var(--red-soft);color:var(--red)}
   .mut{color:var(--mut);font-size:11.5px}
-  .chip{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:20px;padding:7px 16px;font-size:13px;cursor:pointer}
-  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
-  .fi{display:flex;gap:11px;padding:9px 0;border-bottom:1px dashed var(--line2);font-size:12.5px}
+  .chip{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:20px;padding:7px 16px;font-size:13px;cursor:pointer;transition:border-color .12s ease,color .12s ease,background .12s ease}
+  .chip:hover{border-color:#d3d1cc;color:var(--ink)}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+  .fi{display:flex;gap:11px;padding:9px 2px;border-bottom:1px dashed var(--line2);font-size:12.5px;border-radius:6px;transition:background .12s ease}
+  .fi:hover{background:var(--hover)}
   .fi:last-child{border-bottom:none}
   .fi .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);margin-top:6px;flex:none}
   .fi .t{color:var(--mut);font-size:11px;flex:none;width:48px}
   .fi b{color:var(--ink)}
-  .note{background:var(--gold-soft);border-left:4px solid var(--gold);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--ink2);margin-bottom:16px}
+  .note{background:var(--gold-soft);border-left:3px solid var(--gold);border-radius:0 var(--radius) var(--radius) 0;padding:10px 14px;font-size:12.5px;color:var(--ink2);margin-bottom:16px}
   .view{display:none} .view.on{display:block}
   .tabbar{display:none}
   .overlay{display:none}
@@ -103,53 +121,56 @@
   .status.err{background:var(--red-soft);color:var(--red);border:1px solid #f0c4bc}
   .status.loading{background:var(--blue-soft);color:var(--blue);border:1px solid #c3d8f0}
   .empty{color:var(--mut);font-size:13px;padding:18px 0;text-align:center}
-  .sumrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;margin-bottom:14px;background:#f7f8fb;border-radius:14px;border:1px solid #eef0f4}
-  .sumrow b{font-size:15px;color:#1c2130}
-  .sumrow .pill{padding:2px 10px;background:#eef2ff;color:#3a57e8;border-radius:999px;font-size:12px}
-  .sumrow .m{color:#8b92a5;font-size:13px}
-  .chk{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line2)}
+  .sumrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;margin-bottom:14px;background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--line)}
+  .sumrow b{font-size:15px;color:var(--ink)}
+  .sumrow .pill{padding:2px 10px;background:var(--blue-soft);color:var(--blue);border-radius:999px;font-size:12px}
+  .sumrow .m{color:var(--mut);font-size:13px}
+  .chk{display:flex;align-items:flex-start;gap:10px;padding:9px 4px;border-bottom:1px dashed var(--line2);border-radius:6px;transition:background .12s ease}
+  .chk:hover{background:var(--hover)}
   .chk:last-child{border-bottom:none}
   .chk .box{width:18px;height:18px;border:1.5px solid var(--line);border-radius:5px;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:13px}
   .chk .box.done{background:var(--green);border-color:var(--green);color:#fff}
   .chk .body{flex:1}
   .chk .body .ti{font-size:13px;font-weight:600}
+  .chk:hover{background:var(--hover)}
   .chk .body .sb{font-size:11.5px;color:var(--mut)}
   .today-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-  .today-cell{border:1px solid var(--line);border-radius:12px;padding:13px 14px;background:#fff}
+  .today-cell{border:1px solid var(--line);border-radius:var(--radius-lg);padding:13px 14px;background:#fff;transition:border-color .12s ease,background .12s ease}
   .today-cell.done{border-color:var(--green);background:var(--green-soft)}
-  .today-cell .nm{font-size:13.5px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+  .today-cell .nm{font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
   .today-cell .st{font-size:11px;font-weight:700}
   .today-cell .st.y{color:var(--green)} .today-cell .st.n{color:var(--mut)}
   .today-cell .mt{font-size:12px;color:var(--ink2);margin-top:5px}
   .today-cell .nt{font-size:11.5px;color:var(--mut);margin-top:3px;white-space:pre-wrap}
+  .today-cell:hover{border-color:#d3d1cc}
   .sched{overflow:auto}
   .sched table{border-collapse:collapse;min-width:560px}
   .sched th,.sched td{border:1px solid var(--line);text-align:center;padding:7px 6px;font-size:12px}
-  .sched th{background:#f6f7f9;font-weight:700;color:var(--ink2)}
-  .sched td.di{background:#fafbfc;color:var(--mut)}
+  .sched th{background:var(--bg);font-weight:600;color:var(--ink2)}
+  .sched td.di{background:var(--hover);color:var(--mut)}
   .tl{position:relative;padding-left:18px}
   .tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
   .tl .it{position:relative;padding:10px 0}
-  .tl .it::before{content:"";position:absolute;left:-15px;top:14px;width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px #fff}
+  .tl .it::before{content:"";position:absolute;left:-15px;top:14px;width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px var(--bg)}
   .tl .it .dt{font-size:11px;color:var(--mut)}
   .tl .it .tx{font-size:13px;margin-top:2px}
   .dim{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0}
   .dim .nm{width:96px;flex:none;color:var(--ink2)}
-  .dim .track{flex:1;height:9px;background:#eef0f4;border-radius:5px;overflow:hidden}
+  .dim .track{flex:1;height:9px;background:var(--line2);border-radius:5px;overflow:hidden}
   .dim .track i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green))}
-  .dim .v{width:42px;flex:none;text-align:right;font-weight:700}
+  .dim .v{width:42px;flex:none;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
   /* 口令门 */
-  .gate{position:fixed;inset:0;background:linear-gradient(160deg,#1d2b53,#2a3c70);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px}
-  .gatecard{background:#fff;border-radius:16px;padding:30px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-  .gatecard h2{font-size:18px;font-weight:800;margin-bottom:6px}
+  .gate{position:fixed;inset:0;background:linear-gradient(160deg,var(--navy),#2a3c70);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px}
+  .gatecard{background:#fff;border-radius:12px;padding:32px 30px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .gatecard h2{font-size:18px;font-weight:700;margin-bottom:6px}
   .gatecard p{font-size:12.5px;color:var(--ink2);margin-bottom:18px;line-height:1.7}
-  .gatecard input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:14px;margin-bottom:14px;outline:none}
+  .gatecard input{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:11px 14px;font-size:14px;margin-bottom:14px;outline:none;transition:border-color .12s ease}
   .gatecard input:focus{border-color:var(--gold)}
-  .gatecard button{width:100%;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
-  .gatecard button:hover{background:#16223f}
+  .gatecard button{width:100%;background:var(--navy);color:#fff;border:0;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .12s ease}
+  .gatecard button:hover{opacity:.9}
   .gatecard .hint{font-size:11px;color:var(--mut);margin-top:12px;text-align:center}
   .report-sec{margin-bottom:14px}
-  .report-sec h4{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+  .report-sec h4{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:7px}
   .report-sec h4::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--gold)}
   /* 导学单（T21）：状态徽章与锚点/回执小节。纯新增，不改动任何既有选择器 */
   .obadge{display:inline-block;padding:1px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
@@ -160,17 +181,20 @@
   .b-voided{background:var(--red-soft);color:var(--red)}
   .okey{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--mut);word-break:break-all}
   .obtns{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
-  .obtns button{border:1px solid var(--line);color:var(--ink2);background:#fff;border-radius:8px;padding:6px 14px;font-size:12.5px;cursor:pointer}
-  .obtns button.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
-  .obox{background:#f7f8fb;border:1px solid #eef0f4;border-radius:10px;padding:12px 14px;margin-top:10px}
+  .obtns button{border:1px solid var(--line);color:var(--ink2);background:#fff;border-radius:8px;padding:6px 14px;font-size:12.5px;cursor:pointer;transition:border-color .12s ease,color .12s ease}
+  .obtns button:hover{border-color:#d3d1cc;color:var(--ink)}
+  .obtns button.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+  .obox{background:var(--bg);border:1px solid var(--line2);border-radius:var(--radius-lg);padding:12px 14px;margin-top:10px}
   .obox .kv{font-size:12.5px;padding:3px 0;display:flex;gap:10px;align-items:flex-start}
   .obox .kv .k{color:var(--mut);flex:none;width:80px}
   .obox .kv .v{flex:1;white-space:pre-wrap;word-break:break-word;min-width:0}
-  /* ── 导学单写区（T21 · 本看板唯一可写区域）：出单 / 回执表单 ── */
+  /* ── 导学单写区（T21）：出单 / 回执表单。看板另有复习卡、教材·计划导入与
+   *    历史归属三个登记出口，各自独立，不共用这里的写函数 ── */
   .owrite{margin-bottom:14px}
   .owrite .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
-  .owrite .tabs button{border:1px solid var(--line);color:var(--ink2);background:#fff;border-radius:8px;padding:6px 16px;font-size:12.5px;cursor:pointer;font-weight:600}
-  .owrite .tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
+  .owrite .tabs button{border:1px solid var(--line);color:var(--ink2);background:#fff;border-radius:8px;padding:6px 16px;font-size:12.5px;cursor:pointer;font-weight:600;transition:border-color .12s ease,color .12s ease}
+  .owrite .tabs button:hover{border-color:#d3d1cc;color:var(--ink)}
+  .owrite .tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
   .ofrm .fr{margin:0 0 10px}
   .ofrm .fr>label{display:block;font-size:12px;color:var(--mut);margin:0 0 4px;font-weight:600}
   .ofrm input[type=text],.ofrm input[type=number],.ofrm select,.ofrm textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--ink);background:#fff;font-family:inherit}
@@ -181,11 +205,13 @@
   .ofrm .hint{font-size:11.5px;color:var(--mut);line-height:1.7;margin:2px 0 10px}
   .ofrm .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line2)}
   .ofrm .acts .mut{font-size:11.5px}
-  .obtn{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer}
+  .obtn{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .12s ease}
+  .obtn:hover{opacity:.88}
   .obtn.ghost{background:#fff;color:var(--ink2);border-color:var(--line);font-weight:600}
   .obtn[disabled]{opacity:.5;cursor:not-allowed}
   .opick{display:flex;gap:8px;flex-wrap:wrap}
-  .opick button{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:8px;padding:7px 14px;font-size:12.5px;cursor:pointer;text-align:left}
+  .opick button{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:8px;padding:7px 14px;font-size:12.5px;cursor:pointer;text-align:left;transition:border-color .12s ease}
+  .opick button:hover{border-color:var(--gold)}
   .opick button.on{background:var(--gold-soft);border-color:var(--gold);color:var(--ink);font-weight:700}
   .opick button .s{display:block;font-size:11px;color:var(--mut);font-weight:400;margin-top:2px}
   .osteps{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
@@ -216,6 +242,33 @@
     .tbl-card td::before{content:attr(data-l);color:var(--mut);font-weight:600;flex:none}
     .tbl-card td>*{text-align:right}
   }
+/* ===== 教材·计划导入（作用域 #tbed，2026-10-26） ===== */
+#tbed .f-row{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+#tbed .f-label{font-size:12.5px;font-weight:600;color:var(--mut)}
+#tbed .f-row select,#tbed .f-row input{width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:#fff;font-family:inherit;color:var(--ink);box-sizing:border-box;transition:border-color .15s}
+#tbed .f-row select:focus,#tbed .f-row input:focus{outline:none;border-color:var(--navy)}
+#tbed textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.65;font-family:inherit;color:var(--ink);box-sizing:border-box;resize:vertical;transition:border-color .15s;background:#fff}
+#tbed textarea:focus{outline:none;border-color:var(--navy)}
+#tbed .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s,background .15s}
+#tbed .btn:hover{border-color:var(--navy);color:var(--navy)}
+#tbed .btn:disabled{opacity:.55;cursor:default}
+#tbed .btn-sm{padding:6px 12px;font-size:12px}
+#tbed .btn-primary{background:var(--navy);border-color:var(--navy);color:#fff}
+#tbed .btn-primary:hover{background:var(--navy);color:#fff;opacity:.9}
+#tbed .btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#tbed .btnbar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+#tbed .tp-info{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 12px;padding:8px 12px;background:#F5F7FB;border:1px solid var(--line2);border-radius:9px;font-size:12px;color:var(--ink2)}
+#tbed .tp-info svg{width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#tbed .tp-info b{color:var(--ink)}
+#tbed .tp-empty{margin:2px 0 12px;font-size:12px;color:var(--mut)}
+#tbed .rowlist{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+#tbed .rowitem{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line2);border-radius:10px;font-size:12.5px;background:#fff;transition:border-color .15s}
+#tbed .rowitem:hover{border-color:var(--navy)}
+#tbed .rowitem .rt{flex:1;min-width:0}
+#tbed .rowitem .rt b{color:var(--ink)}
+#tbed .rowitem .rt .mut{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tbed .rowitem .meta{color:var(--mut);font-size:11.5px;flex:none;white-space:nowrap}
+
 /* ===== SpeakStep 英语练习（作用域 #speakstep） ===== */
 
 #speakstep{
@@ -411,6 +464,10 @@
     <nav class="nav" data-page-node-id="q5OqHaGiHx8GFF94jShxon">
       <a data-v="report" data-page-node-id="P0pSUnJi7ysjfTx7wFlRyr"><svg viewBox="0 0 24 24" data-page-node-id="Wt9LHiyx8ejyq3y7jgnTk0"><path d="M7 3h7l5 5v13H7Z" data-page-node-id="HbFZAW2swYxNzAsoh2zFMH"/><path d="M14 3v5h5M10 13h6M10 17h6" data-page-node-id="mYVQfyK9iLalkWKnzEbkYV"/></svg>导学报告</a>
     </nav>
+    <div class="navgrp">教材</div>
+    <nav class="nav">
+      <a data-v="tbed"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h13v13H6a2 2 0 0 0-2 2Zm0 0a2 2 0 0 0 2 2h13"/></svg>教材·计划</a>
+    </nav>
     <div class="navgrp" data-page-node-id="whaJt37oiQWtTWpCbr4mQQ">设置</div>
     <nav class="nav" data-page-node-id="alXjN7n2RuuSesxfFCcM6H">
       <a data-v="set" data-page-node-id="KuTmK0NUMfCVT2gibF45uM"><svg viewBox="0 0 24 24" data-page-node-id="41ulNRJz10tKSGmaRut4ZN"><circle cx="12" cy="12" r="3.2" data-page-node-id="TJciWDMCbA7ml88PZtRQju"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" data-page-node-id="BUqNWzAWYzzoQDG0CGudtB"/></svg>环境与口令</a>
@@ -509,6 +566,7 @@
           <h3>单元必会清单（tutor_unit_kps · 混合路线）</h3>
           <div class="mut" style="margin-bottom:8px">小程序导学页「📚 建单元必会库」生成的 canonical 清单；会话结束时未覆盖的点会自动补齐成复习卡。通关率 = 已毕业卡（Leitner 到顶）对应的必会点数 / 必会点总数，属复习行为指标，非教学掌握度。</div>
           <table class="tbl-card" id="unitTbl"><thead><tr><th>单元</th><th>必会点（正面）</th><th>主题</th><th>状态</th><th>档位</th><th>到期</th><th>复习</th></tr></thead><tbody></tbody></table>
+          <div id="blindSpotBox" style="margin-top:12px"></div>
         </div>
       </section>
 
@@ -535,7 +593,7 @@
       <!-- 导学单（T21）：出单 / 回执（两步选择）/ 计划下钻 / 时间线 ——「计划 → 出单 → 执行 → 回执 → 评语」闭环，
            与小程序「导学单」页、工作台出单区**同一份云端数据、同一套状态机**。 -->
       <section class="view" id="orders" data-page-node-id="ordersView">
-        <div class="note" data-page-node-id="ordersNote">「导学单」是「计划 → 出单 → 执行 → 回执 → 评语」闭环的家长操作台：每张单都锚定到某份成长计划的某个任务（<code data-page-node-id="ordersNoteC1">planId</code> = 学科key@计划创建时间戳），从出单到回执到评语全程带时间戳（<code data-page-node-id="ordersNoteC2">events</code> 只追加不覆盖）。<b data-page-node-id="ordersNoteB1">本页是本看板唯一的可写区域</b>：可以在这里<b data-page-node-id="ordersNoteB3">出单</b>与<b data-page-node-id="ordersNoteB4">交回执</b>，其余模块（打卡 / 农场 / 试卷 / 档案）仍严格只读；状态推进一律由云端状态机裁决，本页不推导、不改写。<b data-page-node-id="ordersNoteB2">回执 ≠ 掌握证据</b>，掌握度只来自复测达标（tutor_evidence.passed=true）。</div>
+        <div class="note" data-page-node-id="ordersNote">「导学单」是「计划 → 出单 → 执行 → 回执 → 评语」闭环的家长操作台：每张单都锚定到某份成长计划的某个任务（<code data-page-node-id="ordersNoteC1">planId</code> = 学科key@计划创建时间戳），从出单到回执到评语全程带时间戳（<code data-page-node-id="ordersNoteC2">events</code> 只追加不覆盖）。<b data-page-node-id="ordersNoteB1">本页与「教材·计划」页是本看板仅有的两个可写区域</b>：可以在这里<b data-page-node-id="ordersNoteB3">出单</b>与<b data-page-node-id="ordersNoteB4">交回执</b>，其余模块（打卡 / 农场 / 试卷 / 档案）仍严格只读；状态推进一律由云端状态机裁决，本页不推导、不改写。<b data-page-node-id="ordersNoteB2">回执 ≠ 掌握证据</b>，掌握度只来自复测达标（tutor_evidence.passed=true）。</div>
         <div id="childChipsOrders" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px" data-page-node-id="ordersChips"></div>
         <div id="ordersWrite" data-page-node-id="ordersWrite"></div>
         <div id="ordersContent" data-page-node-id="ordersContent"></div>
@@ -558,6 +616,30 @@
         <div id="reportContent" data-page-node-id="Aon3BlxH3a6jdD9dFdTgJq"></div>
       </section>
 
+      <!-- 教材与教学计划导入（2026-10-26）：本看板第二个可写区（继 orders/cards 之后）。
+           教材：粘贴目录 / 联网搜索 → webAdminWrite.textbook 代理 examService 解析 → 与官方种子库比对 → 保存为孩子库条目。
+           教学计划：md/html/txt → 字段级写 subjectProfiles.<key>.teachingPlan（生成成长计划与导学时自动参考）。 -->
+      <section class="view" id="tbed" data-page-node-id="tbedView">
+        <div class="note" data-page-node-id="tbedNote">「教材与教学计划」导入页：教材走粘贴目录文本或联网搜索，AI 提取单元后<b data-page-node-id="tbedNoteB1">与官方种子库比对</b>，由你拍板哪份正确，保存进孩子的教材库；教学计划（Markdown / HTML / 纯文本）存入学科画像，生成成长计划与日常导学时自动参考其目标与重点。写入只落当前选中孩子的数据；官方种子库<b data-page-node-id="tbedNoteB2">只读不写</b>。</div>
+        <div id="childChipsTbed" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px" data-page-node-id="tbedChips"></div>
+
+        <div class="grid2" data-page-node-id="tbedGrid">
+          <div class="card" data-page-node-id="tbedTpCard">
+            <div class="card-h" data-page-node-id="tbedTpHead"><h3 data-page-node-id="tbedTpH3">教学计划导入</h3><span data-page-node-id="tbedTpSpan">md / html / 纯文本 · 生成计划与导学自动参考</span></div>
+            <div id="tpForm" data-page-node-id="tbedTpForm"></div>
+          </div>
+          <div class="card" data-page-node-id="tbedTbCard">
+            <div class="card-h" data-page-node-id="tbedTbHead"><h3 data-page-node-id="tbedTbH3">教材导入</h3><span data-page-node-id="tbedTbSpan">上传 PDF（主）/ 粘贴目录 / 联网搜索 → AI 提取 → 比对官方库</span></div>
+            <div id="tbForm" data-page-node-id="tbedTbForm"></div>
+          </div>
+        </div>
+
+        <div class="card" id="tbPreviewCard" style="margin-top:14px;display:none" data-page-node-id="tbedPreviewCard">
+          <div class="card-h" data-page-node-id="tbedPreviewHead"><h3 data-page-node-id="tbedPreviewH3">解析结果预览</h3><span id="tbPreviewSub" data-page-node-id="tbedPreviewSub"></span></div>
+          <div id="tbPreview" data-page-node-id="tbedPreview"></div>
+        </div>
+      </section>
+
       <!-- 设置 -->
       <section class="view" id="set" data-page-node-id="V3AxUqXGXkiLc1wLpBtnNB">
         <div class="card" data-page-node-id="YYZ3ELWSWd9RRD4qiMe9F4"><h3 data-page-node-id="URkJdaIxxkCOXEX4HwDOSo">环境与口令</h3>
@@ -566,7 +648,7 @@
             · 环境 ID：<code id="envText" data-page-node-id="nbVAbhF6gcAfB81UHo4fqf">—</code><br data-page-node-id="YXuUppFHZhhD3DN9I9juez">
             · 访问口令：云端环境变量 <code data-page-node-id="vQFdtzuCkfIEUNb1R7pJLP">WEB_DASHBOARD_TOKEN</code>，前端本地存储带入；不符即拒绝。<br data-page-node-id="LX1pUB0aVTHnmeXtWDf7P8">
             · 当前口令：<code id="tokenMask" data-page-node-id="mbD32oMre96VKBRMNAztHQ">未设置</code><br data-page-node-id="oODKDJdzpwoxpjGDYHAEFZ">
-            · 写入边界：<b data-page-node-id="ordersScopeNote">仅「导学单」可写</b>（出单 / 交回执），其余模块严格只读，不写库、不调用 AI。状态与事件只由云端状态机推进，端上不推导。
+            · 写入边界：<b data-page-node-id="ordersScopeNote">仅「导学单」「复习卡」「教材·计划导入」可写</b>；历史数据归属另需家长口令确认。其余模块严格只读，不写库、不调用 AI。状态与事件只由云端状态机推进，端上不推导。
           </p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px" data-page-node-id="qDJHUVlWz6cGOsBHXVTyEv">
             <button class="btn-refresh" id="changeToken" data-page-node-id="3ySDU66osbqdkDHlDWecVW">清除口令并重新输入</button>
@@ -595,6 +677,27 @@
             <span id="visMsg" class="mut" data-page-node-id="BdqcrGCslGBj8CJiE4uxLt"></span>
           </div>
         </div>
+        <!-- 家长口令（2026-10-29）：网页访问口令 = 看数据的钥匙；家长口令 = 做家长动作的凭据 -->
+        <div class="card" style="margin-top:14px" id="ppCard">
+          <h3>家长口令</h3>
+          <p style="font-size:13px;color:var(--ink2);line-height:1.8">
+            家长口令与网页访问口令是两件事：访问口令决定「能看哪个家庭的数据」，家长口令决定「能不能做家长动作」（签发学习单、改计划）。口令只存云端散列值，本机只留 2 小时有效的验证状态。
+          </p>
+          <div id="ppState" class="mut" style="font-size:12.5px;margin:2px 0 8px"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:420px">
+            <input id="ppOld" class="inp" type="password" inputmode="numeric" maxlength="8" placeholder="当前口令（修改时填）" autocomplete="off" style="display:none">
+            <input id="ppPin" class="inp" type="password" inputmode="numeric" maxlength="8" placeholder="4-8 位数字口令" autocomplete="off">
+            <input id="ppPin2" class="inp" type="password" inputmode="numeric" maxlength="8" placeholder="再输一次（设置 / 修改时填）" autocomplete="off" style="display:none">
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center">
+            <button class="btn-refresh" id="ppPrimary">设置口令</button>
+            <button class="btn-refresh" id="ppChange" style="display:none">修改口令</button>
+            <button class="btn-refresh" id="ppCancel" style="display:none">取消</button>
+            <button class="btn-refresh" id="ppRevoke" style="display:none">结束本次验证</button>
+            <span id="ppMsg" class="mut"></span>
+          </div>
+        </div>
+
       </section>
     </div>
 
@@ -607,6 +710,7 @@
       <a data-v="tasks" data-page-node-id="0WaLzVGWAl5wVDZUJhAUIb"><svg viewBox="0 0 24 24" data-page-node-id="NcCQC9zBjylL2G4czVLlNR"><path d="M4 6h16M4 12h16M4 18h10" data-page-node-id="maBSqhqw1hW1HBE1VOKQuK"/><path d="M18 16l2 2 3-3" data-page-node-id="cSdgqGqKHUO1CedhuM83Xm"/></svg>任务</a>
       <a data-v="timeline" data-page-node-id="EK4UG4JZcDf2PN0iHJ93Y8"><svg viewBox="0 0 24 24" data-page-node-id="vO9a9DKktOw5FBvMh6RpLK"><path d="M12 3v18M3 12h18" data-page-node-id="5pEwF5fflseztkGQK3ssln"/><circle cx="12" cy="12" r="9" data-page-node-id="VXLUNxTOGrKRBypfTQ8jCV"/></svg>记录</a>
       <a data-v="report" data-page-node-id="S96g0hg89SzyEJJc8NexXx"><svg viewBox="0 0 24 24" data-page-node-id="hOG9WCRSrTFIxVpsVfRPrl"><path d="M7 3h7l5 5v13H7Z" data-page-node-id="AsYPJxJvFhUDpXdvBgvFhr"/><path d="M14 3v5h5M10 13h6M10 17h6" data-page-node-id="CvFPyQwqk0mrFlrllHdiZx"/></svg>报告</a>
+      <a data-v="tbed" data-page-node-id="tbedTab"><svg viewBox="0 0 24 24" data-page-node-id="tbedTabIco"><path d="M4 19V6a2 2 0 0 1 2-2h13v13H6a2 2 0 0 0-2 2Zm0 0a2 2 0 0 0 2 2h13" data-page-node-id="tbedTabPath"/></svg>教材·计划</a>
       <a data-v="set" data-page-node-id="X0IFdg72PLX4nIE6gQtSrj"><svg viewBox="0 0 24 24" data-page-node-id="88hZwzGFBB6EzdWzu5P11d"><circle cx="12" cy="12" r="3.2" data-page-node-id="sGBzxjk7FHTPX9csIIjcpo"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" data-page-node-id="Gbc1ftGfkwlrwNBn2NrIf1"/></svg>设置</a>
     </nav>
 <section class="view" id="speakstep">
@@ -16770,7 +16874,7 @@
                       }));
                     }));
                   }), 500), u4.appendChild(l3), a2.appendChild(u4);
-                  var h3 = i3("input", "width:100%;padding:14px 16px;margin-bottom:15px;box-sizing:border-box;border:2px solid #e8ecf4;border-radius:10px;font-size:15px");
+                  var h3 = i3("input", "width:100%;padding:14px 16px;margin-bottom:15px;box-sizing:border-box;border:2px solid var(--line);border-radius:10px;font-size:15px");
                   h3.type = "text", h3.placeholder = "\u8F93\u5165\u5B57\u7B26", h3.maxLength = 4, a2.appendChild(h3);
                   var d4 = i3("div", "color:#dc3545;font-size:12px;margin-bottom:10px;display:none;padding:8px;background:#f8d7da;border:1px solid #f5c6cb;border-radius:4px");
                   a2.appendChild(d4);
@@ -28811,7 +28915,7 @@ function eventText(e){
 }
 function subjName(c){ return SUBJECTS[c] || (c || '未知'); }
 function errLabel(c){ const e = ERRORS[c]; return e ? (c + ' ' + e.name) : (c || '未知'); }
-function errColor(c){ return (ERRORS[c] && ERRORS[c].color) || '#8b92a5'; }
+function errColor(c){ return (ERRORS[c] && ERRORS[c].color) || '#9b9a97'; }
 function fmtDate(v){ if(!v) return '—'; const d = new Date(typeof v==='number' && v<1e12 ? v*1000 : v); if(isNaN(d)) return '—'; const p=n=>n<10?'0'+n:''+n; return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
 function fmtMD(v){ const s = fmtDate(v); return s.length>=10 ? s.slice(5) : s; }
 function todayKey(){ const d=new Date(); const p=n=>n<10?'0'+n:''+n; return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
@@ -28904,6 +29008,7 @@ async function refreshAll(){
   renderOverview(); renderToday(); renderFarm(); renderTutor();
   renderArchive(); renderTasks(); renderTimeline(); renderReport(); renderExams();
   renderOrders();
+  if(typeof window.__renderTbed==='function') window.__renderTbed();
 
   const errs = [o,p,t,f,x,od].filter(v=>v.__err).map(v=>v.__err);
   if(errs.length){
@@ -28940,7 +29045,7 @@ function renderOverview(){
     if(o.child){
       const c = o.child;
       cs.style.display = 'flex';
-      cs.innerHTML = `<b style="font-size:15px;color:#1c2130">${esc(c.nickname||'孩子')}</b>` +
+      cs.innerHTML = `<b style="font-size:15px;color:var(--ink)">${esc(c.nickname||'孩子')}</b>` +
         (c.grade?`<span class="pill">${esc(c.grade)}</span>`:'') +
         `<span class="m">🪙 ${c.coins}</span><span class="m">🐻 ${c.bears}</span><span class="m">🌱 ${c.plots}</span><span class="m">🛡️ ${c.shields}</span>`;
     } else cs.style.display = 'none';
@@ -28959,19 +29064,19 @@ function renderDonut(ed){
   const total = ed.reduce((a,b)=>a+b.v,0);
   const C = 2*Math.PI*54; let off=0;
   const segs = ed.map(e=>{ const len = total? e.v/total*C : 0; const s=`<circle cx="70" cy="70" r="54" fill="none" stroke="${e.c}" stroke-width="16" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>`; off+=len; return s; }).join('');
-  document.getElementById('donut').innerHTML = segs + (total?`<text x="70" y="66" text-anchor="middle" font-size="20" font-weight="800" fill="#1c2130">${total}</text><text x="70" y="84" text-anchor="middle" font-size="11" fill="#8b92a5">错题</text>`:'<text x="70" y="75" text-anchor="middle" font-size="11" fill="#8b92a5">无数据</text>');
+  document.getElementById('donut').innerHTML = segs + (total?`<text x="70" y="66" text-anchor="middle" font-size="20" font-weight="800" fill="#32302c">${total}</text><text x="70" y="84" text-anchor="middle" font-size="11" fill="#9b9a97">错题</text>`:'<text x="70" y="75" text-anchor="middle" font-size="11" fill="#9b9a97">无数据</text>');
   document.getElementById('errLegend').innerHTML = ed.length ? ed.map(e=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0"><span style="width:10px;height:10px;border-radius:3px;background:${e.c};display:inline-block"></span>${esc(e.t)} <b style="margin-left:auto">${e.v}</b></div>`).join('') : '<span class="mut">暂无错题</span>';
 }
 function renderTrend(t){
   const W=520,H=170,pl=40,pr=14,pt=18,pb=26;
-  if(!t.length){ document.getElementById('trend').innerHTML='<text x="260" y="90" text-anchor="middle" fill="#8b92a5" font-size="12">该窗口内无打卡记录</text>'; return; }
+  if(!t.length){ document.getElementById('trend').innerHTML='<text x="260" y="90" text-anchor="middle" fill="#9b9a97" font-size="12">该窗口内无打卡记录</text>'; return; }
   const xs=i=>pl+(W-pl-pr)*i/(t.length-1);
   const ys=v=>pt+(H-pt-pb)*(1-v/100);
   const pts=t.map((p,i)=>`${xs(i)},${ys(p.r)}`).join(' ');
   const area=`${pl},${H-pb} ${pts} ${W-pr},${H-pb}`;
-  const grid=[0,25,50,75,100].map(g=>`<line x1="${pl}" y1="${ys(g)}" x2="${W-pr}" y2="${ys(g)}" stroke="#eef0f4"/><text x="6" y="${ys(g)+3}" font-size="9" fill="#8b92a5">${g}</text>`).join('');
+  const grid=[0,25,50,75,100].map(g=>`<line x1="${pl}" y1="${ys(g)}" x2="${W-pr}" y2="${ys(g)}" stroke="#f1f1ef"/><text x="6" y="${ys(g)+3}" font-size="9" fill="#9b9a97">${g}</text>`).join('');
   const dots=t.map((p,i)=>`<circle cx="${xs(i)}" cy="${ys(p.r)}" r="3" fill="#1d2b53"/>`).join('');
-  const lbls=t.map((p,i)=>`<text x="${xs(i)}" y="${H-8}" font-size="9" fill="#8b92a5" text-anchor="middle">${p.d.slice(5)}</text>`).join('');
+  const lbls=t.map((p,i)=>`<text x="${xs(i)}" y="${H-8}" font-size="9" fill="#9b9a97" text-anchor="middle">${p.d.slice(5)}</text>`).join('');
   document.getElementById('trend').innerHTML=grid+`<polygon points="${area}" fill="rgba(201,162,39,.10)"/><polyline points="${pts}" fill="none" stroke="#c9a227" stroke-width="2.5"/>`+dots+lbls;
 }
 function renderAlertsAndActivity(){
@@ -29106,7 +29211,7 @@ function renderFarm(){
     const pct = p.goal ? Math.round(p.progress/p.goal*100) : 0;
     const contributors = Object.keys(p.contributors||{}).length;
     return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span>${esc(p.name||'家庭合种')} ${p.done?'<span class="tag t-g">已完成</span>':''}</span><span>${p.progress}/${p.goal}</span></div>`+
-      `<div class="track" style="height:12px;background:#eef0f4;border-radius:6px;overflow:hidden;margin-top:5px"><i style="display:block;height:100%;width:${pct}%;background:linear-gradient(90deg,#6FCF7C,#3B6D11)"></i></div>`+
+      `<div class="track" style="height:12px;background:var(--line2);border-radius:6px;overflow:hidden;margin-top:5px"><i style="display:block;height:100%;width:${pct}%;background:linear-gradient(90deg,#6FCF7C,#3B6D11)"></i></div>`+
       `<div class="mut" style="margin-top:3px">${pct}% · ${contributors} 位成员贡献</div></div>`;
   }).join('') : '<div class="empty">暂无合种</div>';
   const evs = (f.events||[]).filter(e=>e.event!=='app_launch').slice(0,40);
@@ -29179,6 +29284,20 @@ function renderTutor(){
     const cid = b.dataset.cid; const good = b.dataset.good==='1';
     await reviewCard(cid, good);
   }));
+  // 盲区诊断（依赖归因）：前置欠账 + 下游拖累
+  renderBlindSpots(t.blindSpots || []);
+}
+function renderBlindSpots(spots){
+  const box = document.getElementById('blindSpotBox');
+  if(!box) return;
+  if(!spots.length){ box.innerHTML = '<span class="tag t-g">无盲区：所有前置依赖均已达标</span>'; return; }
+  const rows = spots.map(s=>{
+    const miss = (s.missingPrereqs||[]).map(m=>`<span class="tag t-a">补「${esc(m.topic)}」</span>`).join(' ') || '';
+    const block = (s.blocks||[]).length ? ` 拖累：${s.blocks.map(b=>esc(b)).join('、')}` : '';
+    const flag = s.mastered ? '' : '<span class="tag t-n">未达标</span> ';
+    return `<div style="margin:4px 0;line-height:1.9">${flag}「${esc(s.topic)}」 ${miss}${block}</div>`;
+  }).join('');
+  box.innerHTML = '<div class="mut" style="margin-bottom:6px">盲区诊断（依赖归因 · 该补的前置）</div>' + rows;
 }
 
 /* ============ 试卷库 ============ */
@@ -30067,7 +30186,7 @@ function renderOrders(){
     + '<div class="sched"><table><tr><th>计划任务</th><th>学科</th><th>阶段</th><th>锚点下标</th><th>待回执</th><th>已回执</th><th>已归档</th><th>合计</th><th>最近出单</th></tr>'
     + plans.map(function(p){
         const on = ordersPlanFilter === p.planId;
-        return '<tr data-planrow="'+esc(p.planId)+'" style="cursor:pointer'+(on?';background:#faf3dd':'')+'">'
+        return '<tr data-planrow="'+esc(p.planId)+'" style="cursor:pointer'+(on?';background:var(--gold-soft)':'')+'">'
           + '<td><div style="font-weight:700">'+esc(p.taskName||'（任务名缺失）')+'</div><div class="okey">'+esc(p.planId)+'</div></td>'
           + '<td>'+esc(p.subjectName||subjName(p.key))+'</td>'
           + '<td>'+esc(p.stageName||'—')+'</td>'
@@ -30091,7 +30210,7 @@ function renderOrders(){
     const sel = ordersSel === o.orderNo;
     const ev = o.evaluation || {};
     const verdict = ev.verdictText || (ev.verdict===null?'证据不足':(ev.verdict||''));
-    return '<tr data-orderno="'+esc(o.orderNo||o.id||'')+'" style="cursor:pointer'+(sel?';background:#faf3dd':'')+'">'
+    return '<tr data-orderno="'+esc(o.orderNo||o.id||'')+'" style="cursor:pointer'+(sel?';background:var(--gold-soft)':'')+'">'
       + '<td><div style="font-weight:700">'+esc(o.orderNo||o.id||'—')+'</div><div class="mut">'+esc(o.title||'')+'</div></td>'
       + '<td>'+esc(orderSubjText(o))+'<div class="mut">'+esc((o.plan&&o.plan.taskName)||'—')+'</div></td>'
       + '<td>'+esc(o.kind||'—')+(o.minutes?'<div class="mut">'+esc(String(o.minutes))+' 分钟</div>':'')+'</td>'
@@ -30207,18 +30326,414 @@ function renderReport(){
 }
 
 /* ============ 视图切换 ============ */
+/* ================================================================== *
+ * 教材与教学计划导入（tbed 视图，2026-10-26）
+ * ------------------------------------------------------------------
+ * 读走 webAdminQuery（profile 已含 subjectProfiles/updatedAt），写走 webAdminWrite
+ * 两个新通道：teachingPlan（字段级写）与 textbook（代理 examService）。
+ * 与 orders/cards 同一写边界原则：所有写入只经 callTbedWrite()，不在页面上
+ * 直接拼 webAdminWrite 以外的东西。官方种子库全程只读。
+ * ================================================================== */
+const TB_STATE = { draft:null, compare:null, candidates:[], dirty:false, tpKey:'', searching:false };
+
+/* —— 纯文本清洗（与小程序 utils/teachingPlan.js 同款，移植勿改语义） —— */
+function tpHtmlToText(html){
+  return String(html||'')
+    .replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<!--[\s\S]*?-->/g,' ')
+    .replace(/<h1[^>]*>/gi,'\n# ').replace(/<h2[^>]*>/gi,'\n## ').replace(/<h3[^>]*>/gi,'\n### ')
+    .replace(/<h4[^>]*>/gi,'\n#### ').replace(/<h5[^>]*>/gi,'\n##### ').replace(/<h6[^>]*>/gi,'\n###### ')
+    .replace(/<\/h[1-6]>/gi,'\n').replace(/<li[^>]*>/gi,'\n- ')
+    .replace(/<(p|div|br|tr|table|thead|tbody)[^>]*>/gi,'\n').replace(/<[^>]+>/g,' ')
+    .replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"')
+    .replace(/[ \t]+/g,' ').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function tpMdToText(md){
+  return String(md||'')
+    .replace(/```[\s\S]*?```/g,' ').replace(/!\[[^\]]*\]\([^)]*\)/g,' ').replace(/`([^`]+)`/g,'$1')
+    .replace(/[ \t]+/g,' ').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function tpClean(content, format){
+  if(format==='html') return tpHtmlToText(content);
+  if(format==='md') return tpMdToText(content);
+  return String(content||'').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+}
+function tpDetectFormat(name, content){
+  const ext=(name||'').toLowerCase().split('.').pop();
+  if(ext==='html'||ext==='htm') return 'html';
+  if(ext==='md'||ext==='markdown') return 'md';
+  const c=String(content||'');
+  if(/<(h[1-6]|p|div|table|style|script)\b/i.test(c)) return 'html';
+  if(/^#{1,6}\s|^[-*]\s|\*\*[^*]+\*\*/m.test(c)) return 'md';
+  return 'text';
+}
+
+/* —— 单元 diff（与小程序 textbookLibModel.js 同口径，移植勿改语义） —— */
+function tbNormUnit(name){
+  let s=String(name||'');
+  s=s.replace(/第[一二三四五六七八九十百千0-9０-９]+单元/g,'').replace(/第[一二三四五六七八九十百千0-9０-９]+[课讲章]/g,'');
+  s=s.replace(/^[0-9０-９]+[\s\.、\.]*/,'').replace(/[·•・\-—_()（）\[\]【】\s]/g,'');
+  return s.toLowerCase();
+}
+function tbUnitsOf(units){
+  return (Array.isArray(units)?units:[]).map(u=>({
+    name:String((u&&u.name)||'').trim(),
+    sections:u&&Array.isArray(u.sections)?u.sections.map(x=>String(x).trim()).filter(Boolean):String((u&&u.sectionsText)||'').split('\n').map(x=>x.trim()).filter(Boolean)
+  })).filter(u=>u.name);
+}
+function tbUnitMatch(a,b){
+  const x=tbNormUnit(a),y=tbNormUnit(b);
+  if(!x||!y) return false;
+  return x===y||(x.length>=2&&y.length>=2&&(x.indexOf(y)>=0||y.indexOf(x)>=0));
+}
+function tbDiff(draftUnits,seedUnits){
+  const d=tbUnitsOf(draftUnits),s=tbUnitsOf(seedUnits);
+  const used=new Array(s.length).fill(false); const rows=[]; let matched=0;
+  for(const du of d){
+    let si=-1;
+    for(let j=0;j<s.length;j++){ if(!used[j]&&tbUnitMatch(du.name,s[j].name)){si=j;break;} }
+    if(si<0){ rows.push({name:du.name,status:'draft_only',note:'官方库没有该单元'}); continue; }
+    used[si]=true; matched++;
+    const setA=new Set(du.sections.map(x=>tbNormUnit(x))), setB=new Set(s[si].sections.map(x=>tbNormUnit(x)));
+    const onlyA=du.sections.filter(x=>!setB.has(tbNormUnit(x))), onlyB=s[si].sections.filter(x=>!setA.has(tbNormUnit(x)));
+    if(!s[si].sections.length||(!onlyA.length&&!onlyB.length)) rows.push({name:du.name,status:'same',note:s[si].sections.length?('小节一致（'+du.sections.length+' 节）'):'单元名一致（官方库无小节）'});
+    else{
+      const parts=[];
+      if(onlyA.length) parts.push('识别多出 '+onlyA.length+' 节');
+      if(onlyB.length) parts.push('官方多出 '+onlyB.length+' 节');
+      rows.push({name:du.name,status:'section_diff',note:'小节不同：'+parts.join('，')});
+    }
+  }
+  for(let j=0;j<s.length;j++){ if(!used[j]) rows.push({name:s[j].name,status:'seed_only',note:'本次识别漏了该单元'}); }
+  return { matched, draftOnly:d.length-matched, seedOnly:s.length-matched, rows };
+}
+
+function tbedAcct(){
+  const p = DATA.profile;
+  if(!p || !p.accounts || !p.accounts.length) return null;
+  if(selectedAccount >= p.accounts.length) selectedAccount = 0;
+  return p.accounts[selectedAccount];
+}
+
+/* —— 写通道：teachingPlan / textbook 两个新模块（与 callWriteCards 同款调用形态） —— */
+async function callTbedWrite(body){
+  if(!TOKEN) return { ok:false, code:'auth', msg:'缺少访问口令，请先在「设置」输入' };
+  try{
+    if(!app) await initCloud();
+    const res = await app.callFunction({ name:'webAdminWrite', data: Object.assign({ token: TOKEN }, body) });
+    const r = (res && res.result) || {};
+    if(!r.ok) return { ok:false, code:r.code||'write_error', msg:r.msg||'写入失败' };
+    return { ok:true, data:r };
+  }catch(e){ return { ok:false, code:'network', msg:'网络错误：' + ((e&&e.message)||e) }; }
+}
+
+/* —— 教学计划表单 —— */
+const TP_SUBJECTS = [ ['chinese','语文'], ['math','数学'], ['english','英语'], ['science','科学'] ];
+function renderTbedTp(acct){
+  const el = document.getElementById('tpForm');
+  const sp = (acct && acct.subjectProfiles) || {};
+  const cur = TB_STATE.tpKey || 'chinese';
+  const opts = TP_SUBJECTS.map(s=>`<option value="${s[0]}" ${s[0]===cur?'selected':''}>${s[1]}</option>`).join('');
+  const p = sp[cur] || {};
+  const tp = p.teachingPlan || null;
+  const tpInfo = tp && tp.raw
+    ? `<div class="tp-info"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg><b>${esc(tp.title||'已导入')}</b> · ${tp.format||'text'} · ${(tp.raw||'').length} 字<span style="color:var(--mut)">（生成计划/导学自动参考）</span></div>`
+    : `<div class="tp-empty">该学科还没有教学计划。导入后，生成成长计划与导学会参考其教学目标与重点。</div>`;
+  el.innerHTML =
+    `<div class="f-row"><span class="f-label">学科</span><select id="tpKey">${opts}</select></div>` +
+    `<div id="tpCur">${tpInfo}</div>` +
+    `<div class="f-row"><span class="f-label">标题</span><input id="tpTitle" placeholder="如：一年级上学期语文教学计划（可空）" value="${esc(TB_STATE.tpTitle||'')}"></div>` +
+    `<textarea id="tpRaw" style="min-height:180px" placeholder="粘贴 Markdown / HTML / 纯文本教学计划…（也可点下方按钮选文件）">${esc(TB_STATE.tpRaw||'')}</textarea>` +
+    `<div class="btnbar">` +
+      `<button class="btn btn-sm" id="tpFile"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>选 md/html/txt 文件</button>` +
+      `<input type="file" id="tpFileInp" accept=".md,.markdown,.html,.htm,.txt" style="display:none">` +
+      `<span id="tpFmt" class="mut" style="font-size:11px"></span>` +
+      `<span style="flex:1"></span>` +
+      `<button class="btn btn-sm" id="tpClear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>清除</button>` +
+      `<button class="btn btn-primary btn-sm" id="tpSave"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5Z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>保存教学计划</button>` +
+    `</div>`;
+  el.querySelector('#tpKey').addEventListener('change', e=>{ TB_STATE.tpKey=e.target.value; TB_STATE.tpRaw=''; TB_STATE.tpTitle=''; renderTbedTp(tbedAcct()); });
+  el.querySelector('#tpFile').addEventListener('click', ()=> el.querySelector('#tpFileInp').click());
+  el.querySelector('#tpFileInp').addEventListener('change', e=>{
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    if(f.size > 2*1024*1024) return tbedMsg('文件超过 2MB，请精简后重试');
+    const reader = new FileReader();
+    reader.onload = ()=>{ TB_STATE.tpRaw = tpClean(String(reader.result||''), tpDetectFormat(f.name, String(reader.result||''))); renderTbedTp(tbedAcct()); };
+    reader.readAsText(f);
+  });
+  el.querySelector('#tpSave').addEventListener('click', async ()=>{
+    const acct = tbedAcct(); if(!acct) return tbedMsg('档案数据未加载');
+    const key = el.querySelector('#tpKey').value;
+    const raw = el.querySelector('#tpRaw').value.trim();
+    const title = el.querySelector('#tpTitle').value.trim();
+    if(!raw) return tbedMsg('请先粘贴或选择教学计划内容');
+    tbedMsg('正在保存教学计划…');
+    const r = await callTbedWrite({ teachingPlan: { key, title, raw, format: tpDetectFormat('', raw), base: acct.updatedAt || 0 } });
+    if(!r.ok){ tbedMsg('保存失败：' + r.msg, true); return; }
+    // 服务端写入会刷新文档级 updatedAt，这里同步本地基线，否则紧接着再保存一次会被
+    // 自己的冲突闸（no_baseline）挡掉，必须刷新页面才能继续编辑。
+    if(r.teachingPlan && r.teachingPlan.updatedAt) acct.updatedAt = r.teachingPlan.updatedAt;
+    TB_STATE.tpRaw=''; TB_STATE.tpTitle='';
+    tbedMsg('教学计划已保存（' + key + ' · ' + raw.length + ' 字）', false, true);
+    await refreshAll();
+  });
+  el.querySelector('#tpClear').addEventListener('click', async ()=>{
+    const acct = tbedAcct(); if(!acct) return tbedMsg('档案数据未加载');
+    const key = el.querySelector('#tpKey').value;
+    if(!confirm('确认清除「' + key + '」学科的教学计划？')) return;
+    const r = await callTbedWrite({ teachingPlan: { key, title:'', raw:'', format:'text', base: acct.updatedAt || 0 } });
+    if(!r.ok) return tbedMsg('清除失败：' + r.msg, true);
+    if(r.teachingPlan && r.teachingPlan.updatedAt) acct.updatedAt = r.teachingPlan.updatedAt;
+    tbedMsg('已清除', false, true);
+    await refreshAll();
+  });
+}
+
+/* —— 教材导入表单 + 解析预览 —— */
+function renderTbedTb(acct){
+  const el = document.getElementById('tbForm');
+  const sp = (acct && acct.subjectProfiles) || {};
+  const opts = TP_SUBJECTS.map(s=>`<option value="${s[0]}" ${s[0]===(TB_STATE.tbSubject||'chinese')?'selected':''}>${s[1]}</option>`).join('');
+  el.innerHTML =
+    `<div class="f-row"><span class="f-label">学科</span><select id="tbSubject">${opts}</select></div>` +
+    `<div class="f-row"><span class="f-label">年级</span><input id="tbGrade" placeholder="如：一年级" value="${esc(TB_STATE.tbGrade||'')}"></div>` +
+    `<div class="f-row"><span class="f-label">版本</span><input id="tbVersion" placeholder="如：人教版（可空）" value="${esc(TB_STATE.tbVersion||'')}"></div>` +
+    `<div class="f-row"><span class="f-label">学期</span><input id="tbTerm" placeholder="如：上学期（可空）" value="${esc(TB_STATE.tbTerm||'')}"></div>` +
+    `<textarea id="tbRaw" style="min-height:130px" placeholder="粘贴教材目录文本，如：&#10;第一单元 准备课&#10;  1 数一数&#10;  2 比多少&#10;第二单元 位置…">${esc(TB_STATE.tbRaw||'')}</textarea>` +
+    `<div class="btnbar">` +
+      `<button class="btn btn-primary btn-sm" id="tbPdf"><svg viewBox="0 0 24 24"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9Z"/><path d="M13 3v6h6M9 13h6M9 17h6"/></svg>上传 PDF</button>` +
+      `<input type="file" id="tbPdfInp" accept=".pdf,application/pdf" style="display:none">` +
+      `<button class="btn btn-sm" id="tbParse"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z"/></svg>AI 解析目录</button>` +
+      `<button class="btn btn-sm" id="tbSearch"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.7 2.5 13.3 0 16-2.5-2.7-2.5-13.3 0-16Z"/></svg>联网搜索</button>` +
+      `<button class="btn btn-sm" id="tbOfficial"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h13v13H6a2 2 0 0 0-2 2Zm0 0a2 2 0 0 0 2 2h13"/></svg>官方库直接选</button>` +
+    `</div>` +
+    `<div id="tbSearchOut"></div>`;
+  el.querySelector('#tbSubject').addEventListener('change', e=>{ TB_STATE.tbSubject=e.target.value; });
+  el.querySelector('#tbGrade').addEventListener('input', e=>{ TB_STATE.tbGrade=e.target.value; });
+  el.querySelector('#tbVersion').addEventListener('input', e=>{ TB_STATE.tbVersion=e.target.value; });
+  el.querySelector('#tbTerm').addEventListener('input', e=>{ TB_STATE.tbTerm=e.target.value; });
+  el.querySelector('#tbRaw').addEventListener('input', e=>{ TB_STATE.tbRaw=e.target.value; });
+  el.querySelector('#tbParse').addEventListener('click', ()=> tbedParse());
+  el.querySelector('#tbSearch').addEventListener('click', ()=> tbedSearch());
+  el.querySelector('#tbOfficial').addEventListener('click', ()=> tbedListOfficial());
+  el.querySelector('#tbPdf').addEventListener('click', ()=> el.querySelector('#tbPdfInp').click());
+  el.querySelector('#tbPdfInp').addEventListener('change', e=>{
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(!f) return;
+    tbedUploadPdf(f);
+  });
+}
+
+/* —— 入口一：上传 PDF（与小程序同流程：COS 直传 → parseTextbookPdf → 比对预览） ——
+ * 网页端复用页面内已初始化的 CloudBase JS SDK：app.uploadFile 走 getUploadMetadata
+ * → PUT（authorization / x-cos-meta-fileid / x-cos-security-token 同款 4 header 语义），
+ * 返回 fileID 与小程序 COS 直传产物一致，云端 parseTextbookPdf 用 getTempFileURL 下载，
+ * 通道差异对云端透明。25MB 上限、无文本层报 pdf_no_text 与小程序一致。 */
+async function tbedUploadPdf(file){
+  const acct = tbedAcct(); if(!acct) return tbedMsg('档案数据未加载', true);
+  if(!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') return tbedMsg('请选择 PDF 文件', true);
+  if(file.size > 25*1024*1024) return tbedMsg('PDF 超过 25MB，请压缩后重试', true);
+  if(!file.size) return tbedMsg('PDF 文件为空', true);
+  const btn = document.getElementById('tbPdf');
+  if(btn){ btn.disabled = true; }
+  try{
+    tbedMsg('上传 PDF 中…（' + Math.max(1, Math.round(file.size/1024/1024*10)/10) + 'MB）');
+    if(!app) await initCloud();
+    const up = await app.uploadFile({
+      cloudPath: 'textbook_pdf/web-' + Date.now() + '-' + Math.floor(Math.random()*1e6) + '.pdf',
+      filePath: file
+    });
+    const fileId = (up && (up.fileID || up.fileId)) || '';
+    if(!fileId) throw new Error('上传成功但未取得 fileID');
+    tbedMsg('解析目录中…（约 5-15 秒）');
+    const r = await tbedCallTextbook('parsePdf', {
+      fileId: fileId,
+      subject: TB_STATE.tbSubject || 'chinese',
+      grade: TB_STATE.tbGrade || '',
+      term: TB_STATE.tbTerm || '',
+      version: TB_STATE.tbVersion || ''
+    });
+    if(!r.ok) return tbedMsg('解析失败：' + r.msg, true);
+    if(!r.draft) return tbedMsg('解析结果为空，换个 PDF 试试', true);
+    TB_STATE.draft = r.draft;
+    tbedMsg('解析完成，正在与官方库比对…');
+    await tbedCompareAndPreview();
+  }catch(e){
+    tbedMsg('上传或解析失败：' + ((e && e.message) || e), true);
+  }finally{
+    if(btn){ btn.disabled = false; }
+  }
+}
+
+async function tbedCallTextbook(action, payload){
+  const acct = tbedAcct(); if(!acct) return { ok:false, msg:'档案数据未加载' };
+  return await callTbedWrite({ textbook: Object.assign({ action }, payload||{}) });
+}
+
+async function tbedParse(){
+  const raw = (TB_STATE.tbRaw||'').trim();
+  if(!raw) return tbedMsg('请先粘贴目录文本');
+  tbedMsg('AI 解析目录中…（约 5-15 秒）');
+  const r = await tbedCallTextbook('parseText', { rawText: raw, subject: TB_STATE.tbSubject||'chinese', grade: TB_STATE.tbGrade||'', term: TB_STATE.tbTerm||'', version: TB_STATE.tbVersion||'' });
+  if(!r.ok) return tbedMsg('解析失败：' + r.msg, true);
+  if(!r.draft) return tbedMsg('解析结果为空，换个文本试试', true);
+  TB_STATE.draft = r.draft;
+  tbedMsg('解析完成，正在与官方库比对…');
+  await tbedCompareAndPreview();
+}
+
+async function tbedSearch(){
+  if(TB_STATE.searching) return;
+  const q = prompt('搜索关键词（留空自动按 年级+学科+版本+教材目录 拼装）：', (TB_STATE.tbVersion||'') + (TB_STATE.tbGrade||'') + (TB_STATE.tbTerm||'') + '教材目录');
+  if(q === null) return;
+  TB_STATE.searching = true;
+  tbedMsg('联网搜索中…');
+  const r = await tbedCallTextbook('search', { query: (q||'').trim(), subject: TB_STATE.tbSubject||'chinese', grade: TB_STATE.tbGrade||'', term: TB_STATE.tbTerm||'', version: TB_STATE.tbVersion||'' });
+  TB_STATE.searching = false;
+  if(!r.ok) return tbedMsg('搜索失败：' + r.msg, true);
+  const list = r.candidates || [];
+  if(!list.length) return tbedMsg('没搜到结果，换个关键词试试');
+  const out = document.getElementById('tbSearchOut');
+  out.innerHTML = `<div style="font-size:12px;margin-top:10px" class="mut">候选 ${list.length} 条（${esc(r.provider||'')}）：点「选它」进预览比对</div>` +
+    `<div class="rowlist">` + list.map((c,i)=>`<div class="rowitem">` +
+      `<div class="rt"><b>${esc(c.title||'未命名')}</b><div class="mut">${esc(c.url||'')}</div></div>` +
+      `<span class="meta">${(c.units||[]).length} 单元</span>` +
+      `<button class="btn btn-sm" data-i="${i}">选它</button></div>`).join('') + `</div>`;
+  out.querySelectorAll('button[data-i]').forEach(b=>b.addEventListener('click', ()=>{
+    const c = list[+b.dataset.i];
+    if(!c.units || !c.units.length) return tbedMsg('这条没提取到目录，换一条', true);
+    TB_STATE.draft = { title: (c.title||'').slice(0,60), subject: TB_STATE.tbSubject||'chinese', grade: TB_STATE.tbGrade||'', term: TB_STATE.tbTerm||'', version: TB_STATE.tbVersion||'', source:'search', sourceUrl:c.url, units: c.units };
+    tbedMsg('已选候选，正在与官方库比对…');
+    tbedCompareAndPreview();
+  }));
+}
+
+async function tbedListOfficial(){
+  const r = await tbedCallTextbook('list', { subject: TB_STATE.tbSubject||'', grade: TB_STATE.tbGrade||'' });
+  if(!r.ok) return tbedMsg('官方库读取失败：' + r.msg, true);
+  const g = r.official || [];
+  if(!g.length) return tbedMsg('该筛选下官方库暂无条目');
+  const out = document.getElementById('tbSearchOut');
+  out.innerHTML = `<div style="font-size:12px;margin-top:10px" class="mut">官方库 ${g.length} 条：点「采用」直接把它复制成孩子的教材（比对可省）</div>` +
+    `<div class="rowlist">` + g.slice(0,20).map(t=>`<div class="rowitem">` +
+      `<div class="rt"><b>${esc(t.title)}</b></div>` +
+      `<span class="meta">${esc(t.grade||'')} ${esc(t.term||'')} ${esc(t.version||'')}</span>` +
+      `<span class="meta">${t.unitCount||0} 单元</span>` +
+      `<button class="btn btn-sm" data-id="${esc(t.textbookId)}">采用</button></div>`).join('') + `</div>`;
+  out.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click', async ()=>{
+    tbedMsg('正在读取官方教材…');
+    const tr = await tbedCallTextbook('get', { textbookId: b.dataset.id });
+    if(!tr.ok) return tbedMsg('读取失败：' + tr.msg, true);
+    TB_STATE.draft = tr.textbook;   // textbookId 保留官方 id，保存时云端自动复制成孩子的
+    tbedMsg('已采用官方条目，正在比对…');
+    await tbedCompareAndPreview();
+  }));
+}
+
+/* 解析/采用后：与官方库比对 + 渲染预览 */
+async function tbedCompareAndPreview(){
+  const d = TB_STATE.draft; if(!d) return;
+  const card = document.getElementById('tbPreviewCard');
+  card.style.display = '';
+  document.getElementById('tbPreviewSub').textContent = (d.units||[]).length + ' 单元 · 保存后进「' + (tbedAcct()?tbedAcct().nickname||'孩子':'孩子') + '」的教材库';
+  document.getElementById('tbPreview').innerHTML = '<div class="mut" style="font-size:12px">比对中…</div>';
+  let cmpHtml = '';
+  try{
+    const r = await tbedCallTextbook('list', { subject: d.subject||'', grade: d.grade||'' });
+    if(r.ok){
+      const official = r.official || [];
+      let best=null, bestScore=0;
+      for(const it of official){
+        let sc=0; const ig=it.grade||'';
+        if(d.grade && (ig.indexOf(d.grade)>=0 || (ig && d.grade.indexOf(ig)>=0))) sc+=4;
+        if(d.term && (it.term||'')===d.term) sc+=2;
+        if(d.version && (it.version||'').indexOf(d.version)>=0) sc+=2;
+        if(sc>bestScore){ bestScore=sc; best=it; }
+      }
+      if(best && bestScore>=4){
+        const tr = await tbedCallTextbook('get', { textbookId: best.textbookId });
+        if(tr.ok){
+          const diff = tbDiff(d.units, (tr.textbook&&tr.textbook.units)||[]);
+          TB_STATE.compare = tr.textbook;
+          const ico = s => s==='same'?'✓':(s==='section_diff'?'≈':(s==='draft_only'?'＋':'－'));
+          const color = s => s==='same'?'#4CAF7D':(s==='section_diff'?'#E8A33A':(s==='draft_only'?'#E8833A':'#B0632F'));
+          cmpHtml =
+            `<div style="background:#FFF6E8;border:1px solid #FFE2B8;border-radius:10px;padding:10px 12px;margin-bottom:10px">` +
+            `<div style="font-size:13px;font-weight:700">与官方库《${esc(tr.textbook.title||best.title)}》比对：` +
+            `<span style="color:#4CAF7D">${diff.matched} 一致</span> · <span style="color:#E8833A">${diff.draftOnly} 仅识别</span> · <span style="color:#B0632F">${diff.seedOnly} 官方独有</span></div>` +
+            `<div style="margin-top:6px;max-height:220px;overflow:auto;font-size:12px">` +
+            diff.rows.map(x=>`<div style="display:flex;gap:8px;padding:3px 0;border-top:1px dashed #F0E4CE"><b style="width:16px;color:${color(x.status)};text-align:center">${ico(x.status)}</b><b style="min-width:120px">${esc(x.name)}</b><span class="mut">${esc(x.note)}</span></div>`).join('') +
+            `</div>` +
+            `<div style="margin-top:8px;display:flex;gap:8px">` +
+            `<button class="btn btn-sm" id="tbUseOfficial" style="background:#4CAF7D;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-weight:600">官方库是对的，改用它</button>` +
+            `<button class="btn btn-ghost btn-sm" id="tbKeepDraft">以本次识别为准</button></div></div>`;
+        }
+      } else {
+        cmpHtml = `<div class="mut" style="font-size:12px;margin-bottom:8px">官方库没找到年级对得上的同款教材，跳过比对。</div>`;
+      }
+    }
+  }catch(e){ /* 比对失败不阻断 */ }
+
+  document.getElementById('tbPreview').innerHTML = cmpHtml +
+    `<div class="f-row"><span class="f-label">名称</span><input id="pvTitle" style="flex:1;padding:6px 8px;border:1px solid #e3e6ee;border-radius:8px" value="${esc(d.title||'')}"></div>` +
+    `<div style="margin-top:8px;max-height:300px;overflow:auto;font-size:12px">` +
+    (d.units||[]).map((u,i)=>`<div style="padding:4px 0;border-top:1px dashed var(--line2)"><b>${i+1}. ${esc(u.name||'')}</b>${(u.sections&&u.sections.length)?`<span class="mut"> · ${u.sections.length} 节</span>`:''}${(u.keywords&&u.keywords.length)?`<span class="mut"> · 关键词 ${u.keywords.length}</span>`:''}</div>`).join('') +
+    `</div>` +
+    `<div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-sm" id="pvSave" style="background:var(--navy,var(--ink));color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:600">保存到教材库</button><button class="btn btn-ghost btn-sm" id="pvCancel">放弃</button></div>`;
+  const useO = document.getElementById('tbUseOfficial');
+  if(useO) useO.addEventListener('click', ()=>{
+    TB_STATE.draft = TB_STATE.compare;   // 官方 textbookId 保留 → 保存时云端复制为自己的
+    tbedMsg('已改用官方库版本'); tbedCompareAndPreview();
+  });
+  const keep = document.getElementById('tbKeepDraft');
+  if(keep) keep.addEventListener('click', ()=>{ TB_STATE.compare=null; tbedMsg('以本次识别为准'); });
+  document.getElementById('pvTitle').addEventListener('input', e=>{ TB_STATE.draft.title = e.target.value; });
+  document.getElementById('pvSave').addEventListener('click', async ()=>{
+    TB_STATE.draft.title = document.getElementById('pvTitle').value.trim() || TB_STATE.draft.title;
+    tbedMsg('保存中…');
+    const r = await tbedCallTextbook('save', { textbook: TB_STATE.draft });
+    if(!r.ok) return tbedMsg('保存失败：' + r.msg, true);
+    tbedMsg('已保存到教材库（' + ((TB_STATE.draft.units||[]).length) + ' 单元）', false, true);
+    TB_STATE.draft=null; TB_STATE.compare=null;
+    document.getElementById('tbPreviewCard').style.display='none';
+  });
+  document.getElementById('pvCancel').addEventListener('click', ()=>{
+    TB_STATE.draft=null; TB_STATE.compare=null;
+    document.getElementById('tbPreviewCard').style.display='none';
+  });
+}
+
+function tbedMsg(msg, isErr, autoHide){
+  setStatus(msg, isErr ? 'err' : 'loading');
+  if(autoHide) setTimeout(()=>setStatus('',''), 3500);
+}
+
+/* tbed 视图渲染入口（switchView / refreshAll 都会调） */
+function renderTbed(){
+  const box = document.getElementById('childChipsTbed');
+  const p = DATA.profile;
+  if(!p || !p.accounts || !p.accounts.length){ box.innerHTML=''; document.getElementById('tpForm').innerHTML='<div class="empty">档案数据未加载</div>'; document.getElementById('tbForm').innerHTML=''; return; }
+  box.innerHTML = p.accounts.map((a,i)=>`<button class="chip ${i===selectedAccount?'on':''}" data-i="${i}">${esc(a.nickname||maskOpenid(a.openid))}</button>`).join('');
+  box.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ selectedAccount=+b.dataset.i; renderTbed(); }));
+  const acct = tbedAcct();
+  if(!TB_STATE.dirty) renderTbedTp(acct);
+  renderTbedTb(acct);
+}
+window.__renderTbed = renderTbed;
+
 function switchView(v){
   document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
   const el=document.getElementById(v); if(el) el.classList.add('on');
-  const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',orders:'导学单',exams:'试卷库',archive:'导学档案',tasks:'计划与课表',timeline:'时间轴记录',report:'导学报告',set:'环境与口令',speakstep:'英语练习'};
+  const map={overview:'概览看板',today:'今日打卡',farm:'农场成长',tutor:'全科导学',orders:'导学单',exams:'试卷库',archive:'导学档案',tasks:'计划与课表',timeline:'时间轴记录',report:'导学报告',tbed:'教材与教学计划',set:'环境与口令',speakstep:'英语练习'};
   document.getElementById('title').textContent=map[v]||v;
-  /* 每个视图的副标题后缀 —— 口径与「只读」文案一致：只有「导学单」是可写区（决策 3） */
-  const suffix = (v === 'orders') ? ' · 可写（出单 / 交回执）' : (v === 'tutor') ? ' · 只读（复习卡可标记）' : ' · 只读';
+  /* 每个视图的副标题后缀 —— 口径与「只读」文案一致：可写区是导学单 + 教材·计划（决策 3 延伸） */
+  const suffix = (v === 'orders') ? ' · 可写（出单 / 交回执）' : (v === 'tbed') ? ' · 可写（教材 / 教学计划导入）' : (v === 'tutor') ? ' · 只读（复习卡可标记）' : ' · 只读';
   document.getElementById('sub').textContent=(map[v]||'')+suffix;
   document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
   document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
-  if(v==='set') loadVisionConfig();
+  if(v==='set'){ loadVisionConfig(); ppRefresh(); }
   if(v==='speakstep' && typeof window.__ssMaybeApply==='function') window.__ssMaybeApply();
+  if(v==='tbed' && typeof window.__renderTbed==='function') window.__renderTbed();
   closeDrawer();
 }
 document.querySelectorAll('.nav a,.tabbar a').forEach(a=>a.addEventListener('click',()=>switchView(a.dataset.v)));
@@ -30242,9 +30757,11 @@ document.getElementById('tokenSave').addEventListener('click',()=>{
   const v = document.getElementById('tokenInput').value.trim();
   if(!v){ setStatus('口令不能为空','err'); return; }
   TOKEN = v; localStorage.setItem(TOKEN_KEY, TOKEN); refreshTokenMask(); hideGate(); startSession();
+  ppRefresh();   // 换了访问口令 → 家长口令状态要按新家庭重查
 });
 document.getElementById('changeToken').addEventListener('click',()=>{
-  localStorage.removeItem(TOKEN_KEY); TOKEN=''; refreshTokenMask();
+  localStorage.removeItem(TOKEN_KEY); TOKEN=''; localStorage.removeItem(PP_KEY); refreshTokenMask();
+  ppRender('loading');
   visCfg = { enabled:false, active:'siliconflow', platforms:{ siliconflow:{base:'https://api.siliconflow.cn/v1',key:'',model:'Qwen/Qwen3-VL-32B-Instruct'}, deepseek:{base:'',key:'',model:''}, custom:{base:'',key:'',model:''} } };
   renderVision();
   showGate();
@@ -30329,6 +30846,148 @@ async function testVisionConn(){
 document.querySelectorAll('#visChips button').forEach(b=>b.addEventListener('click',()=>{ visCfg.active=b.dataset.p; renderVision(); }));
 document.getElementById('visSave').addEventListener('click', saveVisionConfig);
 document.getElementById('visTest').addEventListener('click', testVisionConn);
+
+/* ============ 家长口令（网页端，2026-10-29） ============
+ * 身份：parentAuth 用 webToken（本机访问口令 → web_portal_bindings）解析 openid，不依赖微信上下文；
+ * 管理员全局口令没有家长身份，云端会直接拒绝（admin_not_allowed）。
+ * 红线与小程序 utils/parentAuth.js 一致：本机只存 token + expiresAt，绝不存 PIN。
+ */
+const PP_KEY = 'wb_hwfarm_parent_session';
+const PP_PIN_RE = /^\d{4,8}$/;
+const PP_SCOPE_LABEL = { dailyReport:'家长日报', orderIssue:'签发学习单', planEdit:'修改计划', subjectToggle:'开关科目', dataExport:'导出数据' };
+let ppMode = 'loading';
+
+function ppSession(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PP_KEY) || 'null');
+    if(!s || !s.token) return null;
+    if(!(Number(s.expiresAt) > Date.now())){ localStorage.removeItem(PP_KEY); return null; }
+    return s;
+  }catch(e){ return null; }
+}
+function ppStore(r){
+  if(!(r && r.ok && r.token)) return null;
+  const s = { token: r.token, expiresAt: Number(r.expiresAt)||0, scopes: Array.isArray(r.scopes) ? r.scopes : [] };
+  localStorage.setItem(PP_KEY, JSON.stringify(s));
+  return s;
+}
+function setText(id, msg){ const el = document.getElementById(id); if(el) el.textContent = msg || ''; }
+function ppFmt(ts){
+  const d = new Date(Number(ts)||0);
+  if(!(Number(ts) > 0)) return '';
+  const p = n => n<10 ? '0'+n : ''+n;
+  return (d.getMonth()+1)+'月'+d.getDate()+'日 '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+async function ppCall(action, extra){
+  if(!app) await initCloud();
+  try{
+    const res = await app.callFunction({ name:'parentAuth', data: Object.assign({ action: action, webToken: TOKEN }, extra||{}) });
+    return (res && res.result) || { ok:false, code:'no_result', msg:'云端无返回' };
+  }catch(e){ return { ok:false, code:'network', msg: errText(e) }; }
+}
+
+function ppFail(r){
+  const code = (r && r.code) || '';
+  if(code === 'pin_locked') return '尝试次数过多，请稍后再试';
+  if(code === 'pin_wrong') return '口令不正确' + (r.remaining ? '，还可尝试 ' + r.remaining + ' 次' : '');
+  if(code === 'need_old_pin') return '需要先输入当前口令';
+  if(code === 'pin_not_set') return '还没有设置家长口令';
+  if(code === 'bad_pin') return '口令需为 4-8 位数字';
+  return (r && r.msg) || '操作失败，请稍后再试';
+}
+
+/** 四种形态：setup / verify / change / unlocked，外加 loading / error —— 与小程序家长验证页同构 */
+function ppRender(mode, info){
+  ppMode = mode;
+  const inf = info || {};
+  const $ = id => document.getElementById(id);
+  const show = (id, on) => { const el = $(id); if(el) el.style.display = on ? '' : 'none'; };
+  const st = $('ppState');
+  if(mode === 'unlocked'){
+    if(st) st.textContent = '已验证 · 有效至 ' + (inf.expiresText||'—') + '（可做：' + ((inf.scopes||[]).join('、')||'—') + '）';
+    show('ppPrimary',false); show('ppChange',true); show('ppCancel',false); show('ppRevoke',true);
+    show('ppPin',false); show('ppPin2',false); show('ppOld',false);
+  } else if(mode === 'setup'){
+    if(st) st.textContent = '还没有设置家长口令：设置一次 4-8 位数字（设置后立即验证）。';
+    if($('ppPrimary')) $('ppPrimary').textContent = '设置口令';
+    show('ppPrimary',true); show('ppChange',false); show('ppCancel',false); show('ppRevoke',false);
+    show('ppPin',true); show('ppPin2',true); show('ppOld',false);
+  } else if(mode === 'verify'){
+    if(st) st.textContent = inf.locked ? '尝试次数过多，请稍后再试' : '已设置口令，请输入口令（验证后 2 小时内有效）。';
+    if($('ppPrimary')) $('ppPrimary').textContent = '验证';
+    show('ppPrimary',true); show('ppChange',false); show('ppCancel',false); show('ppRevoke',false);
+    show('ppPin',true); show('ppPin2',false); show('ppOld',false);
+  } else if(mode === 'change'){
+    if(st) st.textContent = '修改口令：先输当前口令，再设新口令；改完其他设备上的验证立即失效。';
+    if($('ppPrimary')) $('ppPrimary').textContent = '保存新口令';
+    show('ppPrimary',true); show('ppChange',false); show('ppCancel',true); show('ppRevoke',false);
+    show('ppPin',true); show('ppPin2',true); show('ppOld',true);
+  } else if(mode === 'error'){
+    if(st) st.textContent = inf.msg || '无法连接云端，请稍后再试';
+    if($('ppPrimary')) $('ppPrimary').textContent = '重试';
+    show('ppPrimary',true); show('ppChange',false); show('ppCancel',false); show('ppRevoke',false);
+    show('ppPin',false); show('ppPin2',false); show('ppOld',false);
+  } else {
+    if(st) st.textContent = '正在检查家长口令…';
+    show('ppPrimary',false); show('ppChange',false); show('ppCancel',false); show('ppRevoke',false);
+  }
+}
+
+async function ppRefresh(){
+  if(!TOKEN){ ppRender('error', { msg:'请先输入网页访问口令' }); return; }
+  ppRender('loading');
+  const s = ppSession();
+  const r = await ppCall('status', s ? { sessionToken: s.token } : {});
+  if(!r.ok){
+    if(r.code === 'admin_not_allowed'){ ppRender('error', { msg:'当前是管理员口令，没有家长身份；请改用该家庭的网页看板口令' }); return; }
+    if(r.code === 'web_token_invalid'){ ppRender('error', { msg:'网页口令无效或已撤销，请重新输入访问口令' }); return; }
+    ppRender('error', { msg: r.msg || '读取家长口令状态失败' }); return;
+  }
+  if(r.session && r.session.active === true && s){
+    const scopes = (r.session.scopes && r.session.scopes.length ? r.session.scopes : (s.scopes||[]))
+      .map(k => PP_SCOPE_LABEL[k] || k);
+    ppRender('unlocked', { expiresText: ppFmt(r.session.expiresAt || s.expiresAt), scopes: scopes });
+    return;
+  }
+  if(r.session && r.session.active === false) localStorage.removeItem(PP_KEY);
+  ppRender(r.hasPin ? 'verify' : 'setup', { locked: !!r.locked });
+}
+
+async function ppSubmit(){
+  setText('ppMsg','');
+  const pin = (document.getElementById('ppPin').value || '').trim();
+  const pin2 = (document.getElementById('ppPin2').value || '').trim();
+  const oldPin = (document.getElementById('ppOld').value || '').trim();
+  if(!PP_PIN_RE.test(pin)){ setText('ppMsg','口令需为 4-8 位数字'); return; }
+  if((ppMode === 'setup' || ppMode === 'change') && pin2 !== pin){ setText('ppMsg','两次输入的口令不一致'); return; }
+  if(ppMode === 'change' && !PP_PIN_RE.test(oldPin)){ setText('ppMsg','请输入当前口令（4-8 位数字）'); return; }
+  setText('ppMsg','提交中…');
+  let r = await ppCall(ppMode === 'verify' ? 'verifyPin' : 'setPin',
+    ppMode === 'change' ? { pin: pin, oldPin: oldPin } : { pin: pin });
+  if(!r.ok){ setText('ppMsg', ppFail(r)); if(r.code === 'pin_locked') await ppRefresh(); return; }
+  if(ppMode !== 'verify'){
+    const v = await ppCall('verifyPin', { pin: pin });
+    if(!v.ok){ setText('ppMsg','口令已保存，请再验证一次'); ppRender('verify'); return; }
+    r = v;
+  }
+  ppStore(r);
+  ['ppPin','ppPin2','ppOld'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  await ppRefresh();
+  setText('ppMsg','✓ 已通过家长验证');
+}
+
+document.getElementById('ppPrimary').addEventListener('click', ppSubmit);
+document.getElementById('ppChange').addEventListener('click', ()=>ppRender('change'));
+document.getElementById('ppCancel').addEventListener('click', ()=>ppRefresh());
+document.getElementById('ppRevoke').addEventListener('click', async ()=>{
+  const s = ppSession();
+  if(s) await ppCall('revoke', { sessionToken: s.token });
+  localStorage.removeItem(PP_KEY);
+  await ppRefresh();
+  setText('ppMsg','已结束本次验证（不影响口令本身）');
+});
+
 
 /* ============ 启动 ============ */
 async function startSession(){

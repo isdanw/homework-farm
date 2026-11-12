@@ -1,9 +1,8 @@
 /**
  * 我的（用户管理中枢）
- *  · 当前孩子档案卡：头像 / 昵称 / 年级 / 连续打卡 / 农场资源
- *  · 切换孩子：点列表里的某个孩子即切换（所有页面实时联动）
- *  · 添加孩子：昵称 + emoji 头像 + 年级
- *  · 编辑当前孩子 / 删除当前孩子
+ *  · 孩子档案卡：头像 / 昵称 / 年级 / 连续打卡 / 农场资源
+ *  · 首次使用填写孩子信息（仅此一次），之后只可编辑
+ *  · 单孩子模型：不提供添加 / 切换 / 删除入口
  */
 const store = require('../../utils/store.js');
 const util = require('../../utils/util.js');
@@ -17,10 +16,8 @@ const GRADES = ['小班', '中班', '大班', '一年级', '二年级', '三年�
 
 Page({
   data: {
-    users: [],
     currentId: '',
     current: null,
-    others: [],                   // 除当前孩子外的其他孩子（Hero 卡片内切换）
     bind: { bound: false, masked: '' },
     showWxDetail: false,
     wxName: '',
@@ -102,8 +99,8 @@ Page({
   /* ======================= 渲染 ======================= */
   render() {
     const root = store.getRoot();
-    const cur = store.get();
-    const users = root.users.map(u => ({
+    const u = root.users.find(x => x.id === root.currentUserId) || root.users[0];
+    const current = u ? {
       id: u.id,
       nickname: u.nickname,
       avatar: u.avatar,
@@ -111,10 +108,8 @@ Page({
       streak: u.profile.streak,
       coins: u.farm.coins,
       suns: u.farm.suns,
-      plants: u.farm.plots.filter(p => p).length,
-      isCurrent: u.id === root.currentUserId
-    }));
-    const current = users.find(x => x.id === root.currentUserId) || users[0];
+      plants: u.farm.plots.filter(p => p).length
+    } : null;
     const wxProfile = store.getWxProfile();
 
     // 课表入口摘要
@@ -128,8 +123,6 @@ Page({
     } catch (e) { scheduleInfo = ''; }
 
     this.setData({
-      users,
-      others: users.filter(u => !u.isCurrent),
       currentId: root.currentUserId,
       current,
       bind: store.getBindInfo(),
@@ -193,18 +186,10 @@ Page({
     util.toast('微信昵称已同步', 'success');
   },
 
-  /* ======================= 切换孩子 ======================= */
-  switchUser(e) {
-    const id = e.currentTarget.dataset.id;
-    if (id === this.data.currentId) return;
-    store.setCurrentUser(id);
-    const u = this.data.users.find(x => x.id === id);
-    util.toast('已切换到 ' + (u ? u.nickname : '该孩子'), 'success');
-    this.render();
-  },
-
-  /* ======================= 添加孩子 ======================= */
+  /* ======================= 首次填写孩子信息 ======================= */
   openAdd() {
+    // 单孩子模型：已建档就不再走「新建」，统一转到编辑
+    if (this.data.current) return this.openEdit();
     this.setData({ showAdd: true, form: { nickname: '', avatar: '🐯', grade: '' } });
   },
   closeAdd() { this.setData({ showAdd: false }); },
@@ -214,10 +199,10 @@ Page({
   confirmAdd() {
     const f = this.data.form;
     const nickname = (f.nickname || '').trim();
-    if (!nickname) return util.toast('先给新朋友起个名字吧');
+    if (!nickname) return util.toast('先给孩子起个名字吧');
     store.addUser({ nickname, avatar: f.avatar, grade: f.grade });
     this.setData({ showAdd: false });
-    util.toast('已添加「' + nickname + '」，并切换过去啦', 'success');
+    util.toast('已填好「' + nickname + '」，开始记录啦', 'success');
     this.render();
   },
 
@@ -240,30 +225,13 @@ Page({
     this.render();
   },
 
-  /* ======================= 删除当前孩子 ======================= */
   __stop() {},   // 阻止点击对话框冒泡到遮罩（避免误关闭）
-
-  removeUser() {
-    if (this.data.users.length <= 1) {
-      return util.toast('至少得保留一个孩子哦');
-    }
-    const name = (this.data.current && this.data.current.nickname) || '该孩子';
-    wx.showModal({
-      title: '删除孩子',
-      content: '确定要删除「' + name + '」吗？TA 的打卡记录和农场数据都会被清空，无法恢复。',
-      confirmColor: '#FF7A7A',
-      success: (res) => {
-        if (!res.confirm) return;
-        const ok = store.removeUser(this.data.currentId);
-        if (ok) { util.toast('已删除', 'success'); this.render(); }
-      }
-    });
-  },
 
   /* ======================= 家长工具（从首页移入） ======================= */
   toggleTools() { this.setData({ showTools: !this.data.showTools }); },
   goTypeManage() { wx.navigateTo({ url: '/pkgTools/typeManage/typeManage' }); },
   goSchedule() { wx.navigateTo({ url: '/pkgTools/schedule/schedule' }); },
+  goTextbookLib() { wx.navigateTo({ url: '/pkgTools/textbookLib/textbookLib' }); },
   goLearnerProfile() { wx.navigateTo({ url: '/pkgGuide/learnerProfile/learnerProfile' }); },
 
   /* 成长计划入口（默认带第一个科目 key，页面内可切换） */
@@ -274,6 +242,9 @@ Page({
 
   /** 网页看板入口：per-user 网页口令生成（与微信账户绑定） */
   goWebPortal() { wx.navigateTo({ url: '/pkgTools/webportal/webportal' }); },
+
+  /** 家长验证入口：家长口令 → 2 小时 parentSession（特权操作门禁） */
+  goParentGate() { wx.navigateTo({ url: '/pkgGuide/parentGate/parentGate' }); },
 
   /** 导学中心入口（导学主线聚合：AI 导学 / 错题本 / 导学报告）
    *  ⚠️ 门禁（2026-09-22）：未添加孩子或未建成长计划时，导学功能禁用。
@@ -297,9 +268,9 @@ Page({
       });
     } else if (!gate.hasChild) {
       wx.showModal({
-        title: '请先添加孩子',
-        content: '导学功能需要先添加孩子，才能针对 TA 定制成长计划与导学内容。',
-        confirmText: '去添加孩子',
+        title: '请先填写孩子信息',
+        content: '导学功能需要先填写孩子的昵称与年级，才能定制成长计划与导学内容。',
+        confirmText: '去填写',
         cancelText: '稍后',
         success: (res) => { if (res.confirm) this.openAdd(); }
       });

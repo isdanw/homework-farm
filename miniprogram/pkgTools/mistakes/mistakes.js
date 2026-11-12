@@ -36,6 +36,13 @@ Page({
     scanning: false
   },
 
+  onLoad(options) {
+    const subject = String((options && options.subject) || '').trim();
+    if (subject && TUTOR_SUBJECTS.some(s => s.key === subject)) {
+      this.setData({ filterKey: subject });
+    }
+  },
+
   onShow() { this.render(); },
 
   render() {

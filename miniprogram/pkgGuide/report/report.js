@@ -138,7 +138,8 @@ Page({
       url: '/pkgGuide/retest/retest?key=' + encodeURIComponent(r.subject) +
         '&topic=' + encodeURIComponent(r.topic) +
         '&errorType=' + encodeURIComponent(r.errorType) +
-        '&mid=' + encodeURIComponent(r.mistakeId)
+        '&mid=' + encodeURIComponent(r.mistakeId) +
+        '&rid=' + encodeURIComponent(r.id)   // 复习窗口 id：证据溯源用
     });
   },
 

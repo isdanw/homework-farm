@@ -1,0 +1,141 @@
+{
+  "envId": "workbuddy-d2gsgtfvmde5c9adf",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    {
+      "name": "examService",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": false
+    },
+    {
+      "name": "tutorRetest",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "tutorSync",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "tutorChat",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "tutorOrder",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 20,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "webAdminWrite",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "webAdminQuery",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "syncData",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "dailyReset",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "dailyResetTimer",
+          "type": "timer",
+          "config": "0 5 0 * * * *"
+        }
+      ]
+    },
+    {
+      "name": "parentAuth",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "studyPlanGen",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 90,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "ocrSchedule",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 120,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "aiRoleAnalyze",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "analyzeComment",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "webPortalBind",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "webVisionConfig",
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true
+    }
+  ]
+}
