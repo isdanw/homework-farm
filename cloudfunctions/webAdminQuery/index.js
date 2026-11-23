@@ -47,9 +47,12 @@ const COLLS = {
   orders: 'tutor_orders',
   cards: 'tutor_cards',
   unitKps: 'tutor_unit_kps',
+  kpflows: 'kp_flows',
   bindings: 'web_portal_bindings'
 };
 const READ_LIMIT = 200; // 单集合读取上限（防误拉全量，家庭自用量级足够）
+/** kp_flows 读回截断：已通关流按 updatedAt 倒序最多下发条数（未通关全量，不截） */
+const KP_FLOWS_CLEARED_LIMIT = 100;
 
 let _app = null;
 function app() {
@@ -644,14 +647,15 @@ async function profile(openid) {
  *   exams = exam_resources 全字段（含 markdown/rawText/answers），F-B 起纳入下拉，供 papers md 重建。
  */
 async function sync(openid) {
-  const [users, sessions, mistakes, reviews, evidence, exams, cards] = await Promise.all([
+  const [users, sessions, mistakes, reviews, evidence, exams, cards, kpflowsRaw] = await Promise.all([
     getAll(COLLS.user, ofilter(COLLS.user, openid)),
     getAll(COLLS.sessions, ofilter(COLLS.sessions, openid)),
     getAll(COLLS.mistakes, ofilter(COLLS.mistakes, openid)),
     getAll(COLLS.reviews, ofilter(COLLS.reviews, openid)),
     getAll(COLLS.evidence, ofilter(COLLS.evidence, openid)),
     getAll(COLLS.exams, ofilter(COLLS.exams, openid)),
-    getAll(COLLS.cards, ofilter(COLLS.cards, openid))
+    getAll(COLLS.cards, ofilter(COLLS.cards, openid)),
+    getAll(COLLS.kpflows, ofilter(COLLS.kpflows, openid))
   ]);
   const u = users[0];
   const data = (u && u.data) || {};
@@ -704,7 +708,33 @@ async function sync(openid) {
       'subject', 'subjectName', 'stage', 'grade', 'textbookEdition', 'correspondingUnit',
       'knowledgePoints', 'suggestedDuration', 'maxEvidenceLevel', 'passingCriteria',
       'officialUrl', 'answerUrl', 'publisher', 'lastVerified', 'staleLink', 'sourceFile', 'sessionFile',
-      'markdown', 'rawText', 'answers', 'createdAt', 'updatedAt'])
+      'markdown', 'rawText', 'answers', 'createdAt', 'updatedAt']),
+    /* ---- kpFlows 读回（P2，2026-11-23）----
+     * P1 备份的读回侧：工作台拉取后按 flowId 合并进本地（LWW / 通关只进不出 / 5 分钟窗口）。
+     * 截断口径（评估拍板）：**未通关全量 ＋ 已通关按 updatedAt 倒序最近 KP_FLOWS_CLEARED_LIMIT 条**；
+     * 超限 truncated=true（绝不静默）。total = 账号下全部条数（含被截掉的）。
+     * 字段与 P1 写白名单同源（含 learnerNo / legacy），flowId 键名保持与写端一致。
+     */
+    kpFlows: (() => {
+      const kpKeep = ['flowId', 'subject', 'knowledgePoint', 'status', 'step', 'reviewRound',
+        'nextReviewAt', 'lastEvidence', 'prevStatus', 'learnerNo', 'legacy', 'modelVersion',
+        'createdAt', 'updatedAt', 'deletedAt'];
+      const rows = kpflowsRaw.map(r => {
+        const o = {};
+        kpKeep.forEach(k => { if (r[k] !== undefined) o[k] = r[k]; });
+        if (!o.flowId) o.flowId = r._id; // 兜底：写端 _id=flowId，正常恒等
+        return o;
+      });
+      const active = rows.filter(r => r.status !== 'cleared');
+      const clearedAll = rows.filter(r => r.status === 'cleared')
+        .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+      const cleared = clearedAll.slice(0, KP_FLOWS_CLEARED_LIMIT);
+      return {
+        flows: active.concat(cleared),
+        total: rows.length,
+        truncated: clearedAll.length > KP_FLOWS_CLEARED_LIMIT
+      };
+    })()
   };
 }
 

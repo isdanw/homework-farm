@@ -31,6 +31,7 @@ const ok = (cond, msg) => {
 };
 
 const waw = fs.readFileSync(wawPath, 'utf8');
+const waq = fs.readFileSync(path.join(ROOT, 'cloudfunctions/webAdminQuery/index.js'), 'utf8');
 const cc = fs.readFileSync(ccPath, 'utf8');
 const sync = fs.readFileSync(syncPath, 'utf8');
 const store = fs.readFileSync(storePath, 'utf8');
@@ -51,6 +52,17 @@ ok(/modelVersion = KP_FLOW_MODEL_VERSION/.test(waw) && /echo-loop-v1/.test(waw),
 ok(/const fresh = Object\.assign\(\{ openid \}, doc\)/.test(waw), 'A13 openid 由服务端注入（端上不传）');
 ok(/E2E_SCOPES = \['tutor_sessions', 'tutor_orders', 'kp_flows'\]/.test(waw), 'A14 E2E 清理白名单覆盖 kp_flows');
 ok(!/tutor_evidence/.test(waw.match(/const KP_FLOW_FIELDS = \[[\s\S]*?\]/)[0]), 'A15 快照字段白名单不含证据字段');
+ok(/'learnerNo', 'legacy'\]/.test(waw), 'A16 P2 白名单已补 learnerNo + legacy（白名单重建，不加即被丢弃）');
+
+console.log('── A2. 云端 webAdminQuery sync 读回段（P2，2026-11-23）──');
+ok(/kpflows: 'kp_flows'/.test(waq), 'A17 COLLS 注册 kp_flows');
+ok(/KP_FLOWS_CLEARED_LIMIT = 100/.test(waq), 'A18 截断上限常量 = 100（仅截已通关）');
+ok(/kpFlows: \(\(\) => \{/.test(waq), 'A19 sync 载荷含 kpFlows 段');
+ok(/truncated: clearedAll\.length > KP_FLOWS_CLEARED_LIMIT/.test(waq), 'A20 truncated 标志（超限明示，不静默）');
+ok(/total: rows\.length/.test(waq), 'A21 total = 账号全部条数（含被截掉的）');
+ok(/status !== 'cleared'/.test(waq) && /status === 'cleared'/.test(waq), 'A22 截断口径：未通关全量 + 已通关倒序取最近');
+ok(/learnerNo', 'legacy'/.test(waq), 'A23 读回字段与写白名单同源（含 learnerNo/legacy）');
+ok(/sort\(\(a, b\) => String\(b\.updatedAt \|\| ''\)\.localeCompare/.test(waq), 'A24 已通关按 updatedAt 倒序');
 
 console.log('── B. 工作台写函数收窄（cloudClient.ts）──');
 ok(/callWebAdminWriteKpflows/.test(cc), 'B1 存在 kpflows 专用写函数');
@@ -67,7 +79,11 @@ ok(/clearKpBackupQueue\(ids\.map\(\(id\) => \(\{ flowId: id, updatedAt: map\[id\
 ok(/_inFlight/.test(sync), 'C4 并发 flush 合并（门闩）');
 ok(/enqueueKpFlowBackup\(flow\)/.test(store) && /enqueueKpFlowBackup\(next\)/.test(store), 'C5 三个变更点全部入队');
 ok(/latest-wins/.test(store), 'C6 队列 latest-wins（不堆积并行版本）');
-ok(!/kpFlows.*读回|fetchCloudSync[\s\S]*kpflows/i.test(sync), 'C7 P1 只推不改（无读回写本地路径）');
+ok(/saveKpFlows\(merged\)/.test(sync) && !/enqueueKpFlowBackup|dispatchKpFlowEvent/.test(sync), 'C7 P2 合并直接落本地但不产生备份事件（拉取不回推）');
+ok(/MERGE_CLOCK_WINDOW_MS = 5 \* 60 \* 1000/.test(sync), 'C8 时钟差窗口 5 分钟（reviewRound 大者→再取云端）');
+ok(/localFlow\.status === 'cleared' && cloudFlow\.status !== 'cleared'/.test(sync) && /cloudFlow\.status === 'cleared' && localFlow\.status !== 'cleared'/.test(sync), 'C9 通关只进不出（双向生效）');
+ok(/for \(const f of localById\.values\(\)\) merged\.push\(f\)/.test(sync), 'C10 本地独有流原样保留（永不删除）');
+ok(/setCurrentLearnerNo\(mapped\.currentChildId\)/.test(fs.readFileSync(path.join(WB_ROOT, 'src/main.ts'), 'utf8')), 'C11 main.ts 拉取后登记当前孩子并触发合并');
 
 console.log('── D. 语法 ──');
 for (const p of [wawPath, ccPath, syncPath, storePath]) {

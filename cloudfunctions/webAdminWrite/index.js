@@ -332,7 +332,11 @@ async function writeExams(openid, items) {
  */
 const KP_FLOW_MODEL_VERSION = 'echo-loop-v1';
 const KP_FLOW_FIELDS = ['subject', 'knowledgePoint', 'status', 'step', 'reviewRound',
-  'nextReviewAt', 'lastEvidence', 'prevStatus', 'createdAt', 'updatedAt', 'deletedAt'];
+  'nextReviewAt', 'lastEvidence', 'prevStatus', 'createdAt', 'updatedAt', 'deletedAt',
+  // P2（2026-11-23）：孩子维度进快照 —— learnerNo = 云端孩子 id（profile.childId，与
+  // 小程序 users[].id 同源）；legacy = P1 旧 doc 拉取回填标记。白名单重建 doc，
+  // 不加这两项客户端传了也会被直接丢弃（任务卡明示的易漏点）。
+  'learnerNo', 'legacy'];
 const KP_FLOW_STATUSES = ['not_started', 'first_learning', 'reviewing', 'cleared', 'paused'];
 const KP_FLOW_STEPS = ['learn', 'practice', 'explain', 'test', 'review'];
 
