@@ -4,7 +4,9 @@
  * 职责（不可破坏的红线）：
  *   · 写。但只写「导学镜像」四类集合（tutor_sessions/mistakes/reviews/cards）+「试卷库」
  *     （exam_resources）+ 孩子切片（learner / subjectProfiles / nickname / grade）+「导学单」
- *     （tutor_orders，见下方 orders 专用通道）；tutor_evidence **不可写**（见 P0 说明）；
+ *     （tutor_orders，见下方 orders 专用通道）+「任务流备份」（kp_flows，2026-11-23 P1，
+ *     只读架构第二个例外：整流快照事实记录、LWW、通关只进不出，见 writeKpFlows 注释）；
+ *     tutor_evidence **不可写**（见 P0 说明）；
  *     绝不触碰 homework/checkin/schedule/农场等小程序权威数据，避免镜像写回污染主链路。
  *   · 身份解析：复用 webAdminQuery 的 token→openid 机制（web_portal_bindings），不接收微信上下文。
  *   · 去重：tutor_* 与 exam_resources 均按 openid+clientId 查重。**T5 起 tutor_* 改为三路合并**
@@ -55,6 +57,7 @@ const COLLS = {
   exams: 'exam_resources',
   orders: 'tutor_orders',
   cards: 'tutor_cards',
+  kpflows: 'kp_flows',
   bindings: 'web_portal_bindings'
 };
 
@@ -314,6 +317,103 @@ async function writeExams(openid, items) {
   return { added, skipped, updated, conflicts };
 }
 
+/* ---------- kpFlows 备份写入（2026-11-23，Echo-Loop P1 单向备份）----------
+ * 背景：工作台「云端直连·只读零回写」的第二个例外（第一个是 orders，2026-09-28 决策 3）。
+ * 决策文档：docs/2026-11-23-kpFlows上云P1决策.md。范围收窄：
+ *   · 云端只做**事实记录**（整流快照），不推进状态、不算掌握度 —— 本地状态机是唯一权威；
+ *   · 集合 kp_flows：一 flow 一 doc，_id = flowId（天然幂等去重）；
+ *   · 冲突裁决：per-flow LWW（updatedAt，ISO 字符串字典序 = 时间序）；
+ *     tie 取 reviewRound 大者，再 tie 取云端；
+ *   · 通关只进不出：云端已 cleared 的 flow 不可被非 cleared 状态覆盖（证据链不断）；
+ *   · 字段白名单重建 doc：端上传来的任何多余键（含身份键 openid/_openid/adminKey）
+ *     一律丢弃，openid 由服务端注入 —— 与 tutor_* 同一条 P0 铁律；
+ *   · clientId = flowId：与 tutor_* 同款查询键，并让 E2E 清理白名单统一覆盖。
+ * P1 不改任何读路径：webAdminQuery 的 sync 载荷不读本集合（P2 再评估）。
+ */
+const KP_FLOW_MODEL_VERSION = 'echo-loop-v1';
+const KP_FLOW_FIELDS = ['subject', 'knowledgePoint', 'status', 'step', 'reviewRound',
+  'nextReviewAt', 'lastEvidence', 'prevStatus', 'createdAt', 'updatedAt', 'deletedAt'];
+const KP_FLOW_STATUSES = ['not_started', 'first_learning', 'reviewing', 'cleared', 'paused'];
+const KP_FLOW_STEPS = ['learn', 'practice', 'explain', 'test', 'review'];
+
+function rejectFlow(list, flowId, reason) {
+  if (list.length < 20) list.push({ flowId: flowId || '', reason: reason });
+  return reason;
+}
+
+async function writeKpFlows(openid, items) {
+  const dbh = db();
+  let added = 0, updated = 0, skipped = 0, rejected = 0;
+  const rejectedList = [];
+  for (const raw of items) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) { rejected++; rejectFlow(rejectedList, '', 'not_object'); continue; }
+    const flowId = str(raw.flowId, 60);
+    if (!flowId) { rejected++; rejectFlow(rejectedList, '', 'no_flowId'); continue; }
+
+    // 白名单重建：只拷贝已知字段，端上其余键（身份键、childId、baseUpdatedAt…）不落地
+    const doc = {};
+    for (const k of KP_FLOW_FIELDS) {
+      if (raw[k] !== undefined) doc[k] = raw[k];
+    }
+    if (KP_FLOW_STATUSES.indexOf(doc.status) < 0 || KP_FLOW_STEPS.indexOf(doc.step) < 0) {
+      rejected++; rejectFlow(rejectedList, flowId, 'bad_status_or_step'); continue;
+    }
+    const rr = Number(doc.reviewRound);
+    if (!Number.isFinite(rr) || rr < 0) { rejected++; rejectFlow(rejectedList, flowId, 'bad_reviewRound'); continue; }
+    doc.reviewRound = Math.floor(rr);
+    if (typeof doc.updatedAt !== 'string' || !doc.updatedAt) {
+      rejected++; rejectFlow(rejectedList, flowId, 'no_updatedAt'); continue; // LWW 键必须存在
+    }
+    if (doc.lastEvidence !== undefined && doc.lastEvidence !== null
+      && (typeof doc.lastEvidence !== 'object' || Array.isArray(doc.lastEvidence))) {
+      rejected++; rejectFlow(rejectedList, flowId, 'bad_lastEvidence'); continue;
+    }
+    doc.clientId = flowId;
+    doc.modelVersion = KP_FLOW_MODEL_VERSION;
+
+    let exist = [];
+    try {
+      const res = await dbh.collection(COLLS.kpflows).doc(flowId).get();
+      exist = (res && res.data && (Array.isArray(res.data) ? res.data : [res.data])) || [];
+    } catch (e) { exist = []; }
+    const cloud = exist.length ? exist[0] : null;
+
+    // ---- 新增（云端无此 flow）----
+    if (!cloud || !cloud._id) {
+      const fresh = Object.assign({ openid }, doc);
+      try {
+        // doc(id).set：显式 _id 落库，重复推送同 flowId 不会产生第二条
+        await dbh.collection(COLLS.kpflows).doc(flowId).set(fresh);
+        added++;
+      } catch (e) {
+        try { await dbh.createCollection(COLLS.kpflows); } catch (e2) {}
+        try { await dbh.collection(COLLS.kpflows).doc(flowId).set(fresh); added++; } catch (e3) { rejected++; rejectFlow(rejectedList, flowId, 'write_failed'); }
+      }
+      continue;
+    }
+
+    // ---- 已存在：LWW + 通关只进不出 ----
+    if (cloud.status === 'cleared' && doc.status !== 'cleared') { skipped++; continue; }
+    const cAt = String(cloud.updatedAt || '');
+    const mAt = String(doc.updatedAt);
+    if (cAt > mAt) { skipped++; continue; }              // 云端更新 → 保留云端
+    if (cAt === mAt) {
+      // tie：reviewRound 大者赢；再 tie 取云端（幂等跳过）
+      if (!((doc.reviewRound > (Number(cloud.reviewRound) || 0)))) { skipped++; continue; }
+    }
+    const patch = {};
+    for (const k of KP_FLOW_FIELDS) if (doc[k] !== undefined) patch[k] = doc[k];
+    patch.modelVersion = KP_FLOW_MODEL_VERSION;
+    patch.updatedAt = doc.updatedAt; // 保留本地时间戳（事实记录，不重打）
+    try {
+      await dbh.collection(COLLS.kpflows).doc(cloud._id).update(patch);
+      updated++;
+    } catch (e) { skipped++; }
+  }
+  return { added: added, skipped: skipped, updated: updated, rejected: rejected,
+    ...(rejectedList.length ? { rejectedList: rejectedList } : {}) };
+}
+
 /* ---------- profile 写入（字段级更新，绝不整份替换 data）----------
  * T5：同样走「基线」判定。hw_farm_user 的孩子切片没有逐字段时间戳，
  * 唯一可靠的判据是文档级 updatedAt（syncData 每次全量写 _root 时刷新）。
@@ -467,7 +567,7 @@ async function writeProfile(openid, profile) {
  *      只有外挂脚本显式带前缀造的数据才会被清理。 */
 const E2E_PREFIX = 'e2e-';
 /** 可清理集合白名单（**只允许**这几个；新增必须在此显式登记） */
-const E2E_SCOPES = ['tutor_sessions', 'tutor_orders'];
+const E2E_SCOPES = ['tutor_sessions', 'tutor_orders', 'kp_flows'];
 async function cleanupE2E() {
   const dbh = db();
   const scopes = [];
@@ -889,6 +989,35 @@ exports.main = async (event) => {
       return res;
     } catch (e) {
       return { ok: false, code: 'tutor_proxy_error', msg: '导学服务调用失败：' + ((e && e.message) || e) };
+    }
+  }
+
+  /* ---------- kpFlows 备份通道（工作台 Echo-Loop 任务流，P1 单向备份）----------
+   * 与 orders / tutor 通道同款形态：event.kpflows 必须是对象 { action, flows? }，
+   * 传数组一律拒绝（整流快照批量直写 = 绕过 LWW 与白名单，不允许）。
+   * action 白名单：save（整流快照备份）/ list（读本账号备份，供对账验证）。
+   * ⚠️ 本通道是纯事实记录：不推进状态、不算掌握度、不写 evidence —— 本地状态机唯一权威。
+   */
+  if (event.kpflows !== undefined) {
+    if (Array.isArray(event.kpflows) || typeof event.kpflows !== 'object' || event.kpflows === null) {
+      return { ok: false, code: 'bad_param', msg: 'kpflows 必须是对象 { action, flows? }；批量数组写入被拒绝' };
+    }
+    const act = String(event.kpflows.action || 'save');
+    try {
+      if (act === 'save') {
+        const flows = Array.isArray(event.kpflows.flows) ? event.kpflows.flows.slice(0, 100) : [];
+        const r = await writeKpFlows(openid, flows);
+        try { await db().collection(COLLS.bindings).where({ token, revoked: false }).limit(1).update({ lastUsed: Date.now() }); } catch (e) {}
+        return { ok: true, scope: 'user', openid, kpflows: r };
+      }
+      if (act === 'list') {
+        const res = await db().collection(COLLS.kpflows).where({ openid: openid }).limit(200).get();
+        try { await db().collection(COLLS.bindings).where({ token, revoked: false }).limit(1).update({ lastUsed: Date.now() }); } catch (e) {}
+        return { ok: true, scope: 'user', openid, flows: (res && res.data) || [] };
+      }
+      return { ok: false, code: 'bad_action', msg: '未知 kpflows action: ' + act + '（仅 save / list）' };
+    } catch (e) {
+      return { ok: false, code: 'kpflows_error', msg: 'kpFlows 备份失败：' + ((e && e.message) || e) };
     }
   }
 
