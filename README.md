@@ -15,14 +15,14 @@
 | 我的农场 | `pages/farm/farm` | 地块/仓库/商店/背包 + 小狗熊惩罚动画 |
 | 我的 | `pages/mine/mine` | 备份导出、导学中心入口、类型管理入口 |
 
-### 分包 `pkgGuide`（导学相关，9 页）
-`tutor`（AI 导学对话）、`tutorHub`（导学中心聚合）、`report`（导学报告）、`retest`（复测证据）、`learnerProfile`（儿童画像）、`typeProfile`（题型画像）、`examGallery`（试卷库只读）、`speakstep`（演讲步骤，新增待提交）、`order`（学习单出单/回执）
+### 分包 `pkgGuide`（导学相关，13 页）
+`tutor`（AI 导学对话）、`tutorHub`（导学中心聚合）、`report`（导学报告）、`retest`（复测证据）、`learnerProfile`（儿童画像）、`typeProfile`（题型画像 + 教学计划导入）、`examGallery`（试卷库）/ `examGen` / `examAnswer` / `examReport`（出卷—作答—报告）、`speakstep`（演讲步骤）、`order`（学习单出单/回执）、`parentGate`（家长门禁）
 
-### 分包 `pkgTools`（工具相关，8 页）
-`schedule`（课表拍照/录入）、`mistakes`（错题本 + 订正）、`mistakes/confirm`（订正确认）、`plan`（成长计划 + 进度对照）、`webportal`（网页入口绑定）、`typeManage`（打卡类型管理）、`checkinDetail`（打卡详情 + AI 分析 + 拍照识别）、`unitSummary`（单元总结，新增待提交）
+### 分包 `pkgTools`（工具相关，11 页）
+`schedule`（课表拍照/录入）、`mistakes`（错题本 + 订正）、`mistakes/confirm`（订正确认）、`plan`（成长计划 + 进度对照）、`webportal`（网页入口绑定）、`typeManage`（打卡类型管理）、`checkinDetail`（打卡详情 + AI 分析 + 拍照识别）、`unitSummary`（单元总结）、`cards`（闪卡）、`unitKp`（单元知识点 + 证据覆盖 L0–L6）、`textbookLib`（教材库）
 
-### 云函数（`cloudfunctions/`，15 个）
-`initDB`（建集合）、`syncData`（按 openid 跨设备同步）、`dailyReset`（每日 00:05 兜底结算惩罚）、`ocrSchedule`（课表拍照识别）、`analyzeComment`（学习记录评语）、`aiRoleAnalyze`（**语文/数学角色分析，活功能**）、`studyPlanGen`（AI 生成成长计划）、`tutorChat`（导学对话 + 归档 + E1–E9 归因）、`tutorRetest`（复测生成 + 证据判定）、`tutorOrder`（学习单出单/回执状态机）、`tutorSync`（导学数据同步）、`webAdminQuery`（网页看板只读查询）、`webAdminWrite`（网页看板写，仅 orders）、`webPortalBind`（网页绑定）、`webVisionConfig`（视觉识别配置）
+### 云函数（`cloudfunctions/`，17 个有效入口）
+`initDB`（建集合）、`syncData`（按 openid 跨设备同步）、`dailyReset`（每日 00:05 兜底结算惩罚）、`ocrSchedule`（课表/错题拍照识别）、`analyzeComment`（学习记录评语）、`aiRoleAnalyze`（**语文/数学角色分析，活功能**）、`studyPlanGen`（AI 生成成长计划）、`tutorChat`（导学对话 + 归档 + E1–E9 归因）、`tutorRetest`（复测生成 + 证据判定）、`tutorOrder`（学习单出单/回执状态机）、`tutorSync`（导学数据同步）、`examService`（**考试中枢**：出卷/判分/教材库/题型库，小程序 + iPad 双端共用）、`webAdminQuery`（网页看板只读查询）、`webAdminWrite`（网页看板受控写入）、`webPortalBind`（网页绑定）、`webVisionConfig`（视觉识别配置）、`parentAuth`（家长门禁 scope 校验）
 
 ---
 
@@ -38,7 +38,7 @@
 
 - 不录音 / 不采个人信息 / 无支付 / 无陌生人社交。
 - UI 文案规避「学习 / 作业 / 教育 / 培训」：统一用「导学报告 / 导学数据 / 导学证据 / 打卡」等词。
-- ⚠️ 已知漏红：部分边缘错误文案仍含「学习分析」等词（见 `miniprogram/pkgTools/checkinDetail/checkinDetail.js` 第 523 行附近），待修。
+- 合规文案核销（2026-11-23 实测）：`checkinDetail.js` 已无「学习分析」字样；UI 层 wxml 中的「作业」仅存于代码注释（非用户可见），可见文案命中 0。由 `scripts/check-doc-facts.cjs` 持续守护口径。
 
 ## 四、部署纪律
 
