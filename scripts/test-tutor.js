@@ -2,6 +2,11 @@
  * test-tutor.js —— tutorChat 云函数核心逻辑单元测试（mock 依赖，不联网）
  * 运行：node scripts/test-tutor.js
  * 覆盖：chat 正常流程 / 参数校验 / archive 落库 / 频控
+ *
+ * ⚠️ 已过时（2026-11-23 标注）：本套件不在 npm test 链内，且其 mock 的 db.add
+ * 结构与 2026-11-12 重构后的 tutorChat 落库路径不再匹配（实测本文件自身就挂）。
+ * 回归请以 `npm test` 链内的 test-tutor-p3.js / test-tutor-p3-page.js /
+ * test-tutor-store.cjs / test-tutor-sync-dedupe.cjs 为准。勿按本文件结果判断回归。
  */
 const path = require('path');
 const Module = require('module');

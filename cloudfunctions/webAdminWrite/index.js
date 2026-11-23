@@ -579,6 +579,32 @@ async function callExamService(app2, action, openid, payload) {
   return (res && res.result) || { ok: false, code: 'no_result', msg: 'examService 无返回' };
 }
 
+/* ---------- 导学对话代理（2026-11-23，P1-2 网页端页内导学）----------
+ * 为什么代理而不是复制：主控 prompt / 学科 prompt / 频控 / 归档写库全在 tutorChat，
+ * 复制必然分叉（与 textbook 代理同一理由）。身份：EXAM_ADMIN_KEY + 显式 openid
+ * 代身份（tutorChat 的 admin 分支），会话/错题归孩子账号，小程序端导学报告可见。
+ *
+ * 写入边界（网页端唯一写入口仍是本函数）：
+ *   · chat        只生成回复，不落库（tutorChat chat 路径无写操作）
+ *   · archive     按 tutorChat 既有契约写 tutor_sessions / tutor_mistakes / tutor_reviews
+ *   · sessionSummary / genCards  各按既有契约（summary 写回；cards 只返回候选不入库）
+ *   · diagnoseQuestions / unitSummary **不开放**（错题拍照链路与单元总结属小程序专属流程）
+ * 网页端不再需要「复制提示词给对话侧」——这是工作台自动闭环的最后一块。 */
+const TUTOR_SVC_NAME = 'tutorChat';
+const TUTOR_ACTION_MAP = {
+  chat: 'chat', archive: 'archive',
+  sessionSummary: 'sessionSummary', genCards: 'genCards'
+};
+async function callTutorChat(app2, action, openid, payload) {
+  const adminKey = (process.env.EXAM_ADMIN_KEY || '').trim();
+  if (!adminKey) return { ok: false, code: 'no_admin_key', msg: '本函数未配置 EXAM_ADMIN_KEY，导学代理不可用' };
+  const res = await app2.callFunction({
+    name: TUTOR_SVC_NAME,
+    data: Object.assign({}, payload || {}, { action: action, openid: openid, adminKey: adminKey })
+  });
+  return (res && res.result) || { ok: false, code: 'no_result', msg: 'tutorChat 无返回' };
+}
+
 /* ---------- R3：childId 历史数据迁移（P0-8，默认 dry-run）----------
  * 背景：多孩遍历（P0-2/3）之后新行都带 childId，但历史行没有 —— 看板同一天会同时出现
  * 「孩子级行」和「legacy 行」两条（webAdminQuery 已按 replaced/unattributed 区分展示）。
@@ -840,6 +866,29 @@ exports.main = async (event) => {
       return res;
     } catch (e) {
       return { ok: false, code: 'proxy_error', msg: '教材服务调用失败：' + ((e && e.message) || e) };
+    }
+  }
+
+  /* ---------- 导学对话代理通道（网页端页内导学，转发 tutorChat） ---------- */
+  if (event.tutor !== undefined) {
+    const tc = event.tutor;
+    if (Array.isArray(tc) || typeof tc !== 'object' || tc === null) {
+      return { ok: false, code: 'bad_param', msg: 'tutor 必须是对象 { action, ...payload }；批量数组写入被拒绝' };
+    }
+    const act = String(tc.action || '');
+    if (!TUTOR_ACTION_MAP[act]) {
+      return { ok: false, code: 'bad_action', msg: '未知导学 action: ' + (act || '(空)') + '（网页端仅开放 chat / archive / sessionSummary / genCards）' };
+    }
+    try {
+      const payload = Object.assign({}, tc);
+      delete payload.action;
+      const res = await callTutorChat(app2, TUTOR_ACTION_MAP[act], openid, payload);
+      if (res && res.ok) {
+        try { await db().collection(COLLS.bindings).where({ token, revoked: false }).limit(1).update({ lastUsed: Date.now() }); } catch (e) {}
+      }
+      return res;
+    } catch (e) {
+      return { ok: false, code: 'tutor_proxy_error', msg: '导学服务调用失败：' + ((e && e.message) || e) };
     }
   }
 

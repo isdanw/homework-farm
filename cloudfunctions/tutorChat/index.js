@@ -817,9 +817,22 @@ async function archive(app, input, openid, childId) {
 exports.main = async (event) => {
   // 身份守卫（P0）：归档会写 tutor_sessions/mistakes/reviews，空 openid 一律拒绝，
   // 不产生任何无主文档；对话类只读动作同样要求身份（限流也按 openid 计）。
-  const gate = G.requireOpenid((event.userInfo && event.userInfo.openId) || '');
-  if (!gate.ok) return { ok: false, code: gate.code, msg: '缺少用户身份，无法继续' };
-  const openid = gate.openid;
+  //
+  // 代身份分支（2026-11-23，P1-2 网页端导学闭环）：与 examService resolveOpenid 的
+  // admin 分支同款——共享密钥 EXAM_ADMIN_KEY + 显式 openid，仅限云函数间服务端调用
+  // （webAdminWrite 的 tutor 代理通道）。网页端/客户端不持有密钥；两函数 env 必须同值。
+  // 密钥不符或缺失一律落回 wx 身份守卫，不产生旁路。
+  let openid = '';
+  const adminKey = (process.env.EXAM_ADMIN_KEY || '').trim();
+  const claimed = str(event.adminKey, 200);
+  if (adminKey && claimed && claimed === adminKey && event.openid) {
+    openid = str(event.openid, 64);
+  }
+  if (!openid) {
+    const gate = G.requireOpenid((event.userInfo && event.userInfo.openId) || '');
+    if (!gate.ok) return { ok: false, code: gate.code, msg: '缺少用户身份，无法继续' };
+    openid = gate.openid;
+  }
 
   const input = {
     subject: str(event.subject, 20),
