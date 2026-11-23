@@ -11,9 +11,11 @@
  *   'exam'  F-B 单份试卷详情（按 resourceId）——回卷面 markdown + 参考答案，供「查看卷面」
  *
  * 【pull】出参：
- *   { ok:true, sessions:[], mistakes:[], evidence:[], reviews:[] }
+ *   { ok:true, sessions:[], mistakes:[], evidence:[], reviews:[], orders:[], cards:[], unitKps:[],
+ *     kpFlows: { flows:[], total, truncated, rejected } }   ← P3a 只读段（工作台建的流，详见 pullKpFlows）
  *   每条含 id（= 云端 clientId，无 clientId 的旧数据用 _id 兜底）+ cloudId + 原字段
  *   限量：sessions 100 / mistakes 200 / evidence 200 / reviews 100（createdAt 倒序）
+ *   kpFlows 截断口径与 webAdminQuery P2 一致：未通关全量 + 已通关 updatedAt 倒序最近 100
  *
  * 【exams】入参：{ subject?: 'math'|'chinese'|…, childId?: string }（均可选）
  *   出参：{ ok:true, exams:[{ id, resourceId, name, subject, subjectName, level, examType,
@@ -81,6 +83,18 @@ const PUSH_LIMITS = {
   unitKps: 200
 };
 
+/* P3a（2026-11-23）：kpFlows 只读下发段。
+ * kp_flows 由「全科导学工作台」P1/P2 写入与读回（webAdminWrite / webAdminQuery），
+ * 小程序端 P3a 纯只读展示。截断口径与 webAdminQuery P2 完全一致：
+ *   未通关全量 + 已通关按 updatedAt 倒序最近 KP_FLOWS_CLEARED_LIMIT 条，带 total/truncated（绝不静默）。
+ * 额外孩子闸（任务卡）：flow.learnerNo 属于该 openid 家庭才下发，跨家庭直接拒该条（不猜不藏）；
+ *   无 learnerNo 的 P1 旧 doc 保留（无法判定归属时不下判，端上按 legacy 兜底展示）。
+ * deletedAt 行不下发：只读端不展示已删流（工作台读回走 webAdminQuery，不受影响）。
+ * flows 只读：不进 push 的 collName / sanitize / PUSH_LIMITS 任何路径（P3b 写通道另立卡）。 */
+const KP_FLOWS_COLL = 'kp_flows';
+const KP_FLOWS_CLEARED_LIMIT = 100;
+const KP_FLOWS_SCAN_LIMIT = 200;   // 与 webAdminQuery READ_LIMIT 同口径，防误拉全量
+
 /* F-B：试卷库 */
 const EXAM_COLL = 'exam_resources';
 const EXAM_LIST_LIMIT = 100;
@@ -140,7 +154,9 @@ async function pull(app, openid) {
   return {
     ok: true,
     sessions: out.sessions, mistakes: out.mistakes, evidence: out.evidence,
-    reviews: out.reviews, orders: out.orders, cards: out.cards, unitKps: out.unitKps
+    reviews: out.reviews, orders: out.orders, cards: out.cards, unitKps: out.unitKps,
+    // P3a：kpFlows 只读段（缺集合时为空段，老端忽略该键即可）
+    kpFlows: await pullKpFlows(db, openid)
   };
 }
 
@@ -160,6 +176,49 @@ function dedupeEvidence(list) {
     if (curHas) { out[out.indexOf(hit)] = it; byKey[key] = it; }   // 保留带 clientId 的那份
   });
   return out;
+}
+
+/* ---------------- pull：kpFlows 只读段（P3a） ----------------
+ * 口径与 webAdminQuery P2 一致：未通关全量 + 已通关按 updatedAt 倒序最近 100，
+ * 带 total/truncated；跨家庭 learnerNo 拒该条（rejected 计数 >0 说明云端脏数据/绑定错，不静默）。
+ * 集合不存在（工作台还没备份过任何流）→ 空段，不阻塞其他集合。 */
+async function pullKpFlows(db, openid) {
+  const empty = { flows: [], total: 0, truncated: false, rejected: 0 };
+  let docs = [];
+  try {
+    const res = await db.collection(KP_FLOWS_COLL)
+      .where({ openid: openid })
+      .orderBy('updatedAt', 'desc')
+      .limit(KP_FLOWS_SCAN_LIMIT)
+      .get();
+    docs = (res && res.data) || [];
+  } catch (e) {
+    return empty;
+  }
+  const root = await loadRoot(db, openid);
+  const rows = [];
+  let rejected = 0;
+  docs.forEach(d => {
+    if (d.deletedAt) return;                       // 已删流不下发（只读端不展示）
+    // 孩子闸：learnerNo 必须属于该 openid 家庭（与 push 的 childId 跨家庭拒绝同纪律）
+    if (d.learnerNo && !G.isChildOf(root, d.learnerNo)) { rejected++; return; }
+    const o = Object.assign({}, d);
+    o.cloudId = d._id;
+    o.id = d.flowId || d._id;                      // 写端 _id=flowId（幂等键），正常恒等
+    if (!o.flowId) o.flowId = d._id;
+    delete o._id;
+    rows.push(o);
+  });
+  const active = rows.filter(r => r.status !== 'cleared');
+  const clearedAll = rows.filter(r => r.status === 'cleared')
+    .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+  const cleared = clearedAll.slice(0, KP_FLOWS_CLEARED_LIMIT);
+  return {
+    flows: active.concat(cleared),
+    total: rows.length,
+    truncated: clearedAll.length > KP_FLOWS_CLEARED_LIMIT,
+    rejected: rejected
+  };
 }
 
 /* ---------------- F-B：试卷库（只读） ----------------

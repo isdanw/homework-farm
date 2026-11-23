@@ -61,6 +61,17 @@
     <view class="hub-go">›</view>
   </view>
 
+  <!-- ===== 今日任务（P3a 只读：工作台知识流到期复习） ===== -->
+  <view class="hub-card" bindtap="goTodayTasks">
+    <view class="hub-ic">🔁</view>
+    <view class="hub-body">
+      <view class="hub-title">今日任务</view>
+      <view class="hub-desc">工作台排的复习计划到期后在这里提醒，到点的知识点别忘回顾</view>
+    </view>
+    <view wx:if="{{dueFlows}}" class="hub-badge">到期 {{dueFlows}}</view>
+    <view class="hub-go">›</view>
+  </view>
+
   <!-- ===== 错题本（含订正 + 复测巩固） ===== -->
   <view class="hub-card" bindtap="goMistakes">
     <view class="hub-ic">📝</view>

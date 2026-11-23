@@ -179,3 +179,14 @@
 .action-btn { flex: 1; text-align: center; font-size: 26rpx; padding: 20rpx 0; }
 .action-danger { color: var(--c-danger); }
 .foot-tip { text-align: center; margin-top: 18rpx; }
+
+/* 今日任务（P3a 只读：工作台知识流到期复习） */
+.today-card { margin-top: 16rpx; }
+.tt-group { margin-top: 16rpx; }
+.tt-subject { font-size: 26rpx; font-weight: 700; color: #5A5F73; margin-bottom: 10rpx; }
+.tt-item { background: #F7F8FA; border-radius: 14rpx; padding: 16rpx 20rpx; margin-bottom: 12rpx; }
+.tt-kp { font-size: 28rpx; font-weight: 600; color: #333; line-height: 1.5; }
+.tt-meta { display: flex; align-items: center; gap: 16rpx; margin-top: 6rpx; }
+.tt-step { font-size: 22rpx; color: #7C6BF0; background: #F0EDFF; border-radius: 8rpx; padding: 2rpx 12rpx; font-weight: 600; }
+.tt-round { font-size: 22rpx; color: #9AA5B1; }
+.tt-due { font-size: 22rpx; color: #E08A1E; font-weight: 600; margin-left: auto; }

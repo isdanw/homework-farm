@@ -8,6 +8,8 @@ const store = require('../../utils/store.js');
 const studyPlan = require('../../utils/studyPlan.js');
 const util = require('../../utils/util.js');
 const parentAuth = require('../../utils/parentAuth.js');
+const tutorStore = require('../../utils/tutorStore.js');
+const wi = require('../../utils/workbenchKpImport.js');
 
 const STATUS_STYLE = {
   ahead: { color: '#5FBF6B', bg: '#E7F6E8' },
@@ -15,6 +17,37 @@ const STATUS_STYLE = {
   lag: { color: '#E08A1E', bg: '#FFF3E0' },
   notstarted: { color: '#8A8A8A', bg: '#F0F2F5' }
 };
+
+/* P3a 只读（2026-11-23）：「今日任务」区 = 工作台建的 Echo-Loop 知识流到期复习提醒。
+ * 口径 = tutorStore.dueKpFlows()：nextReviewAt ≤ now 且未通关/未暂停，按学科分组。
+ * subject 是工作台侧 key（mathematics/english/…），复用 SUBJECT_MAP 映射，未列出透传。
+ * 只展示不写回：任务推进（六步闭环/复测）请在工作台完成，P3b 写通道另立卡。 */
+const FLOW_STEP_CN = { learn: '首学', practice: '练习', explain: '讲解', test: '复测', review: '复习' };
+
+function buildTodayTasks() {
+  const now = Date.now();
+  const groups = {};
+  const order = [];
+  tutorStore.dueKpFlows().forEach(f => {
+    const sub = wi.normalizeSubject(f.subject);
+    if (!groups[sub.subject]) {
+      groups[sub.subject] = { key: sub.subject, name: sub.subjectName, items: [] };
+      order.push(sub.subject);
+    }
+    const t = f.nextReviewAt ? Date.parse(f.nextReviewAt) : 0;
+    const lateMin = t ? Math.max(0, Math.floor((now - t) / 60000)) : 0;
+    groups[sub.subject].items.push({
+      flowId: f.flowId || f.id,
+      kp: f.knowledgePoint || '',
+      step: FLOW_STEP_CN[f.step] || f.step || '',
+      due: lateMin >= 1440 ? '到期 ' + Math.floor(lateMin / 1440) + ' 天'
+         : lateMin >= 60 ? '到期 ' + Math.floor(lateMin / 60) + ' 小时'
+         : '刚到期',
+      round: f.reviewRound || 0
+    });
+  });
+  return order.map(k => groups[k]);
+}
 
 /** 限流重试策略：等待超过 30 秒不给「重试」（属小时档超限），只提示稍后再试 */
 const RATE_RETRY_MAX_MS = 30000;
@@ -49,6 +82,10 @@ Page({
     /* 教学计划参考（与成长计划关联） */
     tpTitle: '',
     tpFormat: '',
+
+    /* 今日任务（P3a 只读：工作台知识流到期复习，按学科分组） */
+    todayTasks: [],
+    todayCount: 0,
 
     /* 阶段视图模型 */
     stageList: []
@@ -89,6 +126,11 @@ Page({
     const profile = store.getSubjectProfile(key);
     const plan = studyPlan.getPlan(key);
     const prog = studyPlan.getProgress(key);
+
+    // 今日任务（P3a 只读）：跨学科展示，不受当前 key 切换影响
+    const todayTasks = buildTodayTasks();
+    let todayCount = 0;
+    todayTasks.forEach(g => { todayCount += g.items.length; });
 
     let stageList = [];
     if (plan && prog) {
@@ -144,7 +186,9 @@ Page({
       statusBg: style.bg,
       stageList: stageList,
       tpTitle: tp ? tp.title : '',
-      tpFormat: tp ? tp.format : ''
+      tpFormat: tp ? tp.format : '',
+      todayTasks: todayTasks,
+      todayCount: todayCount
     }, () => this.scrollToFocusTask());
   },
 

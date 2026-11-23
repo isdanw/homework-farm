@@ -56,6 +56,15 @@ const REVIEW_STAGE_DAYS = [1, 2, 4, 7, 15];
 /* 同步节流：60 秒内不重复 pull */
 const SYNC_THROTTLE_MS = 60000;
 
+/* kpFlows 合并时钟窗（P3a，与工作台 MERGE_CLOCK_WINDOW_MS 同值）：
+ * 两端 updatedAt 差值 ≤ 5 分钟视为同一时刻 → 取 reviewRound 大者，防时钟差误判新旧 */
+const FLOW_CLOCK_WINDOW_MS = 5 * 60 * 1000;
+
+/** kpFlows updatedAt 换算毫秒：兼容工作台侧 ISO 字符串与本地毫秒数（直接 Number() 对 ISO 会 NaN） */
+function flowTsOf(v) {
+  return Number(v) || Date.parse(v) || 0;
+}
+
 /* 有改动登记后的合并推送延迟：连续 3 次写操作只触发 1 次云调用 */
 const FLUSH_DEBOUNCE_MS = 1500;
 
@@ -130,7 +139,7 @@ function ensureChildScope(all) {
 }
 
 function blank() {
-  return { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], cards: [], unitKps: [], removed: [], pushQueue: [], lastSyncAt: 0 };
+  return { sessions: [], mistakes: [], evidence: [], reviews: [], orders: [], cards: [], unitKps: [], flows: [], removed: [], pushQueue: [], lastSyncAt: 0 };
 }
 
 let _probeOid = '';            // 已探查过 _guest 空间的 openid（按身份各探一次）
@@ -145,6 +154,7 @@ function readAll() {
   if (!Array.isArray(all.orders)) all.orders = [];
   if (!Array.isArray(all.cards)) all.cards = [];
   if (!Array.isArray(all.unitKps)) all.unitKps = [];
+  if (!Array.isArray(all.flows)) all.flows = [];   // P3a：知识流（工作台建的，只读展示）
   if (!Array.isArray(all.pushQueue)) all.pushQueue = [];
   if (!Array.isArray(all.removed)) all.removed = [];
   // 身份已确认且本进程还没为该身份探查过 → 探一次 _guest 空间（F9）。
@@ -665,6 +675,42 @@ function getUnitKpsListBySubject(subject) {
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
+/* ======================= kpFlows（P3a 只读，2026-11-23） =======================
+ * 知识流由「全科导学工作台」建立并上云（kp_flows，_id=flowId），小程序端纯只读展示：
+ * 不写回、不推进状态机（P3b 写通道另立卡，届时走 tutorSync 新动作）。
+ * 孩子维度：flow.learnerNo = 云端孩子 id（与 users[].id 同源）。
+ *   · learnerNo === 当前孩子 → 展示；
+ *   · 无 learnerNo 的 P1 旧 doc → 归第一个真实孩子（与 ownerOf 历史归属同口径，不猜其他孩子）；
+ *   · learnerNo 指向其他孩子 → 不展示（切孩子即切视图，与 CHILD_SCOPED 各集合同纪律）；
+ *   · 当前孩子解析不出（未建档/占位）→ 不过滤（同 ofCurrentChild 口径）。
+ */
+
+/** 当前孩子的知识流（已过滤 deletedAt；P3a 只读） */
+function getFlows() {
+  const cur = currentChildId();
+  const first = firstRealChildId();
+  return readAll().flows.filter(f => {
+    if (!f || typeof f !== 'object') return false;
+    if (f.deletedAt) return false;
+    if (!cur) return true;
+    const ln = f.learnerNo;
+    if (!ln) return first === cur;   // legacy：归第一个真实孩子
+    return ln === cur;
+  });
+}
+
+/** 到期未做的知识流（nextReviewAt ≤ now 且未通关、未暂停）。
+ * 口径与工作台 dueKpFlows 同义；paused 的流 nextReviewAt 为 null，天然不满足，显式排除双保险。 */
+function dueKpFlows() {
+  const now = Date.now();
+  return getFlows().filter(f => {
+    if (!f) return false;
+    if (f.status === 'cleared' || f.status === 'paused') return false;
+    const t = f.nextReviewAt ? Date.parse(f.nextReviewAt) : NaN;
+    return t === t && t <= now;      // NaN !== NaN：非法时间不算到期
+  });
+}
+
 /**
  * 盲区诊断（Path A S3）：读该学科最新必会库 + 复习卡毕业态，反查「前置欠账」与「下游拖累」。
  * 掌握度判据 = 该 topic 下存在 done=true 的卡（Leitner 毕业）；无卡视为未达标（保守）。
@@ -959,6 +1005,8 @@ function cloudToLocal(kind, cloud) {
  *   · sessions / mistakes / evidence：按 id 并集，同 id 本地优先（本地是本机权威）
  *   · reviews：同 id 比 updatedAt，云端的更新则把云端字段全量覆盖过来
  *   · orders：同 id **云端整条覆盖本地**（云端是唯一真相源，见本节末说明）
+ *   · flows（P3a 只读）：与工作台 P2 同一纪律 —— LWW + 5 分钟时钟窗 reviewRound 大者
+ *     + 通关只进不出 + 墓碑跳过 + deletedAt 行不落地；不入 pushQueue（只读不写）
  *   · 任何被本地删过（removed 墓碑）的条目一律不回填
  */
 function mergeFromCloud(remote) {
@@ -1033,6 +1081,50 @@ function mergeFromCloud(remote) {
     if (i < 0) { all.orders.push(loc); added++; }
     else { all.orders[i] = loc; }
   });
+
+  /* ── kpFlows（P3a 只读，2026-11-23）：与工作台 P2 mergeCloudKpFlows 同一合并纪律 ──
+   *   · 按 id（= flowId，写端 _id）逐条 LWW；updatedAt 大者胜（ISO 字符串/毫秒统一换算）；
+   *   · 两端 updatedAt 差值 ≤ 5 分钟 → 取 reviewRound 大者，再 tie 取云端（防两台设备时钟差）；
+   *   · 已 cleared 不可被非 cleared 覆盖（通关只进不出）；
+   *   · removed 墓碑复用（kind='flows'）：本地删过的流 pull 回填跳过，防「删了又回来」；
+   *   · deletedAt 行不落地（只读端不展示已删流）；
+   *   · flows 只读：不入 pushQueue、不盖 childId、不新增墓碑（P3b 写通道另立卡）；
+   *   · remote.kpFlows 缺省（老云函数）→ 整段跳过，向后兼容。 */
+  const kpRemote = remote.kpFlows;
+  const flowList = kpRemote && Array.isArray(kpRemote.flows) ? kpRemote.flows : null;
+  if (flowList) {
+    flowList.forEach(cf => {
+      if (!cf || typeof cf !== 'object') return;
+      const id = String(cf.flowId || cf.id || '');
+      if (!id) return;
+      if (cf.deletedAt) return;
+      if (isBuried(all, 'flows', id)) return;
+      const i = all.flows.findIndex(x => x && x.id === id);
+      if (i < 0) {
+        const inc = Object.assign({}, cf, { id: id });
+        all.flows.push(inc);
+        added++;
+        return;
+      }
+      const cur = all.flows[i];
+      // 通关只进不出：本地已通关、云端未通关（不可能发生于只读端，防御性保留）
+      if (cur.status === 'cleared' && cf.status !== 'cleared') return;
+      const tL = flowTsOf(cur.updatedAt);
+      const tC = flowTsOf(cf.updatedAt);
+      let cloudWins;
+      if (tL > 0 && tC > 0 && Math.abs(tL - tC) <= FLOW_CLOCK_WINDOW_MS) {
+        // 时钟差窗口：reviewRound 大者胜，tie 取云端
+        cloudWins = (Number(cf.reviewRound) || 0) >= (Number(cur.reviewRound) || 0);
+      } else {
+        // 常规 LWW：updatedAt 大者胜；非法时间戳一侧视为更旧
+        cloudWins = tC > tL;
+      }
+      if (cloudWins) {
+        Object.keys(cf).forEach(k => { cur[k] = cf[k]; });
+        cur.id = id;
+      }
+    });
+  }
 
   all.lastSyncAt = Date.now();
   writeAll(all);
@@ -1246,6 +1338,7 @@ module.exports = {
   getOrders, getOrder, getOrdersByPlan, getPendingOrders, orderCounts, planOrderAggregate,
   orderApi, saveOrderFromCloud, queueOrderPush,
   getLearnerContext,
+  getFlows, dueKpFlows,
   queuePush, mergeFromCloud, syncFromCloud, pushQueued,
   REVIEW_STAGE_DAYS
 };

@@ -14,6 +14,7 @@ Page({
   data: {
     overview: { sessions: 0, mistakes: 0, pending: 0, evidence: 0 },
     orderPending: 0,          // 待回执的导学单数（回执环的待办量）
+    dueFlows: 0,              // 到期知识流数（P3a 只读：工作台排的复习任务）
     locked: false,
     lockReason: ''
   },
@@ -43,6 +44,8 @@ Page({
     const pending = mistakes.filter(m => m.status !== 'corrected').length;
     const evidence = tutorStore.evidencePassedCount();
     const oc = tutorStore.orderCounts();
+    // P3a（2026-11-23）：今日任务 = 工作台知识流到期复习数（只读，推进在工作台完成）
+    const dueFlows = tutorStore.dueKpFlows().length;
 
     this.setData({
       overview: {
@@ -51,7 +54,8 @@ Page({
         pending: pending,
         evidence: evidence
       },
-      orderPending: oc.issued
+      orderPending: oc.issued,
+      dueFlows: dueFlows
     });
   },
 
@@ -66,6 +70,12 @@ Page({
   goTutor() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgGuide/tutor/tutor' }); },
   goOrder() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgGuide/order/order' }); },
   goMistakes() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgTools/mistakes/mistakes' }); },
+  /* P3a 只读：今日任务（工作台知识流到期复习）→ 成长计划页（跨学科「今日任务」区） */
+  goTodayTasks() {
+    if (!this.guard()) return;
+    const first = store.getTypeList()[0];
+    wx.navigateTo({ url: '/pkgTools/plan/plan' + (first ? '?key=' + first.key : '') });
+  },
   goReport() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgGuide/report/report' }); },
   goExam() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgGuide/examGallery/examGallery' }); },
   goSpeakstep() { if (!this.guard()) return; wx.navigateTo({ url: '/pkgGuide/speakstep/speakstep' }); },
