@@ -18,10 +18,11 @@ const STATUS_STYLE = {
   notstarted: { color: '#8A8A8A', bg: '#F0F2F5' }
 };
 
-/* P3a 只读（2026-11-23）：「今日任务」区 = 工作台建的 Echo-Loop 知识流到期复习提醒。
+/* P3a/P3b（2026-11-23/24）：「今日任务」区 = 工作台建的 Echo-Loop 知识流到期复习提醒。
  * 口径 = tutorStore.dueKpFlows()：nextReviewAt ≤ now 且未通关/未暂停，按学科分组。
  * subject 是工作台侧 key（mathematics/english/…），复用 SUBJECT_MAP 映射，未列出透传。
- * 只展示不写回：任务推进（六步闭环/复测）请在工作台完成，P3b 写通道另立卡。 */
+ * P3b 起可推进：advanceFlow 本地状态机前进 + 七档排期递进，写回走 tutorSync flows 动作；
+ * 复测/通关仍回工作台（小程序不判通关、不产生 evidence）。 */
 const FLOW_STEP_CN = { learn: '首学', practice: '练习', explain: '讲解', test: '复测', review: '复习' };
 
 function buildTodayTasks() {
@@ -36,6 +37,14 @@ function buildTodayTasks() {
     }
     const t = f.nextReviewAt ? Date.parse(f.nextReviewAt) : 0;
     const lateMin = t ? Math.max(0, Math.floor((now - t) / 60000)) : 0;
+    // P3b：推进按钮（只读→可推进）。首学到 test 停（复测回工作台：小程序不判通关）
+    let btn = '', waitRetest = false;
+    if (f.status === 'first_learning') {
+      if (['learn', 'practice', 'explain'].indexOf(f.step) >= 0) btn = '下一步';
+      else waitRetest = true;   // step='test'
+    } else if (f.status === 'reviewing') {
+      btn = f.step === 'practice' ? '下一步' : '完成本轮复习';
+    }
     groups[sub.subject].items.push({
       flowId: f.flowId || f.id,
       kp: f.knowledgePoint || '',
@@ -43,7 +52,9 @@ function buildTodayTasks() {
       due: lateMin >= 1440 ? '到期 ' + Math.floor(lateMin / 1440) + ' 天'
          : lateMin >= 60 ? '到期 ' + Math.floor(lateMin / 60) + ' 小时'
          : '刚到期',
-      round: f.reviewRound || 0
+      round: f.reviewRound || 0,
+      btn: btn,
+      waitRetest: waitRetest
     });
   });
   return order.map(k => groups[k]);
@@ -380,6 +391,20 @@ Page({
 
   goProfile() {
     wx.navigateTo({ url: '/pkgGuide/typeProfile/typeProfile?key=' + this.data.key });
+  },
+
+  /** P3b：推进今日任务流（下一步 / 完成本轮复习）。
+   * 家长特权动作（§7.6，复用 planEdit 会话，一次验证会话内有效不反复打断）；
+   * 本地推进立即生效 + 刷新；写回由 commit→scheduleFlush 自动走 tutorSync flows 动作，
+   * 失败留队不丢数据、不弹错打断孩子。 */
+  async advanceTask(e) {
+    const fid = e.currentTarget.dataset.fid;
+    if (!fid) return;
+    if (!(await parentAuth.requireScope('planEdit'))) return;
+    const f = tutorStore.advanceFlow(fid);
+    if (!f) return;   // 不可推进（通关/暂停/首学已到 test）——按钮本不该出现，防御
+    this.render();
+    wx.showToast({ title: '已推进 ✓', icon: 'none', duration: 1200 });
   },
 
   goBack() { wx.navigateBack({ delta: 1 }); }

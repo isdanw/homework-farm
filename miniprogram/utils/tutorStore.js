@@ -711,6 +711,76 @@ function dueKpFlows() {
   });
 }
 
+/* ---- P3b 写回（2026-11-24）：手机上推进状态，云端只记事实 ----
+ * 推进语义与工作台 kpTaskFlow.advanceKpFlow 同一状态机的手机端子集：
+ *   · 首学期「下一步」：learn → practice → explain → test 逐步；到 test 停
+ *     （复测须回工作台：小程序不判通关、不产生 evidence，红线 5）；
+ *   · 复习期「下一步/完成本轮复习」：practice → explain（回退步完成）；
+ *     explain / review → reviewRound+1 + 按七档排期递进 nextReviewAt；
+ *   · 排期七档与工作台 REVIEW_INTERVALS_HOURS 逐值一致（单测锁死）；round ≥ 7 → null（七轮走满）；
+ *   · cleared / paused 不可推进；绝不写 status='cleared'（通关只由复测证据驱动）；
+ *   · 写时盖章 learnerNo = 当前孩子（无 learnerNo 的 P3a 旧流推进后补归属；
+ *     无孩子档案 → 不盖章，写回会被服务端拒并清队，本地状态保留）；
+ *   · R7：落盘 + 登记 pushQueue（kind='flows'）在本函数内完成，调用方不会漏推；
+ *     推送走 tutorSync 新开 flows 动作（整流 LWW），push 的只补缺语义承载不了更新。 */
+const KP_REVIEW_INTERVALS_HOURS = [6, 18, 24, 48, 72, 168, 336];   // ⚠️ 与工作台 kpTaskFlow.ts 同值，改动必须两端同步
+
+/** 按已完成的复习轮数取下一档（round 从 0 起：完成第 N 轮 → 取第 N+1 档，索引 round） */
+function scheduleNextReviewIso(reviewRound, fromMs) {
+  if (reviewRound >= KP_REVIEW_INTERVALS_HOURS.length) return null;   // 七轮走满（未提前通关）
+  return new Date(fromMs + KP_REVIEW_INTERVALS_HOURS[reviewRound] * 3600000).toISOString();
+}
+
+const FIRST_LEARN_ORDER = ['learn', 'practice', 'explain', 'test'];  // 与工作台 FIRST_LEARN_ORDER 同序
+
+/**
+ * 推进一条知识流（plan 页今日任务区的「下一步 / 完成本轮复习」按钮）。
+ * 无参数自动判定动作：按 status/step 查表前进一步。
+ * @returns {Object|null} 推进后的流；不可推进（不存在/通关/暂停/首学已到 test）返回 null
+ */
+function advanceFlow(flowId) {
+  const fid = String(flowId || '');
+  if (!fid) return null;
+  const all = readAll();
+  const cur = currentChildId();
+  const first = firstRealChildId();
+  const f = all.flows.find(x => x && x.id === fid && !x.deletedAt);
+  if (!f) return null;
+  // 孩子闸：只推进当前孩子可见的流（与 getFlows 同口径）
+  const ln = f.learnerNo;
+  if (cur) {
+    if (ln && ln !== cur) return null;
+    if (!ln && first !== cur) return null;
+  }
+  if (f.status === 'cleared' || f.status === 'paused') return null;
+
+  const nowIso = new Date().toISOString();
+  let advanced = false;
+  if (f.status === 'first_learning') {
+    const i = FIRST_LEARN_ORDER.indexOf(f.step);
+    if (i >= 0 && i < FIRST_LEARN_ORDER.length - 1) {   // 推到 test 即停（复测回工作台）
+      f.step = FIRST_LEARN_ORDER[i + 1];
+      advanced = true;
+    }
+  } else if (f.status === 'reviewing') {
+    if (f.step === 'practice') { f.step = 'explain'; advanced = true; }   // 回退步完成 → 回「讲」
+    else if (f.step === 'explain' || f.step === 'review') {
+      // 复习轮完成 → 下一轮排期（review_done passed 分支；不写 cleared）
+      f.reviewRound = (Number(f.reviewRound) || 0) + 1;
+      f.step = 'review';
+      f.nextReviewAt = scheduleNextReviewIso(f.reviewRound, Date.now());
+      advanced = true;
+    }
+  }
+  if (!advanced) return null;
+
+  f.updatedAt = nowIso;
+  // 写时盖章归属（P3a 旧流无 learnerNo → 补当前孩子）
+  if (!f.learnerNo && cur) f.learnerNo = cur;
+  commit(all, [{ kind: 'flows', id: fid }]);
+  return f;
+}
+
 /**
  * 盲区诊断（Path A S3）：读该学科最新必会库 + 复习卡毕业态，反查「前置欠账」与「下游拖累」。
  * 掌握度判据 = 该 topic 下存在 done=true 的卡（Leitner 毕业）；无卡视为未达标（保守）。
@@ -1161,7 +1231,10 @@ function syncFromCloud() {
   });
 }
 
-/** 把待补写队列 push 上云（归档/复测成功后 fire-and-forget；失败留队下次再试） */
+/** 把待补写队列 push 上云（归档/复测成功后 fire-and-forget；失败留队下次再试）。
+ * P3b：kind='flows' 的条目不走 push（只补缺语义承载不了整流更新），
+ * 改走 tutorSync 新开的 flows 动作（整流 LWW），按 learnerNo 分组各推一次；
+ * 服务端明确拒绝（rejected）的条目重试无意义，同样清队（本地状态保留）。 */
 function pushQueued() {
   return new Promise(resolve => {
     try {
@@ -1173,7 +1246,20 @@ function pushQueued() {
       // 队列里的条目可能属于不同孩子（切孩子后旧队列还在）：按 childId 分组各推一次，
       // 服务端把 childId 当「想要的归属」校验（跨家庭拒绝），不依赖云端 currentUserId 是否已同步。
       const groups = {};
+      const flowGroups = {};   // P3b：flows 动作分组（按 learnerNo）
       queue.forEach(q => {
+        if (q.kind === 'flows') {
+          const item = (all.flows || []).find(x => x.id === q.id);
+          if (!item) return;
+          const ln = (item.learnerNo && item.learnerNo !== LEGACY_CHILD) ? item.learnerNo : '';
+          const g = flowGroups[ln] || (flowGroups[ln] = { keys: [], flows: [] });
+          g.keys.push(q);
+          const payload = Object.assign({}, item, { flowId: item.id });
+          delete payload.id;
+          delete payload.cloudId;
+          g.flows.push(payload);
+          return;
+        }
         const arrName = { sessions: 'sessions', mistakes: 'mistakes', evidence: 'evidence', reviews: 'reviews', orders: 'orders', cards: 'cards', unitKps: 'unitKps' }[q.kind];
         if (!arrName) return;
         const item = (all[arrName] || []).find(x => x.id === q.id);
@@ -1189,11 +1275,23 @@ function pushQueued() {
         data: Object.assign({ action: 'push' }, cid ? { childId: cid } : {}, body)
       }).then(res => ({ res: res, keys: keys })).catch(() => ({ res: null, keys: keys }));
 
+      /* flows 组：整流 LWW 走专用动作；服务端 rejected（跨家庭/非法字段）也算已处理 → 清队 */
+      const sendFlows = (ln, keys, flows) => wx.cloud.callFunction({
+        name: 'tutorSync',
+        data: { action: 'flows', flows: flows }
+      }).then(res => ({ res: res, keys: keys, flowsAction: true })).catch(() => ({ res: null, keys: keys }));
+
       const gids = Object.keys(groups);
-      if (!gids.length) return resolve({ ok: true, added: 0 });
-      Promise.all(gids.map(cid => send(cid, groups[cid].keys, groups[cid].payload))).then(list => {
+      const fgids = Object.keys(flowGroups);
+      if (!gids.length && !fgids.length) return resolve({ ok: true, added: 0 });
+      const jobs = gids.map(cid => send(cid, groups[cid].keys, groups[cid].payload))
+        .concat(fgids.map(ln => sendFlows(ln, flowGroups[ln].keys, flowGroups[ln].flows)));
+      Promise.all(jobs).then(list => {
         const doneKeys = [];
-        list.forEach(x => { if (x.res && x.res.result && x.res.result.ok) doneKeys.push.apply(doneKeys, x.keys); });
+        list.forEach(x => {
+          // push 组：res.ok 才清；flows 组：res.ok 也算（服务端 rejected 已是明确结论，重试无意义）
+          if (x.res && x.res.result && x.res.result.ok) doneKeys.push.apply(doneKeys, x.keys);
+        });
         const rest = readAll();
         const doneIds = {};
         doneKeys.forEach(q => { doneIds[q.kind + ':' + q.id] = true; });
@@ -1338,7 +1436,7 @@ module.exports = {
   getOrders, getOrder, getOrdersByPlan, getPendingOrders, orderCounts, planOrderAggregate,
   orderApi, saveOrderFromCloud, queueOrderPush,
   getLearnerContext,
-  getFlows, dueKpFlows,
+  getFlows, dueKpFlows, advanceFlow,
   queuePush, mergeFromCloud, syncFromCloud, pushQueued,
   REVIEW_STAGE_DAYS
 };

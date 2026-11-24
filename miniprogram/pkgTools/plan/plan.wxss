@@ -190,3 +190,8 @@
 .tt-step { font-size: 22rpx; color: #7C6BF0; background: #F0EDFF; border-radius: 8rpx; padding: 2rpx 12rpx; font-weight: 600; }
 .tt-round { font-size: 22rpx; color: #9AA5B1; }
 .tt-due { font-size: 22rpx; color: #E08A1E; font-weight: 600; margin-left: auto; }
+
+/* 今日任务推进按钮（P3b） */
+.tt-actions { display: flex; align-items: center; margin-top: 12rpx; }
+.tt-btn { background: #7C6BF0; color: #fff; font-size: 26rpx; font-weight: 700; padding: 12rpx 32rpx; border-radius: 999rpx; }
+.tt-wait { font-size: 22rpx; color: #9AA5B1; }

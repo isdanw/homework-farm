@@ -9,6 +9,7 @@
  *   'push'  把本地有而云端缺的条目补写上云（离线归档 / 归档失败回补），按 clientId 查重
  *   'exams' F-B 试卷库列表（exam_resources）——只回索引元数据，**不回正文**，保持载荷轻量
  *   'exam'  F-B 单份试卷详情（按 resourceId）——回卷面 markdown + 参考答案，供「查看卷面」
+ *   'flows' P3b：kp_flows 整流 LWW 写回（小程序推进状态后落事实），规则=writeKpFlows（P1）
  *
  * 【pull】出参：
  *   { ok:true, sessions:[], mistakes:[], evidence:[], reviews:[], orders:[], cards:[], unitKps:[],
@@ -439,13 +440,118 @@ async function push(app, openid, input, childId) {
   return { ok: true, added: added, skipped: skipped, updated: updated, rejected: rejected };
 }
 
+/* ---------------- flows 动作（P3b：小程序写回，整流 LWW 更新） ----------------
+ * ⚠️ 与 push 的分工（别混淆）：
+ *   · push 是「只补缺」语义（clientId 已存在 → skip），承载不了状态推进；
+ *   · 本动作 = 整流 LWW 更新，规则与 webAdminWrite 的 writeKpFlows（P1）完全一致：
+ *     字段白名单重建 doc、_id=flowId 幂等、per-flow LWW（updatedAt 大者胜、tie 取
+ *     reviewRound 大者）、通关只进不出（cloud cleared 不可被降级覆盖）。
+ * 服务端只做事实记录：不推进状态、不算排期、不判通关（工作台/端上状态机唯一权威）。
+ * 孩子闸：有 learnerNo 必须 isChildOf（跨家庭拒该条计 rejected，不落库）；
+ *   缺省则用 resolveChildId 结果盖章（P3a 旧流推进时端上会盖章，此处兜底），
+ *   解析不出 → rejected（不产生无主数据，与 push 同纪律）。
+ * 校验：status/step 必须在库内枚举、reviewRound ≥ 0、updatedAt 必须存在（LWW 键）。
+ * flows 不进 push 的 collName / PUSH_LIMITS / sanitize（P3a 红线延续）。 */
+const KP_FLOW_FIELDS = ['subject', 'knowledgePoint', 'status', 'step', 'reviewRound',
+  'nextReviewAt', 'lastEvidence', 'prevStatus', 'createdAt', 'updatedAt', 'deletedAt',
+  'learnerNo', 'legacy'];
+const KP_FLOW_STATUSES = ['not_started', 'first_learning', 'reviewing', 'cleared', 'paused'];
+const KP_FLOW_STEPS = ['learn', 'practice', 'explain', 'test', 'review'];
+const KP_FLOW_MAX_BATCH = 100;
+
+async function updateFlows(app, openid, event) {
+  const db = app.database();
+  const items = Array.isArray(event.flows) ? event.flows.slice(0, KP_FLOW_MAX_BATCH) : [];
+  let updated = 0, skipped = 0, rejected = 0;
+  const rejectedList = [];
+  const reject = (flowId, reason) => {
+    rejected++;
+    if (rejectedList.length < 20) rejectedList.push({ flowId: flowId || '', reason: reason });
+  };
+  // 家庭根数据：孩子闸 + learnerNo 缺省时的兜底盖章
+  const root = await loadRoot(db, openid);
+  const fallbackKid = G.resolveChildId(root, event.childId);
+
+  for (const raw of items) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) { reject('', 'not_object'); continue; }
+    const flowId = str(raw.flowId || raw.id, 60);
+    if (!flowId) { reject('', 'no_flowId'); continue; }
+
+    // 白名单重建：只拷贝已知字段，端上多余键（id/cloudId/身份键）不落地
+    const doc = {};
+    for (const k of KP_FLOW_FIELDS) {
+      if (raw[k] !== undefined) doc[k] = raw[k];
+    }
+    if (KP_FLOW_STATUSES.indexOf(doc.status) < 0 || KP_FLOW_STEPS.indexOf(doc.step) < 0) {
+      reject(flowId, 'bad_status_or_step'); continue;
+    }
+    const rr = Number(doc.reviewRound);
+    if (!Number.isFinite(rr) || rr < 0) { reject(flowId, 'bad_reviewRound'); continue; }
+    doc.reviewRound = Math.floor(rr);
+    if (typeof doc.updatedAt !== 'string' || !doc.updatedAt) {
+      reject(flowId, 'no_updatedAt'); continue;   // LWW 键必须存在
+    }
+
+    // 孩子闸：learnerNo 缺省 → 服务端兜底盖章（解析不出 = 无归属，拒）
+    if (!doc.learnerNo) {
+      if (!fallbackKid.childId) { reject(flowId, 'no_learnerNo_resolvable'); continue; }
+      doc.learnerNo = fallbackKid.childId;
+    } else if (!G.isChildOf(root, doc.learnerNo)) {
+      reject(flowId, 'learnerNo_cross_family'); continue;
+    }
+
+    let exist = [];
+    try {
+      const res = await db.collection(KP_FLOWS_COLL).doc(flowId).get();
+      exist = (res && res.data && (Array.isArray(res.data) ? res.data : [res.data])) || [];
+    } catch (e) { exist = []; }
+    const cloud = exist.length ? exist[0] : null;
+
+    // ---- 新增 ----
+    if (!cloud || !cloud._id) {
+      const fresh = Object.assign({ openid }, doc);
+      try {
+        await db.collection(KP_FLOWS_COLL).doc(flowId).set(fresh);
+        updated++;
+      } catch (e) {
+        try { await db.createCollection(KP_FLOWS_COLL); } catch (e2) {}
+        try {
+          await db.collection(KP_FLOWS_COLL).doc(flowId).set(fresh);
+          updated++;
+        } catch (e3) { reject(flowId, 'write_failed'); }
+      }
+      continue;
+    }
+
+    // ---- 已存在：LWW + 通关只进不出（与 P1 writeKpFlows 同规则）----
+    if (cloud.status === 'cleared' && doc.status !== 'cleared') { skipped++; continue; }
+    const cAt = String(cloud.updatedAt || '');
+    const mAt = String(doc.updatedAt);
+    if (cAt > mAt) { skipped++; continue; }              // 云端更新 → 保留云端
+    if (cAt === mAt) {
+      // tie：reviewRound 大者赢；再 tie 取云端（幂等跳过）
+      if (!(doc.reviewRound > (Number(cloud.reviewRound) || 0))) { skipped++; continue; }
+    }
+    const patch = {};
+    for (const k of KP_FLOW_FIELDS) if (doc[k] !== undefined) patch[k] = doc[k];
+    patch.updatedAt = doc.updatedAt;   // 保留客户端时间戳（事实记录，不重打）
+    try {
+      await db.collection(KP_FLOWS_COLL).doc(cloud._id).update(patch);
+      updated++;
+    } catch (e) { reject(flowId, 'write_failed'); }
+  }
+
+  return { ok: true, updated: updated, skipped: skipped, rejected: rejected,
+    ...(rejectedList.length ? { rejectedList: rejectedList } : {}) };
+}
+
 /* ---------------- 主入口 ---------------- */
 exports.main = async (event) => {
   const gate = G.requireOpenid((event.userInfo && event.userInfo.openId) || '');
   if (!gate.ok) return { ok: false, code: gate.code, msg: '缺少用户身份，无法同步' };
   const openid = gate.openid;
 
-  const action = ['push', 'exams', 'exam'].includes(event.action) ? event.action : 'pull';
+  const action = ['push', 'exams', 'exam', 'flows'].includes(event.action) ? event.action : 'pull';
 
   let app;
   try {
@@ -476,6 +582,7 @@ exports.main = async (event) => {
     }
     if (action === 'exams') return await exams(app, openid, event);
     if (action === 'exam') return await exam(app, openid, event);
+    if (action === 'flows') return await updateFlows(app, openid, event);
     return await pull(app, openid);
   } catch (e) {
     return { ok: false, code: 'sync_error', msg: '同步失败：' + ((e && e.message) || e) };

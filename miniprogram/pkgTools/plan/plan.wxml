@@ -48,6 +48,10 @@
           <text wx:if="{{it.round}}" class="tt-round">第 {{it.round}} 轮复习</text>
           <text class="tt-due">{{it.due}}</text>
         </view>
+        <view class="tt-actions">
+          <view wx:if="{{it.btn}}" class="tt-btn" catchtap="advanceTask" data-fid="{{it.flowId}}">{{it.btn}}</view>
+          <text wx:elif="{{it.waitRetest}}" class="tt-wait">复测请回工作台完成（达标即通关）</text>
+        </view>
       </view>
     </view>
   </view>
