@@ -254,6 +254,42 @@ async function groupI_pullTruncate() {
   ok(kp.total === 231, 'total = 全部条数（含被截掉的）', kp.total);
 }
 
+
+async function groupJ_deleteAndRedLine() {
+  group('J 删除行下发 / 红线 5 服务端兜底（小程序写回不得判通关、不得写证据）');
+  // J1 pull 下发 deletedAt 行（否则手机端已 pull 的副本永远删不掉）
+  const mod = loadSync({ hw_farm_user: familyRoot(), kp_flows: [Object.assign({ _id: 'f_del', openid: OPENID }, flow('f_del', { deletedAt: '2026-11-25T00:00:00.000Z' }))] });
+  const pulled = await invoke(mod, { action: 'pull' });
+  const ids = (pulled.kpFlows.flows || []).map(f => f.flowId);
+  ok(pulled.ok === true && ids.indexOf('f_del') >= 0, 'pull 下发 deletedAt 行（供端上按删除处理）', ids);
+
+  // J2 写回 status=cleared → 拒：通关只能由复测证据驱动（工作台口径），小程序不判通关
+  const mod2 = loadSync({ hw_farm_user: familyRoot() });
+  let r = await invoke(mod2, { action: 'flows', flows: [flow('f_c', { status: 'cleared', step: 'review', nextReviewAt: null })] });
+  ok(r.rejected === 1 && r.rejectedList[0].reason === 'mp_cannot_clear' && r.updated === 0, 'status=cleared 的写回被拒（mp_cannot_clear）', r);
+  ok(mod2.fake.rows('kp_flows').length === 0, '不落库');
+
+  // J3 客户端带 lastEvidence → 剥离：新增不带、更新不覆盖云端原值
+  const victimEvidence = { passed: true, correctItems: 5, totalItems: 5, judgedAt: '2026-11-20T00:00:00.000Z', basis: 'server' };
+  const mod3 = loadSync({ hw_farm_user: familyRoot(), kp_flows: [Object.assign({ _id: 'f_ev', openid: OPENID }, flow('f_ev', { lastEvidence: victimEvidence, updatedAt: '2026-11-24T09:00:00.000Z' }))] });
+  const forged = { passed: true, correctItems: 99, totalItems: 99, judgedAt: NOW, basis: '手机自封' };
+  r = await invoke(mod3, { action: 'flows', flows: [flow('f_ev', { lastEvidence: forged, reviewRound: 3 }), flow('f_ev_new', { lastEvidence: forged })] });
+  const evRow = mod3.fake.rows('kp_flows').find(x => x._id === 'f_ev');
+  ok(r.updated === 2, '推进本身照常写入（只剥证据，不挡推进）', r);
+  ok(evRow && JSON.stringify(evRow.lastEvidence) === JSON.stringify(victimEvidence) && evRow.reviewRound === 3, '已存在的流：lastEvidence 保留云端原值，不被手机覆盖', evRow);
+  const newRow = mod3.fake.rows('kp_flows').find(x => x._id === 'f_ev_new');
+  ok(newRow && newRow.lastEvidence === undefined, '新建的流：lastEvidence 不落地', newRow);
+  ok(newRow && newRow.modelVersion === 'echo-loop-v1', '新建写 modelVersion（与 P1 同）', newRow);
+
+  // J4 手机写 deletedAt → 拒：小程序没有删流入口，删除只能由工作台发起（否则手机能把工作台的流删掉）
+  const mod4 = loadSync({ hw_farm_user: familyRoot(), kp_flows: [Object.assign({ _id: 'f_live', openid: OPENID }, flow('f_live'))] });
+  r = await invoke(mod4, { action: 'flows', flows: [flow('f_gone2', { deletedAt: NOW }), flow('f_live', { deletedAt: NOW })] });
+  ok(r.rejected === 2 && r.rejectedList.every(x => x.reason === 'mp_cannot_delete') && r.updated === 0, '带 deletedAt 的写回整条拒（mp_cannot_delete，新增与更新都拒）', r);
+  ok(!mod4.fake.rows('kp_flows').some(x => x._id === 'f_gone2'), '带 deletedAt 的新增不落库');
+  const liveRow = mod4.fake.rows('kp_flows').find(x => x._id === 'f_live');
+  ok(liveRow && !liveRow.deletedAt, '带 deletedAt 的更新：云端原流未被标删');
+}
+
 /* ------------------------------ main ------------------------------ */
 (async () => {
   await groupA_newDoc();
@@ -265,6 +301,7 @@ async function groupI_pullTruncate() {
   await groupG_auth();
   await groupH_crossAccountOverwrite();
   await groupI_pullTruncate();
+  await groupJ_deleteAndRedLine();
   console.log('\n通过 ' + pass + ' 项，失败 ' + fail + ' 项');
   if (fail) { console.log('❌ tutorSync flows 动作契约未全过'); process.exit(1); }
   console.log('✅ tutorSync flows 动作契约全通过（整流 LWW / 通关只进不出 / 孩子闸 / 白名单 / 不进 push）');

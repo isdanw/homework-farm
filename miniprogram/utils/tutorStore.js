@@ -1091,8 +1091,8 @@ function cloudToLocal(kind, cloud) {
  *   · sessions / mistakes / evidence：按 id 并集，同 id 本地优先（本地是本机权威）
  *   · reviews：同 id 比 updatedAt，云端的更新则把云端字段全量覆盖过来
  *   · orders：同 id **云端整条覆盖本地**（云端是唯一真相源，见本节末说明）
- *   · flows（P3a 只读）：与工作台 P2 同一纪律 —— LWW + 5 分钟时钟窗 reviewRound 大者
- *     + 通关只进不出 + 墓碑跳过 + deletedAt 行不落地；不入 pushQueue（只读不写）
+ *   · flows（P3a 只读合并 / P3b 推进写回）：与工作台 P2 同一纪律 —— LWW + 5 分钟时钟窗 reviewRound 大者
+ *     + 通关只进不出 + 墓碑跳过 + 云端 deletedAt 行删除传播；入 merge 时待推队列里的流本地优先
  *   · 任何被本地删过（removed 墓碑）的条目一律不回填
  */
 function mergeFromCloud(remote) {
@@ -1171,11 +1171,11 @@ function mergeFromCloud(remote) {
   /* ── kpFlows（P3a 只读，2026-11-23）：与工作台 P2 mergeCloudKpFlows 同一合并纪律 ──
    *   · 按 id（= flowId，写端 _id）逐条 LWW；updatedAt 大者胜（ISO 字符串/毫秒统一换算）；
    *   · 两端 updatedAt 差值 ≤ 5 分钟 → 取 reviewRound 大者，再 tie 取云端（防两台设备时钟差）；
-   *   · 已 cleared 不可被非 cleared 覆盖（通关只进不出）；
-   *   · removed 墓碑复用（kind='flows'）：本地删过的流 pull 回填跳过，防「删了又回来」；
-   *   · deletedAt 行不落地（只读端不展示已删流）；
-   *   · flows 只读：不入 pushQueue、不盖 childId、不新增墓碑（P3b 写通道另立卡）；
-   *   · remote.kpFlows 缺省（老云函数）→ 整段跳过，向后兼容。 */
+ *   · 已 cleared 不可被非 cleared 覆盖（通关只进不出）；
+ *   · 云端 deletedAt 行 = 删除传播（移除本地副本 + 清待推条目 + 墓碑）；
+ *   · removed 墓碑复用（kind='flows'）：本地删过的流 pull 回填跳过，防「删了又回来」；
+ *   · 入 pull 时仍在本机待推队列里的流，本地优先（未上云的推进不能被旧云端值吃掉）；
+ *   · remote.kpFlows 缺省（老云函数）→ 整段跳过，向后兼容。 */
   const kpRemote = remote.kpFlows;
   const flowList = kpRemote && Array.isArray(kpRemote.flows) ? kpRemote.flows : null;
   if (flowList) {
@@ -1183,7 +1183,18 @@ function mergeFromCloud(remote) {
       if (!cf || typeof cf !== 'object') return;
       const id = String(cf.flowId || cf.id || '');
       if (!id) return;
-      if (cf.deletedAt) return;
+      // 云端已删（deletedAt 行）→ 删除传播（2026-11-26；此前直接 return，本地副本成了永远删不掉的僵尸流，
+      // P3b 之后还能继续推进）。三件事：移除本地副本、清掉该流的待推条目（删了就不该再往上推）、
+      // 登记墓碑（防旧快照/旧云函数回填复活）。本地没有该流时只记墓碑，不落地。
+      if (cf.deletedAt) {
+        const di = all.flows.findIndex(x => x && x.id === id);
+        if (di >= 0) all.flows.splice(di, 1);
+        if (Array.isArray(all.pushQueue)) {
+          all.pushQueue = all.pushQueue.filter(q => !(q && q.kind === 'flows' && q.id === id));
+        }
+        bury(all, 'flows', id);
+        return;
+      }
       if (isBuried(all, 'flows', id)) return;
       const i = all.flows.findIndex(x => x && x.id === id);
       if (i < 0) {

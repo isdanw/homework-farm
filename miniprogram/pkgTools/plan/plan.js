@@ -25,6 +25,15 @@ const STATUS_STYLE = {
  * P3b 起可推进：advanceFlow 本地状态机前进 + 七档排期递进，写回走 tutorSync flows 动作；
  * 复测/通关仍回工作台（小程序不判通关、不产生 evidence）。 */
 const FLOW_STEP_CN = { learn: '首学', practice: '练习', explain: '讲解', test: '复测', review: '复习' };
+/** 推进按钮防连点：完成后冷却时长（吃掉双击的第二下） */
+const ADVANCE_COOLDOWN_MS = 300;
+/** 知识点名展示上限：卡片单行，超长截断加省略号（完整名看工作台） */
+const KP_LABEL_MAX = 40;
+
+function kpLabel(v) {
+  const s = String(v || '');
+  return s.length > KP_LABEL_MAX ? s.slice(0, KP_LABEL_MAX) + '…' : s;
+}
 
 function buildTodayTasks() {
   const now = Date.now();
@@ -52,7 +61,7 @@ function buildTodayTasks() {
     }
     groups[sub.subject].items.push({
       flowId: f.flowId || f.id,
-      kp: f.knowledgePoint || '',
+      kp: kpLabel(f.knowledgePoint),
       step: FLOW_STEP_CN[f.step] || f.step || '',
       due: f.status === 'first_learning' ? '首学进行中'
          : lateMin >= 1440 ? '到期 ' + Math.floor(lateMin / 1440) + ' 天'
@@ -402,15 +411,25 @@ Page({
   /** P3b：推进今日任务流（下一步 / 完成本轮复习）。
    * 家长特权动作（§7.6，复用 planEdit 会话，一次验证会话内有效不反复打断）；
    * 本地推进立即生效 + 刷新；写回由 commit→scheduleFlush 自动走 tutorSync flows 动作，
-   * 失败留队不丢数据、不弹错打断孩子。 */
+   * 失败留队不丢数据、不弹错打断孩子。
+   * 防连点（2026-11-26）：首学四步没有到期守卫，双击会连跳两步（learn 一路跳到 explain）。
+   * 两道闸：①执行中（含等家长授权的时间）一律忽略；②完成后 300ms 冷却，吃掉连点的第二下。 */
   async advanceTask(e) {
     const fid = e.currentTarget.dataset.fid;
     if (!fid) return;
-    if (!(await parentAuth.requireScope('planEdit'))) return;
-    const f = tutorStore.advanceFlow(fid);
-    if (!f) return;   // 不可推进（通关/暂停/首学已到 test）——按钮本不该出现，防御
-    this.render();
-    wx.showToast({ title: '已推进 ✓', icon: 'none', duration: 1200 });
+    if (this._advBusy) return;
+    if (this._advDoneAt && Date.now() - this._advDoneAt < ADVANCE_COOLDOWN_MS) return;
+    this._advBusy = true;
+    try {
+      if (!(await parentAuth.requireScope('planEdit'))) return;
+      const f = tutorStore.advanceFlow(fid);
+      if (!f) return;   // 不可推进（通关/暂停/首学已到 test）——按钮本不该出现，防御
+      this.render();
+      wx.showToast({ title: '已推进 ✓', icon: 'none', duration: 1200 });
+    } finally {
+      this._advBusy = false;
+      this._advDoneAt = Date.now();
+    }
   },
 
   goBack() { wx.navigateBack({ delta: 1 }); }

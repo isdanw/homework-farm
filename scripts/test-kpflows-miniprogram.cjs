@@ -440,6 +440,26 @@ async function groupN_advanceGuards() {
   ok(prog.indexOf('f_n3c') < 0 && prog.indexOf('f_n3d') < 0, '未开始 / 别的孩子的不可见', prog);
 }
 
+
+async function groupO_deletePropagation() {
+  group('O 删除传播：云端 deletedAt 行 → 本地对应流移除 + 墓碑防复活 + 清掉待推条目');
+  resetEnv(); seedFamily('c1');
+  const { ts } = await boot();
+  // 本地有 F（且还在待推队列里 = 有未上云的推进），随后工作台把 F 删了
+  seedTutor({ sessions: [], flows: [Object.assign(cloudFlow('f_del'), { id: 'f_del', learnerNo: 'c1', status: 'reviewing', step: 'review', reviewRound: 1 })], removed: [], pushQueue: [{ kind: 'flows', id: 'f_del' }], lastSyncAt: 0 });
+  ts.mergeFromCloud({ ok: true, kpFlows: { flows: [cloudFlow('f_del', { deletedAt: iso(MIN) })], total: 1 } });
+  ok(!rawTutor().flows.some(x => x.id === 'f_del'), '本地对应流被移除（不留僵尸）');
+  ok(rawTutor().removed.some(t => t.kind === 'flows' && t.id === 'f_del'), '登记墓碑 kind=flows');
+  ok(!rawTutor().pushQueue.some(q => q.kind === 'flows' && q.id === 'f_del'), '清掉该流的待推条目（删了就不该再往上推）');
+  ok(ts.getFlows().length === 0 && ts.advanceFlow('f_del') === null, '不可见、不可推进');
+  // 旧快照（不带 deletedAt）回填 → 被墓碑挡住，不复活
+  ts.mergeFromCloud({ ok: true, kpFlows: { flows: [cloudFlow('f_del', { updatedAt: iso(DAY) })], total: 1 } });
+  ok(rawTutor().flows.length === 0, '墓碑挡住旧快照回填（删了不复活）');
+  // 本地没有的流带 deletedAt 下来 → 只登记墓碑，不落地
+  ts.mergeFromCloud({ ok: true, kpFlows: { flows: [cloudFlow('f_gone', { deletedAt: iso(MIN) })], total: 1 } });
+  ok(!rawTutor().flows.some(x => x.id === 'f_gone') && rawTutor().removed.some(t => t.id === 'f_gone'), '本地没有的已删流：只记墓碑不落地');
+}
+
 async function groupS_sourceGuard() {
   group('S 源码断言（守护）：tutorSync 下发口径 + 只读纪律');
   const syncSrc = fs.readFileSync(TS_SYNC_PATH, 'utf8');
@@ -452,7 +472,9 @@ async function groupS_sourceGuard() {
   const writeSrc = fs.readFileSync(path.join(REPO, 'cloudfunctions', 'webAdminWrite', 'index.js'), 'utf8');
   ok(/cloud\.openid !== openid\) \{ rejected\+\+; rejectFlow\(rejectedList, flowId, 'flow_id_conflict'\)/.test(writeSrc), 'webAdminWrite.writeKpFlows 同款归属校验（P1 补漏）');
   ok(/kpFlows: await pullKpFlows/.test(syncSrc), 'pull 返回 kpFlows 段');
-  ok(/if \(d\.deletedAt\) return;/.test(syncSrc), 'deletedAt 行不下发');
+  ok(/deletedAt 行照常下发/.test(syncSrc) && !/if \(d\.deletedAt\) return;/.test(syncSrc), 'deletedAt 行照常下发（端上按删除处理；服务端不过滤）');
+  ok(/reject\(flowId, 'mp_cannot_clear'\)/.test(syncSrc) && /delete doc\.lastEvidence;/.test(syncSrc) && /reject\(flowId, 'mp_cannot_delete'\)/.test(syncSrc), '红线 5 服务端兜底：flows 动作拒 cleared + 拒 deletedAt + 剥离 lastEvidence');
+  ok(/modelVersion: KP_FLOW_MODEL_VERSION/.test(syncSrc), 'flows 新建写 modelVersion（与 P1 同）');
   // 只读纪律：push 路径不收 flows
   const pushSeg = syncSrc.slice(syncSrc.indexOf('async function push'));
   ok(pushSeg.indexOf("kp_flows") < 0, 'push 的 collName 无 kp_flows（写回走专用 flows 动作）');
@@ -465,6 +487,9 @@ async function groupS_sourceGuard() {
   ok(/const KP_FLOW_FIELDS = \['subject', 'knowledgePoint', 'status', 'step', 'reviewRound',/.test(syncSrc), '字段白名单重建 doc（P1 同源）');
   const storeSrc = fs.readFileSync(TUTOR_PATH, 'utf8');
   ok(/isBuried\(all, 'flows', id\)/.test(storeSrc), '端上 merge 墓碑复用 kind=flows');
+  const mergeDel = storeSrc.slice(storeSrc.indexOf('云端已删（deletedAt 行）'), storeSrc.indexOf("if (isBuried(all, 'flows', id)) return;"));
+  ok(/all\.flows\.splice\(di, 1\)/.test(mergeDel) && /q\.kind === 'flows' && q\.id === id/.test(mergeDel) && /bury\(all, 'flows', id\)/.test(mergeDel), '端上删除传播：云端 deletedAt 行 → 移除本地 + 清待推条目 + 墓碑');
+  ok(!/if \(cf\.deletedAt\) return;/.test(storeSrc), '端上不再对 deletedAt 行直接 return（旧口径已废）');
   ok(/FLOW_CLOCK_WINDOW_MS = 5 \* 60 \* 1000/.test(storeSrc), '时钟窗与工作台同值');
   ok(/KP_REVIEW_INTERVALS_HOURS = \[6, 18, 24, 48, 72, 168, 336\]/.test(storeSrc), '七档排期常量与工作台同值（锁死）');
   ok(/function advanceFlow/.test(storeSrc) && /commit\(all, \[\{ kind: 'flows', id: fid \}\]\)/.test(storeSrc), 'advanceFlow 推进 + R7 落盘登记一体');
@@ -474,6 +499,9 @@ async function groupS_sourceGuard() {
   const planSrc = fs.readFileSync(PLAN_PATH, 'utf8');
   ok(/dueKpFlows\(\)/.test(planSrc) && /tutorStore\.advanceFlow\(fid\)/.test(planSrc), 'plan 页：dueKpFlows 展示 + advanceFlow 推进（走 tutorStore，不自行改状态）');
   ok(/requireScope\('planEdit'\)/.test(planSrc), '推进按钮挂家长门禁（复用 planEdit）');
+  const advTask = planSrc.slice(planSrc.indexOf('async advanceTask'), planSrc.indexOf('goBack()'));
+  ok(/if \(this\._advBusy\) return;/.test(advTask) && /this\._advBusy = true;/.test(advTask) && /_advDoneAt < ADVANCE_COOLDOWN_MS/.test(advTask), '推进按钮防连点（执行中忽略 + 完成后 300ms 冷却）');
+  ok(/kp: kpLabel\(f\.knowledgePoint\)/.test(planSrc) && /const KP_LABEL_MAX = 40/.test(planSrc), '知识点名展示截断（40 字加省略号）');
   const hubSrc = fs.readFileSync(HUB_WXML, 'utf8');
   ok(/goTodayTasks/.test(hubSrc) && /dueFlows/.test(hubSrc), 'tutorHub 入口卡片挂到 goTodayTasks + dueFlows 徽标');
 }
@@ -493,6 +521,7 @@ async function groupS_sourceGuard() {
   await groupK_pushFlows();
   await groupM_pendingAndLock();
   await groupN_advanceGuards();
+  await groupO_deletePropagation();
   await groupS_sourceGuard();
   console.log('\n通过 ' + pass + ' 项，失败 ' + fail + ' 项');
   if (fail) { console.log('❌ P3a 小程序只读契约未全过'); process.exit(1); }

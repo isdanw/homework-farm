@@ -90,7 +90,9 @@ const PUSH_LIMITS = {
  *   未通关全量 + 已通关按 updatedAt 倒序最近 KP_FLOWS_CLEARED_LIMIT 条，带 total/truncated（绝不静默）。
  * 额外孩子闸（任务卡）：flow.learnerNo 属于该 openid 家庭才下发，跨家庭直接拒该条（不猜不藏）；
  *   无 learnerNo 的 P1 旧 doc 保留（无法判定归属时不下判，端上按 legacy 兜底展示）。
- * deletedAt 行不下发：只读端不展示已删流（工作台读回走 webAdminQuery，不受影响）。
+ * deletedAt 行照常下发（2026-11-26 改口径）：工作台删了的流，手机必须收到 deletedAt 才能删掉本地副本
+ *   并登记墓碑（此前服务端过滤掉 → 手机上已 pull 的流永远删不掉，成了僵尸流且还能继续推进）。
+ *   deletedAt 行计入 total / 已通关窗口，与活流同一口径截断。
  * flows 只读：不进 push 的 collName / sanitize / PUSH_LIMITS 任何路径（P3b 写通道另立卡）。 */
 const KP_FLOWS_COLL = 'kp_flows';
 const KP_FLOWS_CLEARED_LIMIT = 100;
@@ -208,7 +210,7 @@ async function pullKpFlows(db, openid) {
   const rows = [];
   let rejected = 0;
   docs.forEach(d => {
-    if (d.deletedAt) return;                       // 已删流不下发（只读端不展示）
+    // deletedAt 行照常下发：端上按「删除」处理（移除本地副本 + 墓碑），不过滤
     // 孩子闸：learnerNo 必须属于该 openid 家庭（与 push 的 childId 跨家庭拒绝同纪律）
     if (d.learnerNo && !G.isChildOf(root, d.learnerNo)) { rejected++; return; }
     const o = Object.assign({}, d);
@@ -460,6 +462,12 @@ async function push(app, openid, input, childId) {
  *   缺省则用 resolveChildId 结果盖章（P3a 旧流推进时端上会盖章，此处兜底），
  *   解析不出 → rejected（不产生无主数据，与 push 同纪律）。
  * 校验：status/step 必须在库内枚举、reviewRound ≥ 0、updatedAt 必须存在（LWW 键）。
+ * 红线 5 服务端兜底（小程序不判通关、不产生证据；2026-11-26 加，对卡面「与 P1 完全一致」的收紧）：
+ *   · status=cleared 的写回整条拒（mp_cannot_clear）——通关只能由工作台复测证据驱动；
+ *   · lastEvidence 一律剥离——新增不带、更新不覆盖云端原值（手机写的证据不落库）；
+ *   · deletedAt 一律拒（mp_cannot_delete）——删除只能由工作台发起，手机不带该字段（合法路径下本地已删流
+ *     在 merge 时即被移除，不会进待推队列）。
+ *   其余规则与 P1 writeKpFlows 完全一致；要放开只需删掉这三处。
  * flows 不进 push 的 collName / PUSH_LIMITS / sanitize（P3a 红线延续）。 */
 const KP_FLOW_FIELDS = ['subject', 'knowledgePoint', 'status', 'step', 'reviewRound',
   'nextReviewAt', 'lastEvidence', 'prevStatus', 'createdAt', 'updatedAt', 'deletedAt',
@@ -467,6 +475,7 @@ const KP_FLOW_FIELDS = ['subject', 'knowledgePoint', 'status', 'step', 'reviewRo
 const KP_FLOW_STATUSES = ['not_started', 'first_learning', 'reviewing', 'cleared', 'paused'];
 const KP_FLOW_STEPS = ['learn', 'practice', 'explain', 'test', 'review'];
 const KP_FLOW_MAX_BATCH = 100;
+const KP_FLOW_MODEL_VERSION = 'echo-loop-v1';   // 与 P1 writeKpFlows 同值（工作台 kpTaskFlow.ts）
 
 async function updateFlows(app, openid, event) {
   const db = app.database();
@@ -494,6 +503,12 @@ async function updateFlows(app, openid, event) {
     if (KP_FLOW_STATUSES.indexOf(doc.status) < 0 || KP_FLOW_STEPS.indexOf(doc.step) < 0) {
       reject(flowId, 'bad_status_or_step'); continue;
     }
+    // 红线 5 兜底：小程序不判通关。status=cleared 只能由工作台复测证据写入，此处整条拒。
+    if (doc.status === 'cleared') { reject(flowId, 'mp_cannot_clear'); continue; }
+    // 红线兜底：小程序没有删流入口，删除只能由工作台发起。带 deletedAt 的写回整条拒（新增与更新都拒）。
+    if (doc.deletedAt) { reject(flowId, 'mp_cannot_delete'); continue; }
+    // 红线 5 兜底：小程序不产生证据。剥离后「新增」不带该字段，「更新」的 patch 也不含该键 → 云端原值保留。
+    delete doc.lastEvidence;
     const rr = Number(doc.reviewRound);
     if (!Number.isFinite(rr) || rr < 0) { reject(flowId, 'bad_reviewRound'); continue; }
     doc.reviewRound = Math.floor(rr);
@@ -521,7 +536,7 @@ async function updateFlows(app, openid, event) {
 
     // ---- 新增 ----
     if (!cloud || !cloud._id) {
-      const fresh = Object.assign({ openid }, doc);
+      const fresh = Object.assign({ openid }, doc, { modelVersion: KP_FLOW_MODEL_VERSION });
       try {
         await db.collection(KP_FLOWS_COLL).doc(flowId).set(fresh);
         updated++;
