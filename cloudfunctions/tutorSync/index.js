@@ -94,7 +94,8 @@ const PUSH_LIMITS = {
  * flows 只读：不进 push 的 collName / sanitize / PUSH_LIMITS 任何路径（P3b 写通道另立卡）。 */
 const KP_FLOWS_COLL = 'kp_flows';
 const KP_FLOWS_CLEARED_LIMIT = 100;
-const KP_FLOWS_SCAN_LIMIT = 200;   // 与 webAdminQuery READ_LIMIT 同口径，防误拉全量
+const KP_FLOWS_PAGE_LIMIT = 100;   // 全量读取分页（未通关不截，封顶见下）
+const KP_FLOWS_MAX_PAGES = 10;     // 封顶 10 页 = 1000 条；撞顶时 truncated=true，绝不静默
 
 /* F-B：试卷库 */
 const EXAM_COLL = 'exam_resources';
@@ -185,16 +186,23 @@ function dedupeEvidence(list) {
  * 集合不存在（工作台还没备份过任何流）→ 空段，不阻塞其他集合。 */
 async function pullKpFlows(db, openid) {
   const empty = { flows: [], total: 0, truncated: false, rejected: 0 };
+  // 分页取全部（与 webAdminQuery getAll 同构：count → 分页 → 封顶），**不能**「updatedAt 倒序 + limit」一次取：
+  // 那样已通关流一多就会把未通关流挤出扫描窗口，且 truncated 只看已通关是否超限 → 未通关流静默丢失。
   let docs = [];
   try {
-    const res = await db.collection(KP_FLOWS_COLL)
-      .where({ openid: openid })
-      .orderBy('updatedAt', 'desc')
-      .limit(KP_FLOWS_SCAN_LIMIT)
-      .get();
-    docs = (res && res.data) || [];
+    const countRes = await db.collection(KP_FLOWS_COLL).where({ openid: openid }).count();
+    const pages = Math.min(Math.ceil((countRes.total || 0) / KP_FLOWS_PAGE_LIMIT), KP_FLOWS_MAX_PAGES);
+    for (let i = 0; i < pages; i++) {
+      const res = await db.collection(KP_FLOWS_COLL)
+        .where({ openid: openid })
+        .orderBy('createdAt', 'desc')
+        .skip(i * KP_FLOWS_PAGE_LIMIT)
+        .limit(KP_FLOWS_PAGE_LIMIT)
+        .get();
+      if (res && res.data) docs.push(...res.data);
+    }
   } catch (e) {
-    return empty;
+    return empty;   // 集合不存在（工作台还没备份过任何流）→ 空段，不阻塞其他集合
   }
   const root = await loadRoot(db, openid);
   const rows = [];
@@ -217,7 +225,8 @@ async function pullKpFlows(db, openid) {
   return {
     flows: active.concat(cleared),
     total: rows.length,
-    truncated: clearedAll.length > KP_FLOWS_CLEARED_LIMIT,
+    // 不静默：已通关超限，或全量读取撞到封顶（家庭自用量级不可能，撞到即明示）
+    truncated: clearedAll.length > KP_FLOWS_CLEARED_LIMIT || docs.length >= KP_FLOWS_PAGE_LIMIT * KP_FLOWS_MAX_PAGES,
     rejected: rejected
   };
 }
@@ -506,6 +515,9 @@ async function updateFlows(app, openid, event) {
       exist = (res && res.data && (Array.isArray(res.data) ? res.data : [res.data])) || [];
     } catch (e) { exist = []; }
     const cloud = exist.length ? exist[0] : null;
+    // 按 _id 直取后的归属校验（项目既定越权纪律：_id 兜底查询后必补 openid）。
+    // flowId 由客户端点名，不校验就能改写别家同 flowId 的流（含把 learnerNo 改成自家孩子）。
+    if (cloud && cloud._id && cloud.openid !== openid) { reject(flowId, 'flow_id_conflict'); continue; }
 
     // ---- 新增 ----
     if (!cloud || !cloud._id) {

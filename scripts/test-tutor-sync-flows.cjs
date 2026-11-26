@@ -43,11 +43,12 @@ function createFakeSdk(seed) {
     }
   }
   function collection(name) {
-    let w = {}, order = null, lim = 100;
+    let w = {}, order = null, lim = 100, skipN = 0;
     const api = {
       where(q) { w = q || {}; return api; },
       orderBy(k, d) { order = { k, d }; return api; },
       limit(n) { lim = n; return api; },
+      skip(n) { skipN = n; return api; },
       async count() { return { total: ensure(name).filter((r) => matchWhere(r, w)).length }; },
       async get() {
         let rows = ensure(name).filter((r) => matchWhere(r, w));
@@ -56,7 +57,7 @@ function createFakeSdk(seed) {
             ? String(b[order.k] || '').localeCompare(String(a[order.k] || ''))
             : String(a[order.k] || '').localeCompare(String(b[order.k] || '')));
         }
-        return { data: deep(rows.slice(0, lim)) };
+        return { data: deep(rows.slice(skipN, skipN + lim)) };
       },
       async update(patch) {
         const rows = ensure(name).filter((r) => matchWhere(r, w));
@@ -124,9 +125,12 @@ function flow(flowId, over) {
 }
 
 let pass = 0, fail = 0;
-function ok(name, cond, extra) {
-  if (cond) { pass++; console.log('  ✓ ' + name); }
-  else { fail++; console.log('  ✗ ' + name + (extra !== undefined ? '  → ' + JSON.stringify(extra) : '')); }
+// 调用约定统一为 ok(cond, label, extra)：断言名必须是字符串、cond 必须是布尔。
+// 曾因签名 (name, cond) 与调用 ok(cond, name) 错位 → 断言名恒为非空字符串 → 整文件假绿。
+function ok(cond, label, extra) {
+  if (typeof label !== 'string' || !label) { fail++; console.log('  ✗ [挂具] 断言缺失标签'); return; }
+  if (cond === true) { pass++; console.log('  ✓ ' + label); }
+  else { fail++; console.log('  ✗ ' + label + (extra !== undefined ? '  → ' + JSON.stringify(extra) : '')); }
 }
 function group(t) { console.log('\n' + t); }
 
@@ -218,6 +222,38 @@ async function groupG_auth() {
   ok(r.ok === false && r.code === 'no_openid', '缺身份 → no_openid');
 }
 
+
+async function groupH_crossAccountOverwrite() {
+  group('H 按 _id 直取后的归属校验：别家同 flowId 的流不可被改写（按 _id 兜底必补 openid）');
+  const victim = { _id: 'f_victim', openid: 'o_other_family', flowId: 'f_victim', subject: 'mathematics', knowledgePoint: '别家的流',
+    status: 'reviewing', step: 'review', reviewRound: 1, nextReviewAt: '2026-01-01T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', learnerNo: 'c_their_kid' };
+  const mod = loadSync({ hw_farm_user: familyRoot(), kp_flows: [victim] });
+  // 恶意客户端：本家庭身份，点名别家的 flowId，learnerNo 写成自己家的孩子，updatedAt 更新（LWW 会放行）
+  const r = await invoke(mod, { action: 'flows', flows: [flow('f_victim', { updatedAt: NOW, learnerNo: 'c1' })] });
+  const row = mod.fake.rows('kp_flows')[0];
+  ok(r.rejected === 1 && r.updated === 0, '别家同 flowId → rejected', r);
+  ok(row.openid === 'o_other_family' && row.learnerNo === 'c_their_kid' && row.updatedAt === '2026-01-01T00:00:00.000Z', '别家流原样不动', row);
+}
+
+async function groupI_pullTruncate() {
+  group('I pull 截断口径：已通关再多也不能挤掉未通关（未通关全量，与 P2 一致）');
+  const seed = [];
+  for (let i = 0; i < 230; i++) {
+    seed.push(Object.assign({ _id: 'f_c' + i, openid: OPENID }, flow('f_c' + i, { status: 'cleared', nextReviewAt: null, updatedAt: '2026-11-24T12:00:00.000Z' })));
+  }
+  // 一条「很旧」的未通关流：按 updatedAt 倒序扫描时排在 230 条已通关之后
+  seed.push(Object.assign({ _id: 'f_active_old', openid: OPENID }, flow('f_active_old', { updatedAt: '2026-01-01T00:00:00.000Z' })));
+  const mod = loadSync({ hw_farm_user: familyRoot(), kp_flows: seed });
+  const r = await invoke(mod, { action: 'pull' });
+  const kp = r.kpFlows || {};
+  const ids = (kp.flows || []).map(f => f.flowId);
+  ok(r.ok === true && ids.indexOf('f_active_old') >= 0, '旧的未通关流必须下发（不被已通关挤掉）', { n: ids.length, has: ids.indexOf('f_active_old') });
+  ok(kp.truncated === true, '已通关超 100 → truncated=true（不静默）', kp.truncated);
+  ok(ids.filter(x => x.indexOf('f_c') === 0).length === 100, '已通关只下发最近 100', ids.filter(x => x.indexOf('f_c') === 0).length);
+  ok(kp.total === 231, 'total = 全部条数（含被截掉的）', kp.total);
+}
+
 /* ------------------------------ main ------------------------------ */
 (async () => {
   await groupA_newDoc();
@@ -227,6 +263,8 @@ async function groupG_auth() {
   await groupE_validation();
   await groupF_notInPush();
   await groupG_auth();
+  await groupH_crossAccountOverwrite();
+  await groupI_pullTruncate();
   console.log('\n通过 ' + pass + ' 项，失败 ' + fail + ' 项');
   if (fail) { console.log('❌ tutorSync flows 动作契约未全过'); process.exit(1); }
   console.log('✅ tutorSync flows 动作契约全通过（整流 LWW / 通关只进不出 / 孩子闸 / 白名单 / 不进 push）');

@@ -44,8 +44,10 @@ Page({
     const pending = mistakes.filter(m => m.status !== 'corrected').length;
     const evidence = tutorStore.evidencePassedCount();
     const oc = tutorStore.orderCounts();
-    // P3a（2026-11-23）：今日任务 = 工作台知识流到期复习数（只读，推进在工作台完成）
-    const dueFlows = tutorStore.dueKpFlows().length;
+    // P3a/P3b：今日任务 = 到期复习 + 首学进行中（与成长计划页今日任务区同一批，徽标数点进去要对得上）
+    const seen = {};
+    tutorStore.dueKpFlows().concat(tutorStore.inProgressKpFlows()).forEach(f => { seen[f.flowId || f.id] = true; });
+    const dueFlows = Object.keys(seen).length;
 
     this.setData({
       overview: {

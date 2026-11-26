@@ -381,6 +381,9 @@ async function writeKpFlows(openid, items) {
       exist = (res && res.data && (Array.isArray(res.data) ? res.data : [res.data])) || [];
     } catch (e) { exist = []; }
     const cloud = exist.length ? exist[0] : null;
+    // 按 _id 直取后的归属校验（2026-11-26 安全加固）：flowId 由端上点名，不校验就能改写
+    // 别家同 flowId 的流。只拦「已存在但属于别的 openid」，合法路径行为不变。
+    if (cloud && cloud._id && cloud.openid !== openid) { rejected++; rejectFlow(rejectedList, flowId, 'flow_id_conflict'); continue; }
 
     // ---- 新增（云端无此 flow）----
     if (!cloud || !cloud._id) {

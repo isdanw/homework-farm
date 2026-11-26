@@ -711,6 +711,12 @@ function dueKpFlows() {
   });
 }
 
+/** 首学进行中的知识流（status=first_learning）。它们没有排期（nextReviewAt=null），不在 dueKpFlows 里；
+ * P3b 的「下一步」按钮要能触达，所以今日任务区单独并入这一类（含停在 test 步等复测的）。 */
+function inProgressKpFlows() {
+  return getFlows().filter(f => f && f.status === 'first_learning');
+}
+
 /* ---- P3b 写回（2026-11-24）：手机上推进状态，云端只记事实 ----
  * 推进语义与工作台 kpTaskFlow.advanceKpFlow 同一状态机的手机端子集：
  *   · 首学期「下一步」：learn → practice → explain → test 逐步；到 test 停
@@ -753,6 +759,12 @@ function advanceFlow(flowId) {
     if (!ln && first !== cur) return null;
   }
   if (f.status === 'cleared' || f.status === 'paused') return null;
+  // 到期守卫：复习轮未到期不可提前推进（防提前刷轮次）。页面只给到期流出按钮，数据层再守一道。
+  // 回退态的 nextReviewAt 由工作台置为「当时」，天然已到期，不受影响。
+  if (f.status === 'reviewing' && f.nextReviewAt) {
+    const due = Date.parse(f.nextReviewAt);
+    if (due === due && due > Date.now()) return null;
+  }
 
   const nowIso = new Date().toISOString();
   let advanced = false;
@@ -775,8 +787,12 @@ function advanceFlow(flowId) {
   if (!advanced) return null;
 
   f.updatedAt = nowIso;
-  // 写时盖章归属（P3a 旧流无 learnerNo → 补当前孩子）
-  if (!f.learnerNo && cur) f.learnerNo = cur;
+  // 写时盖章归属（P3a 旧流无 learnerNo → 补当前孩子；当前是占位切片/未建档 → 补第一个真实孩子，
+  // 与 getFlows 的 legacy 归属同口径）。不盖章的流写回会被服务端按无主数据拒掉并清队，永远同步不上。
+  if (!f.learnerNo) {
+    const owner = cur || first;
+    if (owner) f.learnerNo = owner;
+  }
   commit(all, [{ kind: 'flows', id: fid }]);
   return f;
 }
@@ -1177,8 +1193,20 @@ function mergeFromCloud(remote) {
         return;
       }
       const cur = all.flows[i];
-      // 通关只进不出：本地已通关、云端未通关（不可能发生于只读端，防御性保留）
+      // 通关只进不出（双向，与工作台 mergeCloudKpFlows 同纪律）：
+      //   · 本地已通关、云端未通关 → 不降级；
+      //   · 云端已通关 → **无条件采纳**（时间戳再旧也采纳）。P3b 之后本地会推进、updatedAt 比云端新，
+      //     若只比时间戳，工作台复测通关的结果就永远传不到手机，手机卡在 reviewing 死循环。
       if (cur.status === 'cleared' && cf.status !== 'cleared') return;
+      if (cf.status === 'cleared') {
+        Object.keys(cf).forEach(k => { cur[k] = cf[k]; });
+        cur.id = id;
+        return;
+      }
+      // 未上云的本地推进优先：该流还在推送队列里 = 本机有云端没有的写。
+      // 不挡的话，刚 pull 下来就推进（回退步 round 不变）后断网，下次 pull 落进 5 分钟时钟窗 tie →
+      // 取云端旧值，本地推进被静默吃掉，用户得重点一次。推成功后两边同 updatedAt，tie 取云端也是同值。
+      if ((all.pushQueue || []).some(q => q && q.kind === 'flows' && q.id === id)) return;
       const tL = flowTsOf(cur.updatedAt);
       const tC = flowTsOf(cf.updatedAt);
       let cloudWins;
@@ -1436,7 +1464,7 @@ module.exports = {
   getOrders, getOrder, getOrdersByPlan, getPendingOrders, orderCounts, planOrderAggregate,
   orderApi, saveOrderFromCloud, queueOrderPush,
   getLearnerContext,
-  getFlows, dueKpFlows, advanceFlow,
+  getFlows, dueKpFlows, inProgressKpFlows, advanceFlow,
   queuePush, mergeFromCloud, syncFromCloud, pushQueued,
   REVIEW_STAGE_DAYS
 };

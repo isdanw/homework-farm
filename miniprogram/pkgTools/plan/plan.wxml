@@ -36,9 +36,9 @@
     <view class="sec-head">
       <view class="sec-dot" style="background:#7C6BF0"></view>
       <text class="sec-title">今日任务</text>
-      <view class="entry-go">{{todayCount}} 项到期</view>
+      <view class="entry-go">{{todayCount}} 项待办</view>
     </view>
-    <view class="muted">由「全科导学工作台」建立的复习排期，到点后在这里提醒；任务推进（练习/复测）请在工作台完成。</view>
+    <view class="muted">「全科导学工作台」排的知识流：到期复习与首学进行中的都在这里，点一下推进；复测与通关仍回工作台。</view>
     <view class="tt-group" wx:for="{{todayTasks}}" wx:for-item="g" wx:key="key">
       <view class="tt-subject">{{g.name}}</view>
       <view class="tt-item" wx:for="{{g.items}}" wx:for-item="it" wx:key="flowId">

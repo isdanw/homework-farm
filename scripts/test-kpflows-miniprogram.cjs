@@ -110,6 +110,13 @@ function rawTutor() { return storage.get(TUTOR_KEY + '_' + OID) || {}; }
 
 function seedTutor(data) { storage.set(TUTOR_KEY + '_' + OID, data); }
 
+/** 把某流置为已到期（推进守卫要求到期才可推；J1 连续推进逐轮用） */
+function forceDue(id) {
+  const raw = rawTutor();
+  const f = (raw.flows || []).find(x => x.id === id);
+  if (f) { f.nextReviewAt = iso(HOUR); storage.set(TUTOR_KEY + '_' + OID, raw); }
+}
+
 async function boot() {
   const s = require(STORE_PATH);
   s.setCloudReady(false);
@@ -277,10 +284,12 @@ async function groupJ_advance() {
   // 逐档：2→24h … 6→336h；round=7 推进 → null（intervals[7] 越界 = 七轮走满）
   const expectH = [24, 48, 72, 168, 336];
   for (let i = 0; i < expectH.length; i++) {
+    forceDue('f_r0');   // 推进守卫：未到期不可推，逐轮手动置到期
     f = ts.advanceFlow('f_r0');
     deltaH = (Date.parse(f.nextReviewAt) - Date.now()) / 3600000;
     ok(Math.abs(deltaH - expectH[i]) < 0.05, 'round=' + (i + 1) + ' → +' + expectH[i] + 'h', deltaH);
   }
+  forceDue('f_r0');
   f = ts.advanceFlow('f_r0');
   ok(f && f.reviewRound === 7 && f.nextReviewAt === null, 'round=6 推进后取不到第 8 档 → nextReviewAt=null，仍 reviewing 不写 cleared');
   f = ts.advanceFlow('f_r0');
@@ -304,6 +313,7 @@ async function groupJ_advance() {
   seedTutor({ sessions: [], flows: [Object.assign(cloudFlow('f_fb'), { id: 'f_fb', learnerNo: 'c1', status: 'reviewing', step: 'practice', reviewRound: 2, nextReviewAt: iso(HOUR) })], removed: [], pushQueue: [], lastSyncAt: 0 });
   f = ts3.advanceFlow('f_fb');
   ok(f.step === 'explain' && f.reviewRound === 2, '回退步 practice → explain（round 不变）');
+  forceDue('f_fb');
   f = ts3.advanceFlow('f_fb');
   ok(f.step === 'review' && f.reviewRound === 3 && Math.abs((Date.parse(f.nextReviewAt) - Date.now()) / 3600000 - 48) < 0.05, 'explain 完成 → round+1 → +48h（第 4 档）');
 
@@ -367,13 +377,80 @@ async function groupK_pushFlows() {
   ok(r3.ok === true && rawTutor().pushQueue.length === 0, '服务端明确 rejected → 清队（不死循环重试）');
 }
 
+
+async function groupM_pendingAndLock() {
+  group('M P3b 写回后的合并一致性：未上云的本地推进不被旧云端回退 / 云端通关传得到手机');
+  // M1 刚 pull 下来的流（updatedAt 距今 <5min），本地推进回退步（round 不变），断网未推 → 又 pull 回旧云端
+  resetEnv(); seedFamily('c1');
+  const { ts } = await boot();
+  const cloudTs = new Date(Date.now() - 60 * 1000).toISOString();
+  const cloudOld = Object.assign(cloudFlow('f_m1'), { step: 'practice', reviewRound: 2, nextReviewAt: iso(HOUR), updatedAt: cloudTs });
+  ts.mergeFromCloud({ ok: true, kpFlows: { flows: [cloudOld], total: 1 } });
+  const adv = ts.advanceFlow('f_m1');
+  ok(adv && adv.step === 'explain', '前置：回退步 practice → explain');
+  ok(rawTutor().pushQueue.some(q => q.kind === 'flows' && q.id === 'f_m1'), '前置：该推进还在队列里（未上云）');
+  ts.mergeFromCloud({ ok: true, kpFlows: { flows: [cloudOld], total: 1 } });
+  let cur = ts.getFlows().find(x => x.id === 'f_m1');
+  ok(cur.step === 'explain' && cur.updatedAt === adv.updatedAt, '未上云的本地推进不被旧云端回退（时钟窗 tie 取云端会吃掉它）', cur);
+
+  // M2 本地推进后 updatedAt 更新；期间工作台复测通关（云端 cleared，时间更早）→ 通关必须传到手机
+  resetEnv(); seedFamily('c1');
+  const { ts: ts2 } = await boot();
+  ts2.mergeFromCloud({ ok: true, kpFlows: { flows: [Object.assign(cloudFlow('f_m2'), { learnerNo: 'c1', reviewRound: 1, nextReviewAt: iso(2 * HOUR), updatedAt: new Date(Date.now() - 2 * HOUR).toISOString() })], total: 1 } });
+  const adv2 = ts2.advanceFlow('f_m2');
+  ok(adv2 && adv2.reviewRound === 2, '前置：本地完成一轮');
+  ts2.mergeFromCloud({ ok: true, kpFlows: { flows: [Object.assign(cloudFlow('f_m2'), { learnerNo: 'c1', status: 'cleared', nextReviewAt: null, reviewRound: 1, updatedAt: new Date(Date.now() - HOUR).toISOString() })], total: 1 } });
+  cur = ts2.getFlows().find(x => x.id === 'f_m2');
+  ok(cur.status === 'cleared', '云端 cleared 必须覆盖本地未通关（通关只进不出是双向的，否则手机永远卡在 reviewing）', cur);
+  ok(ts2.advanceFlow('f_m2') === null, '已通关的流推进不了');
+}
+
+async function groupN_advanceGuards() {
+  group('N 推进守卫：未到期不可提前推进 / 当前孩子为占位时盖章第一个真实孩子 / 首学进行中可见');
+  // N1 未到期的复习轮不可提前推进（防提前刷轮次；UI 只给到期流出按钮，数据层再守一道）
+  resetEnv(); seedFamily('c1');
+  const { ts } = await boot();
+  seedTutor({ sessions: [], flows: [Object.assign(cloudFlow('f_n1'), { id: 'f_n1', learnerNo: 'c1', status: 'reviewing', step: 'review', reviewRound: 1, nextReviewAt: isoFuture(HOUR) })], removed: [], pushQueue: [], lastSyncAt: 0 });
+  ok(ts.advanceFlow('f_n1') === null, '未到期 → 拒推');
+  // 回退态 nextReviewAt=now（工作台语义），应可推
+  seedTutor({ sessions: [], flows: [Object.assign(cloudFlow('f_n1b'), { id: 'f_n1b', learnerNo: 'c1', status: 'reviewing', step: 'practice', reviewRound: 1, nextReviewAt: new Date(Date.now() - 1000).toISOString() })], removed: [], pushQueue: [], lastSyncAt: 0 });
+  ok(ts.advanceFlow('f_n1b') !== null, '回退态（已到期）→ 可推');
+
+  // N2 当前孩子是占位切片（未切到真实孩子）：legacy 流推进须盖第一个真实孩子，否则写回被服务端拒、永不同步
+  resetEnv();
+  storage.set(OPENID_KEY, OID);
+  storage.set(ROOT_KEY + '_' + OID, { version: 2, users: [{ id: 'guest', nickname: '占位' }, { id: 'c1', nickname: '老大' }, { id: 'c2', nickname: '老二' }], currentUserId: 'guest' });
+  const { ts: ts2 } = await boot();
+  seedTutor({ sessions: [], flows: [Object.assign(cloudFlow('f_n2'), { id: 'f_n2', status: 'reviewing', step: 'review', reviewRound: 0, nextReviewAt: iso(HOUR) })], removed: [], pushQueue: [], lastSyncAt: 0 });
+  const f = ts2.advanceFlow('f_n2');
+  ok(f && f.learnerNo === 'c1', '当前孩子为占位 → legacy 流盖章第一个真实孩子', f);
+
+  // N3 首学进行中的流必须可见可推进（P3b 验收：「下一步」）；它没有排期，不在 dueKpFlows 里
+  resetEnv(); seedFamily('c1');
+  const { ts: ts3 } = await boot();
+  seedTutor({ sessions: [], flows: [
+    Object.assign(cloudFlow('f_n3a'), { id: 'f_n3a', learnerNo: 'c1', status: 'first_learning', step: 'learn', nextReviewAt: null }),
+    Object.assign(cloudFlow('f_n3b'), { id: 'f_n3b', learnerNo: 'c1', status: 'first_learning', step: 'test', nextReviewAt: null }),
+    Object.assign(cloudFlow('f_n3c'), { id: 'f_n3c', learnerNo: 'c1', status: 'not_started', step: 'learn', nextReviewAt: null }),
+    Object.assign(cloudFlow('f_n3d'), { id: 'f_n3d', learnerNo: 'c2', status: 'first_learning', step: 'learn', nextReviewAt: null })
+  ], removed: [], pushQueue: [], lastSyncAt: 0 });
+  ok(typeof ts3.inProgressKpFlows === 'function', '存在 inProgressKpFlows()（首学进行中）');
+  const prog = ts3.inProgressKpFlows().map(x => x.id);
+  ok(prog.indexOf('f_n3a') >= 0 && prog.indexOf('f_n3b') >= 0, '首学进行中（含 test 步待复测）可见', prog);
+  ok(prog.indexOf('f_n3c') < 0 && prog.indexOf('f_n3d') < 0, '未开始 / 别的孩子的不可见', prog);
+}
+
 async function groupS_sourceGuard() {
   group('S 源码断言（守护）：tutorSync 下发口径 + 只读纪律');
   const syncSrc = fs.readFileSync(TS_SYNC_PATH, 'utf8');
   ok(/const KP_FLOWS_COLL = 'kp_flows'/.test(syncSrc), 'tutorSync 指向 kp_flows 集合');
   ok(/G\.isChildOf\(root, d\.learnerNo\)/.test(syncSrc), '孩子闸：learnerNo 跨家庭拒该条');
   ok(/const KP_FLOWS_CLEARED_LIMIT = 100/.test(syncSrc), '已通关截断 100（与 P2 口径一致）');
-  ok(/truncated: clearedAll\.length > KP_FLOWS_CLEARED_LIMIT/.test(syncSrc), 'truncated 不静默');
+  ok(/clearedAll\.length > KP_FLOWS_CLEARED_LIMIT \|\| docs\.length >=/.test(syncSrc), 'truncated 不静默（已通关超限 或 全量读取撞封顶）');
+  ok(/KP_FLOWS_SCAN_LIMIT/.test(syncSrc) === false && /\.count\(\)/.test(syncSrc) && /\.skip\(/.test(syncSrc), 'pull 分页全取（未通关不截）；不再「updatedAt 倒序 + limit」一次取');
+  ok(/cloud\.openid !== openid\) \{ reject\(flowId, 'flow_id_conflict'\)/.test(syncSrc), '按 _id 直取后补归属校验（越权纪律）');
+  const writeSrc = fs.readFileSync(path.join(REPO, 'cloudfunctions', 'webAdminWrite', 'index.js'), 'utf8');
+  ok(/cloud\.openid !== openid\) \{ rejected\+\+; rejectFlow\(rejectedList, flowId, 'flow_id_conflict'\)/.test(writeSrc), 'webAdminWrite.writeKpFlows 同款归属校验（P1 补漏）');
   ok(/kpFlows: await pullKpFlows/.test(syncSrc), 'pull 返回 kpFlows 段');
   ok(/if \(d\.deletedAt\) return;/.test(syncSrc), 'deletedAt 行不下发');
   // 只读纪律：push 路径不收 flows
@@ -414,6 +491,8 @@ async function groupS_sourceGuard() {
   await groupI_due();
   await groupJ_advance();
   await groupK_pushFlows();
+  await groupM_pendingAndLock();
+  await groupN_advanceGuards();
   await groupS_sourceGuard();
   console.log('\n通过 ' + pass + ' 项，失败 ' + fail + ' 项');
   if (fail) { console.log('❌ P3a 小程序只读契约未全过'); process.exit(1); }

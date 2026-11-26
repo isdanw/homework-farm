@@ -66,9 +66,9 @@
     <view class="hub-ic">🔁</view>
     <view class="hub-body">
       <view class="hub-title">今日任务</view>
-      <view class="hub-desc">工作台排的复习计划到期后在这里提醒，到点的知识点别忘回顾</view>
+      <view class="hub-desc">工作台排的知识流：到期复习、首学没学完的都在这里，点一下就能推进</view>
     </view>
-    <view wx:if="{{dueFlows}}" class="hub-badge">到期 {{dueFlows}}</view>
+    <view wx:if="{{dueFlows}}" class="hub-badge">待办 {{dueFlows}}</view>
     <view class="hub-go">›</view>
   </view>
 

@@ -19,7 +19,8 @@ const STATUS_STYLE = {
 };
 
 /* P3a/P3b（2026-11-23/24）：「今日任务」区 = 工作台建的 Echo-Loop 知识流到期复习提醒。
- * 口径 = tutorStore.dueKpFlows()：nextReviewAt ≤ now 且未通关/未暂停，按学科分组。
+ * 口径 = tutorStore.dueKpFlows()（nextReviewAt ≤ now 且未通关/未暂停）+ inProgressKpFlows()
+ * （首学进行中，无排期；不并进来「下一步」永远触达不到），按学科分组。
  * subject 是工作台侧 key（mathematics/english/…），复用 SUBJECT_MAP 映射，未列出透传。
  * P3b 起可推进：advanceFlow 本地状态机前进 + 七档排期递进，写回走 tutorSync flows 动作；
  * 复测/通关仍回工作台（小程序不判通关、不产生 evidence）。 */
@@ -29,7 +30,11 @@ function buildTodayTasks() {
   const now = Date.now();
   const groups = {};
   const order = [];
-  tutorStore.dueKpFlows().forEach(f => {
+  const seen = {};
+  tutorStore.dueKpFlows().concat(tutorStore.inProgressKpFlows()).forEach(f => {
+    const fid = f.flowId || f.id;
+    if (seen[fid]) return;   // 两类互斥（首学无排期），去重只是防御
+    seen[fid] = true;
     const sub = wi.normalizeSubject(f.subject);
     if (!groups[sub.subject]) {
       groups[sub.subject] = { key: sub.subject, name: sub.subjectName, items: [] };
@@ -49,7 +54,8 @@ function buildTodayTasks() {
       flowId: f.flowId || f.id,
       kp: f.knowledgePoint || '',
       step: FLOW_STEP_CN[f.step] || f.step || '',
-      due: lateMin >= 1440 ? '到期 ' + Math.floor(lateMin / 1440) + ' 天'
+      due: f.status === 'first_learning' ? '首学进行中'
+         : lateMin >= 1440 ? '到期 ' + Math.floor(lateMin / 1440) + ' 天'
          : lateMin >= 60 ? '到期 ' + Math.floor(lateMin / 60) + ' 小时'
          : '刚到期',
       round: f.reviewRound || 0,
